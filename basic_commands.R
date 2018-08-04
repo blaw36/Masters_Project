@@ -17,3 +17,9 @@ wflow_publish("analysis/*Rmd") # to publish the unpublished stuff
 #                  ,repo = "Masters_Project")
 # Now we'll push to our git repo online.
 wflow_git_push()
+
+# After setting up my SSH (to avoid continuous prompting of usernames and passwords):
+wflow_git_remote(remote = "origin"
+                 , user = "blaw36"
+                 , repo = "Masters_Project",
+                 protocol = "ssh", action = "set_url")
