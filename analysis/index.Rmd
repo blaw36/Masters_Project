@@ -1,9 +1,15 @@
 ---
 title: "Home"
-site: workflowr::wflow_site
+site: 
 output:
-  workflowr::wflow_html:
-    toc: false
+  html_document:
+    toc: TRUE
 ---
 
-Welcome to my research website.
+This is a website designed to organise readings, notes and code related to my masters project.
+
+### Readings and notes
+Summaries and notes from important readings
+
+### Analysis, code
+Code chunks and RMarkdowns
