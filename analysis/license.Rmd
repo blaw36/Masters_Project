@@ -5,7 +5,9 @@ output:
     toc: false
 ---
 
-Note to self: I've been told I should read [this]: (http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1002598)[^1]
+Note to self: I've been told I should read [this][licensingHelp][^1]
+
+[licensingHelp]: http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1002598
 
 What license are you using for your code? See [choosealicense.com][choose] for
 help deciding. It's a convention to save a file `LICENSE` in the root of your
