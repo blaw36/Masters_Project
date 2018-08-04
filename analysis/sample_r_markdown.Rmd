@@ -81,4 +81,4 @@ qplot(speed,dist,data=cars) + geom_smooth()
 [id]: http://www.google.com "Hmm"
 
 <!-- Here we'll put references/biblio -->
-[^1] Me.
+[^1]: Me.

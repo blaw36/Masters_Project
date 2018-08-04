@@ -11,7 +11,7 @@ This is a website designed to organise readings, notes and code related to my ma
 
 ### Readings and notes
 Summaries and notes from important readings
-[Here's one](sample_r_markdown.Rmd)
+[Here's one](sample_r_markdown.html)
 
 ### Analysis, code
 Code chunks and RMarkdowns
