@@ -7,7 +7,9 @@ wflow_build()
 # Find the status of the markdown files and whether they're ready to be published, or whether they are up-to-date
 wflow_status()
 # 'Unp = Unpublished' <- html files not committed to git repo yet
-wflow_publish("analysis/*Rmd") # to publish the unpublished stuff
+wflow_publish("analysis/*Rmd"
+              ,message = "* Insert a commit message *"
+              ,republish = T) # to publish the unpublished stuff
 
 # We've only committed(published) to our local repository.
 # Create a remote (and call it the default - origin)
