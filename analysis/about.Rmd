@@ -11,8 +11,8 @@ You can find me at `bklaw@student.unimelb.edu.au`
 
 Other information:
 
-- The project will be about <blah>
-- The official thesis title is <blah>
+- The project will be about _blah_
+- The official thesis title is _blah_
 - My supervisor is [Heejung Shim](https://heejungshim.org)
 - I guess that means this project is within the realms of the [Melbourne Integrative Genomics (MIG) group](https://research.unimelb.edu.au/integrative-genomics/MIG-home)
 
