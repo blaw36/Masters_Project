@@ -7,7 +7,7 @@ output:
 
 This is a website designed to organise readings, notes and code related to my masters project.
 
-======
+***
 
 ### Readings and notes
 Summaries and notes from important readings
