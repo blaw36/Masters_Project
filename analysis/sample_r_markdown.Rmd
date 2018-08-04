@@ -22,6 +22,7 @@ Or
 $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$
 $$x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$$
 ---
+***
 
 Nice.
 
@@ -30,32 +31,39 @@ You can also put in R code using three back-ticks, and 'echo = FALSE' if you don
 head(mtcars)
 ```
 But if you set echo = TRUE, it will print:
-```{r, echo=FALSE}
+```{r, echo=TRUE}
+head(mtcars)
+```
+If you don't want to evaluate it, eval = FALSE
+```{r, eval=FALSE}
 head(mtcars)
 ```
 
 Here are some lists:
+
 * blah
 * blah
 * blah
-  + blah (plus for indented parts)
+    + blah (plus, and DOUBLE TAB for indented parts)
 * 1 underscore or asterisk for *italic*
 * 2 "         "         " for __bold__
-* Superscript uses the hat, ^as per usual^
+* Superscript uses the hat^as_per_usual^. No spaces allowed in the superscripts.
 * ~~Strikethrough~~ uses the tilde
   
 Numeric lists:
+
 1. Hi
 2. Hi again
-  + Hi again
-    + And again?
-      + And again?
+    a. Hi again
+        i. And again?
 
 I will cite myself [^1].
 
+> A quote
+
 ## Inline R code
-For when you want programmatic inputs. Wrap the inline code in a single back-tick.
-I have `5+10` sheep.
+For when you want programmatic inputs. Wrap the inline code in a single back-tick, with something at the front to stipulate the language ('r', for code to be executed in R)
+I have `r 5+10` sheep.
 
 ## Images
 I'll have to have some in this directory (but i should add their formats to the gitignore as they're large) if I want to upload.
@@ -67,6 +75,7 @@ print("Hello world")
 
 ## Links!
 A [linked phrase][id].
+
 Alternatively,
 A [linked phrase](http://www.google.com)
 
