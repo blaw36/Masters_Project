@@ -1,13 +1,11 @@
 ---
 title: "License"
 output:
-  workflowr::wflow_html:
+  html_document:
     toc: false
 ---
 
 Note to self: I've been told I should read [this][licensingHelp][^1]
-
-[licensingHelp]: http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1002598
 
 What license are you using for your code? See [choosealicense.com][choose] for
 help deciding. It's a convention to save a file `LICENSE` in the root of your
@@ -18,6 +16,7 @@ traditional to choose a [Creative Commons][cc] license for this type of content.
 
 [choose]: http://choosealicense.com/
 [cc]: https://creativecommons.org/choose/
+[licensingHelp]: http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1002598
 
 How should others cite your work? It's a convention to save a file `CITATION`
 in the root of your Git repo that contains the citation information.
