@@ -1,6 +1,5 @@
 ---
 title: "Home"
-site: 
 output:
   html_document:
     toc: TRUE
