@@ -1,9 +1,12 @@
 ---
 title: "Wavelet-based Genetic Association Analysis... - Shim and Stephens (2014)"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 Full title: _Wavelet-based genetic association analysis of functional phenotypes arising from high-throughput sequencing assays_
+
 Paper can be found [here](https://projecteuclid.org/euclid.aoas/1437397106)
 
 ***
