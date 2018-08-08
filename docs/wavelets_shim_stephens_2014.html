@@ -25,8 +25,6 @@
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
-<link href="site_libs/pagedtable-1.1/css/pagedtable.css" rel="stylesheet" />
-<script src="site_libs/pagedtable-1.1/js/pagedtable.js"></script>
 <link href="site_libs/font-awesome-5.0.13/css/fa-svg-with-js.css" rel="stylesheet" />
 <script src="site_libs/font-awesome-5.0.13/js/fontawesome-all.min.js"></script>
 <script src="site_libs/font-awesome-5.0.13/js/fa-v4-shims.min.js"></script>
@@ -310,6 +308,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Wavelet-based Genetic Association Analysis… - Shim and Stephens (2014)</h1>
+<h4 class="date"><em>8 August 2018</em></h4>
 
 </div>
 
@@ -331,7 +330,85 @@ div.tocify {
 <li>Use the high-res, wavelet-based methods for functional data analysis</li>
 </ul></li>
 <li>Focus in this paper is on identifying <em>genetic variants associated with chromatin accessibility</em>, using <em>DNase-seq</em></li>
+<li>Wavelet-based test for <strong>association between a covariate</strong> <em>(say, a genotype)</em> <strong>and the shape of the underlying function</strong>
+<ul>
+<li>Also provide ability to estimate the shape of genotype efffect</li>
+</ul></li>
+<li>Data is wavelet transformed
+<ul>
+<li>Model associations in the transformed space</li>
+<li>Spatial structure of data translates to sparse structure in wavelet space</li>
+<li>Sparse data relatively easy to model</li>
+<li><span style="color:red"><em>Is this related to the fact that all the localised ‘differences’ at finer granularities mainl show up as 0s due to the spatial structure of the data? Hence spatial similarity creates sparsity in the wavelet space, whereas signal is exposed as the ‘non-sparse’ area?</em></span></li>
+</ul></li>
 </ul>
+</div>
+<div id="background" class="section level3">
+<h3>Background</h3>
+<div id="dnase-seq-and-chromatin-accessibility" class="section level4">
+<h4>DNase-seq and chromatin accessibility</h4>
+<ul>
+<li>Enzyme called DNase I selectively cuts DNA at locations where chromatin is accessible</li>
+<li>More accessibility generally <span class="math inline">\(\Rightarrow\)</span> cut more often</li>
+<li><span class="math inline">\(c_{b}\)</span> = count of number of reads starting at each base, <span class="math inline">\(b\)</span>, in the genome (humans: <span class="math inline">\(b \approx 1,\dots,3 \times 10^9\)</span>)</li>
+<li><span class="math inline">\(d_{b} = \frac{c_{b}}{S}\)</span>, where <span class="math inline">\(S\)</span> is total number of mapped reads. This standardises the read counts</li>
+<li>Generally, higher <span class="math inline">\(d_{b} \Rightarrow\)</span> higher accessibility of base <span class="math inline">\(b\)</span> (through DNase I sensitivity, which is a proxy)</li>
+<li>Counts are 0 in many s=places, but where it exists, shows local spatial autocorrelation</li>
+</ul>
+</div>
+<div id="wavelets" class="section level4">
+<h4>Wavelets</h4>
+<ul>
+<li>Haar Discrete Wavelet Transform (<em>DWT</em>)
+<ul>
+<li>See <span style="color:red"><i>A theory for multiresolution signal decomposition&quot; by S.G. Mallat (1989)</i></span> for a more formal background</li>
+</ul></li>
+<li><span class="math inline">\(d = (d_b)^{B}_{b=1}\)</span> are standardised counts from a length <span class="math inline">\(B\)</span> region</li>
+<li><span class="math inline">\(d\)</span> decomposed into “wavelet coefficients (WCs)”, <span class="math inline">\(y_{\textbf{s}cale,\textbf{l}ocation}\)</span>, and <span class="math inline">\(y=(y_{sl})\)</span>, the vector of all WCs.
+<ul>
+<li>Zero-cale: <span class="math inline">\(y_{01} = \sum_{b} d_{b}\)</span>. Sum of all</li>
+<li>First scale: <span class="math inline">\(y_{11} = \sum_{b \leq \frac{B}{2}} d_{b} - \sum_{b &gt; \frac{B}{2}} d_{b}\)</span>, ie differences between the total counts of the ‘first’ and ‘second’ half of the sequence</li>
+<li>This ‘method’ of differencing the ‘binary split’ regions generates finer data at ‘higher scale levels/numbers’</li>
+</ul></li>
+<li><span class="math inline">\(y = Wd\)</span>, and <span class="math inline">\(W\)</span> known as the <em>DWT matrix</em>.
+<ul>
+<li>One-one transform, hence <span class="math inline">\(W\)</span> is invertible, and we get the ‘inverse discrete wavelet transform’ (IDWT), <span class="math inline">\(d = W^{-1}y\)</span></li>
+</ul></li>
+<li>Two crucial properties:
+<ol style="list-style-type: decimal">
+<li>‘Whitening property’: WCs tend to be less dependent even if <span class="math inline">\(d\)</span> is strongly spatially correlated</li>
+<li>Sparsity in ‘wavelet denoising’: Few big WCs, shrinking/ignoring smaller WCs can provide denoised estimates of signal</li>
+</ol></li>
+</ul>
+</div>
+</div>
+<div id="methods" class="section level3">
+<h3>Methods</h3>
+<ul>
+<li><span class="math inline">\(N\)</span> individuals</li>
+<li>Local effect expected, hence DNase-seq data divided into regions, with each region tested for association with all near-by Single Nucleotide POlymorphisms (SNPs)</li>
+<li><span class="math inline">\(d^i\)</span> is a vector of DNase-seq count data for individual <span class="math inline">\(i\)</span> (to <span class="math inline">\(N\)</span>). Has length <span class="math inline">\(B=2^J\)</span></li>
+<li><span class="math inline">\(y^i\)</span> is a vector of WCs from DWT-transformed <span class="math inline">\(d\)</span>.</li>
+<li><span class="math inline">\(g^i \in {0,1,2}\)</span> is num. of copies of minor allele, at a single SNP of interest for inidividual <span class="math inline">\(i\)</span></li>
+</ul>
+<div id="test-setup" class="section level4">
+<h4>Test setup</h4>
+<ul>
+<li><span class="math inline">\(H_0:\)</span> no association between any WC and <span class="math inline">\(g := \gamma_{sl} = 0 \forall s,l\)</span> (and thus, between <span class="math inline">\(d\)</span> and <span class="math inline">\(g\)</span> also)</li>
+<li>Bayes Factor support for <span class="math inline">\(\gamma_{sl}=1\)</span>: <span class="math display">\[BF_{sl}(y,g)=\frac{p(y_{sl}|g,\gamma_{sl}=1)}{p(y_{sl}|g,\gamma_{sl}=0)}\]</span></li>
+<li>Standard normal linear regression for <span class="math inline">\(p(y_{sl}|g,\gamma_{sl})\)</span>: <span class="math display">\[y_{sl}^i = \mu_{sl} + \gamma_{sl}\beta_{sl}g^i+\epsilon^i_{sl}\]</span> <span class="math display">\[\epsilon_{sl}^i \sim N(0,\sigma_{sl}^2)\]</span></li>
+<li>See supplementary material for priors of mu, beta, sigma. Analytic form solution.</li>
+<li>Hierarchical model: <span class="math inline">\(p(\gamma_{sl}=1|\pi)=\pi_{s}\)</span>
+<ul>
+<li><span class="math inline">\(\pi_s\)</span> = proportion of WCs at <span class="math inline">\(s\)</span> associated with <span class="math inline">\(g\)</span></li>
+<li><strong>Assumption of independence across scales and locations</strong></li>
+<li>Likelihood ratio for <span class="math inline">\(\pi = (\pi_1,\dots,\pi_J)\)</span> relative to <span class="math inline">\(\pi \equiv 0\)</span> given on page 7. Full derivation involves joint over all <span class="math inline">\(s,l\)</span> and multiplying out the two states of <span class="math inline">\(\gamma_{sl}\)</span> <span class="math display">\[ \Lambda(\pi;y,g) = \prod_{s,l} [\pi_{s}BF_{sl}+(1-\pi_{s})]\]</span></li>
+</ul></li>
+<li>Null holds if <span class="math inline">\(\pi \equiv 0\)</span>, therefore, likelihood ratio statistic to test <span class="math inline">\(H_0\)</span> is: <span class="math display">\[\hat{\Lambda}(y,g) := \Lambda(\hat{\pi};y,g)\]</span></li>
+<li><span class="math inline">\(\hat{\pi}\)</span> is the maximum likelihood estimate of <span class="math inline">\(\pi\)</span>, parameterised using an EM algo.</li>
+<li>‘whitening property’: <span class="math inline">\(y_{sl}, \beta_{sl}\)</span> conditionally independent given <span class="math inline">\(\pi\)</span> across <span class="math inline">\(s,l\)</span> (moreso than the <span class="math inline">\(d\)</span>’s)</li>
+</ul>
+</div>
 </div>
 
 
