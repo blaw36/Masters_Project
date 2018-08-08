@@ -1,0 +1,20 @@
+---
+title: "Wavelet-based Genetic Association Analysis... - Shim and Stephens (2014)"
+output: html_notebook
+---
+
+Full title: _Wavelet-based genetic association analysis of functional phenotypes arising from high-throughput sequencing assays_
+Paper can be found [here](https://projecteuclid.org/euclid.aoas/1437397106)
+
+***
+
+### Introduction
+
+* High-level aim: Associate observable traits/behaviours with genetic variants - genetic association studies
+* Data is obtained from high-throughput sequencing assays, resulting in high-resolution data, which is not utilised by traditional association analysis methods (coarser resolution);
+    + Fixed length windows
+    + Genes
+* Treat sequence data as measuring an underlying 'function' which varies on the genome
+    + Use the high-res, wavelet-based methods for functional data analysis
+* Focus in this paper is on identifying _genetic variants associated with chromatin accessibility_, using _DNase-seq_
+
