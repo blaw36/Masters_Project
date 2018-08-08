@@ -1,9 +1,12 @@
 ---
 title: "Wavelet-based Genetic Association Analysis... - Shim and Stephens (2014)"
-output:
-  html_document:
-    df_print: paged
+date: "8 August 2018"
+output: html_document
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 Full title: _Wavelet-based genetic association analysis of functional phenotypes arising from high-throughput sequencing assays_
 
@@ -20,4 +23,59 @@ Paper can be found [here](https://projecteuclid.org/euclid.aoas/1437397106)
 * Treat sequence data as measuring an underlying 'function' which varies on the genome
     + Use the high-res, wavelet-based methods for functional data analysis
 * Focus in this paper is on identifying _genetic variants associated with chromatin accessibility_, using _DNase-seq_
+* Wavelet-based test for __association between a covariate__ _(say, a genotype)_ __and the shape of the underlying function__
+    + Also provide ability to estimate the shape of genotype efffect
+* Data is wavelet transformed
+    + Model associations in the transformed space
+    + Spatial structure of data translates to sparse structure in wavelet space
+    + Sparse data relatively easy to model
+    + <span style="color:red">_Is this related to the fact that all the localised 'differences' at finer granularities mainl show up as 0s due to the spatial structure of the data? Hence spatial similarity creates sparsity in the wavelet space, whereas signal is exposed as the 'non-sparse' area?_</span>
+    
+### Background
+#### DNase-seq and chromatin accessibility
+* Enzyme called DNase I selectively cuts DNA at locations where chromatin is accessible
+* More accessibility generally $\Rightarrow$ cut more often
+* $c_{b}$ = count of number of reads starting at each base, $b$, in the genome (humans: $b \approx 1,\dots,3 \times 10^9$)
+* $d_{b} = \frac{c_{b}}{S}$, where $S$ is total number of mapped reads. This standardises the read counts
+* Generally, higher $d_{b} \Rightarrow$ higher accessibility of base $b$ (through DNase I sensitivity, which is a proxy)
+* Counts are 0 in many s=places, but where it exists, shows local spatial autocorrelation
+
+#### Wavelets
+* Haar Discrete Wavelet Transform (_DWT_)
+    + See <span style="color:red"><i>A theory for multiresolution signal decomposition" by S.G. Mallat (1989)</i></span> for a more formal background
+* $d = (d_b)^{B}_{b=1}$ are standardised counts from a length $B$ region
+* $d$ decomposed into "wavelet coefficients (WCs)", $y_{\textbf{s}cale,\textbf{l}ocation}$, and $y=(y_{sl})$, the vector of all WCs.
+    + Zero-cale: $y_{01} = \sum_{b} d_{b}$. Sum of all
+    + First scale: $y_{11} = \sum_{b \leq \frac{B}{2}} d_{b} - \sum_{b > \frac{B}{2}} d_{b}$, ie differences between the total counts of the 'first' and 'second' half of the sequence
+    + This 'method' of differencing the 'binary split' regions generates finer data at 'higher scale levels/numbers'
+* $y = Wd$, and $W$ known as the _DWT matrix_.
+    + One-one transform, hence $W$ is invertible, and we get the 'inverse discrete wavelet transform' (IDWT), $d = W^{-1}y$
+* Two crucial properties:
+    1. 'Whitening property': WCs tend to be less dependent even if $d$ is strongly spatially correlated
+    2. Sparsity in 'wavelet denoising': Few big WCs, shrinking/ignoring smaller WCs can provide denoised estimates of signal
+    
+### Methods
+* $N$ individuals
+* Local effect expected, hence DNase-seq data divided into regions, with each region tested for association with all near-by Single Nucleotide POlymorphisms (SNPs)
+* $d^i$ is a vector of DNase-seq count data for individual $i$ (to $N$). Has length $B=2^J$
+* $y^i$ is a vector of WCs from DWT-transformed $d$.
+* $g^i \in {0,1,2}$ is num. of copies of minor allele, at a single SNP of interest for inidividual $i$
+
+#### Test setup
+* $H_0:$ no association between any WC and $g := \gamma_{sl} = 0 \forall s,l$ (and thus, between $d$ and $g$ also)
+* Bayes Factor support for $\gamma_{sl}=1$:
+$$BF_{sl}(y,g)=\frac{p(y_{sl}|g,\gamma_{sl}=1)}{p(y_{sl}|g,\gamma_{sl}=0)}$$
+* Standard normal linear regression for $p(y_{sl}|g,\gamma_{sl})$:
+$$y_{sl}^i = \mu_{sl} + \gamma_{sl}\beta_{sl}g^i+\epsilon^i_{sl}$$
+$$\epsilon_{sl}^i \sim N(0,\sigma_{sl}^2)$$
+* See supplementary material for priors of mu, beta, sigma. Analytic form solution.
+* Hierarchical model: $p(\gamma_{sl}=1|\pi)=\pi_{s}$
+    + $\pi_s$ = proportion of WCs at $s$ associated with $g$
+    + __Assumption of independence across scales and locations__
+    + Likelihood ratio for $\pi = (\pi_1,\dots,\pi_J)$ relative to $\pi \equiv 0$ given on page 7. Full derivation involves joint over all $s,l$ and multiplying out the two states of $\gamma_{sl}$
+$$ \Lambda(\pi;y,g) = \prod_{s,l} [\pi_{s}BF_{sl}+(1-\pi_{s})]$$
+* Null holds if $\pi \equiv 0$, therefore, likelihood ratio statistic to test $H_0$ is:
+$$\hat{\Lambda}(y,g) := \Lambda(\hat{\pi};y,g)$$
+* $\hat{\pi}$ is the maximum likelihood estimate of $\pi$, parameterised using an EM algo.
+* 'whitening property': $y_{sl}, \beta_{sl}$ conditionally independent given $\pi$ across $s,l$ (moreso than the $d$'s)
 
