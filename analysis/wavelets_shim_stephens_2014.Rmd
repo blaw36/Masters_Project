@@ -35,7 +35,7 @@ Paper can be found [here](https://projecteuclid.org/euclid.aoas/1437397106)
 #### DNase-seq and chromatin accessibility
 * Enzyme called DNase I selectively cuts DNA at locations where chromatin is accessible
 * More accessibility generally $\Rightarrow$ cut more often
-* $c_{b}$ = count of number of reads starting at each base, $b$, in the genome (humans: $b \approx 1,\dots,3 \times 10^9$)
+* $c_{b}$ = count of reads starting at each base, $b$, in the genome (humans: $b \approx 1,\dots,3 \times 10^9$)
 * $d_{b} = \frac{c_{b}}{S}$, where $S$ is total number of mapped reads. This standardises the read counts
 * Generally, higher $d_{b} \Rightarrow$ higher accessibility of base $b$ (through DNase I sensitivity, which is a proxy)
 * Counts are 0 in many s=places, but where it exists, shows local spatial autocorrelation
@@ -59,16 +59,16 @@ Paper can be found [here](https://projecteuclid.org/euclid.aoas/1437397106)
 * Local effect expected, hence DNase-seq data divided into regions, with each region tested for association with all near-by Single Nucleotide POlymorphisms (SNPs)
 * $d^i$ is a vector of DNase-seq count data for individual $i$ (to $N$). Has length $B=2^J$
 * $y^i$ is a vector of WCs from DWT-transformed $d$.
-* $g^i \in {0,1,2}$ is num. of copies of minor allele, at a single SNP of interest for inidividual $i$
+* $g^i \in {0,1,2}$ is $\#$ of copies of minor allele, at a single SNP of interest for inidividual $i$
 
 #### Test setup
 * $H_0:$ no association between any WC and $g := \gamma_{sl} = 0 \forall s,l$ (and thus, between $d$ and $g$ also)
-* Bayes Factor support for $\gamma_{sl}=1$:
+* Bayes Factor support for $\gamma_{sl}=1$: (<span style="color:red"> read supplementary material for what is a Bayes Factor! But pretty much a statistic to conduct a hypothesis test in a Bayesian setting.</span>)
 $$BF_{sl}(y,g)=\frac{p(y_{sl}|g,\gamma_{sl}=1)}{p(y_{sl}|g,\gamma_{sl}=0)}$$
 * Standard normal linear regression for $p(y_{sl}|g,\gamma_{sl})$:
 $$y_{sl}^i = \mu_{sl} + \gamma_{sl}\beta_{sl}g^i+\epsilon^i_{sl}$$
 $$\epsilon_{sl}^i \sim N(0,\sigma_{sl}^2)$$
-* See supplementary material for priors of mu, beta, sigma. Analytic form solution.
+* See supplementary material for priors of mu, beta, sigma. Priors were chosen to be able to produce an analytic form solution.
 * Hierarchical model: $p(\gamma_{sl}=1|\pi)=\pi_{s}$
     + $\pi_s$ = proportion of WCs at $s$ associated with $g$
     + __Assumption of independence across scales and locations__
@@ -78,4 +78,50 @@ $$ \Lambda(\pi;y,g) = \prod_{s,l} [\pi_{s}BF_{sl}+(1-\pi_{s})]$$
 $$\hat{\Lambda}(y,g) := \Lambda(\hat{\pi};y,g)$$
 * $\hat{\pi}$ is the maximum likelihood estimate of $\pi$, parameterised using an EM algo.
 * 'whitening property': $y_{sl}, \beta_{sl}$ conditionally independent given $\pi$ across $s,l$ (moreso than the $d$'s)
+
+#### Multiple SNPs, permutation procedure
+* Permutation procedure to assess significance of observed $\hat{\Lambda}$
+* Single SNP with vector $g$ vs $d$: $\hat{\Lambda}$ used to test this association
+* Association between $d$ and ANY of $P$ nearby SNPs, with $g_1,\dots,g_P$:
+$$ \hat{\Lambda}_{max} := \max_{p} \hat{\Lambda}(y,g_p) $$
+    + Assess significance by generating permutations $\nu_1,\dots,\nu_M$ of $(1,\dots,M)$
+    + Generating random combos of $g^{i}$'s observed from each of the $i\in(1,\dots,M)$ individuals
+$$ \hat{\Lambda}_{max}^j := \max_{p} \hat{\Lambda}(y,\nu_{j}(g_p)) $$
+$$ p-val_{\hat{\Lambda_{max}}} = \frac{\#\{j:\hat{\Lambda}_{max}^j \geq \hat{\Lambda}_{max}\}+1}{M+1} $$
+    + This is effectively testing for significance by 'simulating' the statistic across a heap of other simulated/potential g_p vectors, and assessing the values of the resultant statistic
+    
+#### Filtering low count WCs
+* Just contribute noise (sampling error) and obscure the signal, so filter them out by allocating $BF_{sl}=1$, implying no information about association ($p(y|g)$ same for both $\gamma_{sl}=0,1$)
+* WC set $\{y_{sl}^i\}_{i=1}^N$ is "low count" if avg number of reads per individual is less than $L=2$ (for a given scale, location)
+    + Tried 1,2,3,5,10. Performance identical for $L \in \{2,3,5\}$, but not for 1,10, suggesting 1 was not filtering enough, 10 was filtering too much (perhaps).
+    
+#### Quantile transformation to guard against non-normality
+* Model assumes normally distributed residuals
+* Significant non-normal residuals can arise
+* To prevent these from distorting the signal, WCs are quantile-transformed to the quantiles of a standard normal distribution
+    + This means they are ranked, and their ranking percentile (percent_rank) is converted to an equivalent value on a standard normal distribution (eg: 1, 10, 100 may become -3, 0, 3)
+    + Guarantees that normality of residuals assumption holds under the null, and that Bayes Factors are well behaved under the null
+    
+#### Controlling for confounding factors
+* PCA regression (regress the first principal components on the quantile transformed WCs), and take the residuals.
+* Residuals are then quantile transformed and used in the Bayes Factor calculations <span style="color:red">How? Are these used as $y_i$'s?</span>
+
+#### Effect size estimates
+* All of this means we can derive posterior distributions on the effect sizes, but only based on data in the wavelet space.
+    + Given $\hat{\pi}$, we can derive $p(\beta_{sl}|y,g,\hat{\pi})$
+    + Has a point mass at zero, and a 3-parameter t-distribution (see supplementary material)
+* To make them meaningful, need to inverse discrete wavelet transform (IDWT) back to interpretable effects
+* Data form of the linear regression:
+    + Each individual, $i \in {1,\dots,n}$ with wavelet coefficients from locations $l\in{1,\dots,B}$, where $B$ is the length of the genome, allows us to write:
+$$ Y = M + \beta g + E$$
+* $Y$ is a $B \times N$ matrix (each column is an individual, with a $B \times 1$ vector of observed counts along the genome, transformed into WCs)
+* $M$ is a $B \times N$ matrix of means. Same with $E$ for error terms
+* $\beta$ is $B \times 1$ - effect for each location
+* $g$ is $1 \times N$ - differnt genotypes for each individual
+* $D = W^{-1}Y$ from IDWT before. Pre-multiply by $W^{-1}$ to 'convert' our $Y$ into $D$, and we get
+$$ W^{-1}Y = W^{-1}(\dots) \\
+\therefore D = W^{-1}M + W^{-1}\beta g + W^{-1}E \\
+\therefore D = W^{-1}M + \alpha g + W^{-1}E $$
+* Because $\alpha$ has linear r/ship with $\beta$, we get a closed form pointwise posterior mean and variance for $\alpha_b$, where $b = 1,\dots,B$ (ie the effect size at each location on the genotype)
+
 

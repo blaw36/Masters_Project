@@ -1,0 +1,42 @@
+---
+title: "StatQuest_Intro_RNA_seq"
+date: "15 August 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+An introduction to RNA-seq
+
+Video can be found [here](https://www.youtube.com/watch?v=tlf6wYJrwKY)
+
+***
+
+* Differences in behaviour between mutated and normal neural cells.
+* What is causing the difference? Differences in gene expression.
+* Each cell has chromosomes, each chromosomes have genes. Some genes are active.
+* mRNA (messenger RNA) transcripts are observed from each gene.
+* High-throughput sequencing: tells us __which__ genes are active, and __how much__ they are transcribed.
+* RNA-seq: allows us to measure gene expression in cells. (High-throughput sequencing on RNA data?)
+* Main steps for RNA-seq:
+    1. Prepare RNA-seq library. 
+        a. RNA must be broken up into small fragments as the sequencer may only be able to read short fragments.
+        b. These fragments are then converted into double stranded DNA (which can be easily amplified, modified). 
+        c. Add sequencing adaptors (which may allow for different samples to be sequenced simultaneously). _Joining bits together to be read in at once?_
+        d. PCR amplify for those which were sequenced.
+        e. Verify
+    2, Filter out garbage reads:
+        a. Low quality base calls (from machine - underdiversity or lack of confidence of read)
+        b. Artifacts of the chemistry: Sometimes, adaptors just bind to each other - no signal, just adaptor sequences!
+    3. Align a read to a genome sequence:
+        a. We have a sequenced __genome__ (<span style="color:red"> how do we attain these? Are these like the 'source of truth'?)</span>: gattaca, etc.
+            + Split this into small fragments, index the fragments and locations within the genome.
+        b. Then take a sequenced __read__, similarly fragmented and indexed as the sequenced genome.
+        c. Genome fragments that match the read fragments will determine a location (chromosome and position) in the genome.
+        d. Why fragment? So we can align reads even if they are not 'exact' matches in the genome. (smaller chunks gives less onerous matching conditions and allow partial rather than full matching of genome location)
+        e. Then we find __matched genome segments__ and see if they lie somewhere, on the chromosome, where a gene is expected.
+        f. Single cell has 800+ samples (columns)    
+        g. Output processed as a list of genes, and a count of occurrences in the (sequenced) samples (of cells) provided
+        h. human genome has around 20k genes.
+        i. Normalise the numbers (within samples), perhaps based on the number of total reads from each sample (one may have had more garbage reads, or readings landed on 'junk' areas of the data)

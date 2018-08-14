@@ -1,0 +1,36 @@
+---
+title: "StatQuest_Intro_ChIP_seq"
+date: "15 August 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+An introduction to ChIP-seq
+
+Video can be found [here](https://www.youtube.com/watch?v=nkWGmaYRues)
+
+***
+
+* Chromosomes = DNA + histones (a type of protein) + other proteins
+* DNA wraps around histones to 'package DNA' and the packaging can regulate gene transcription
+* Histones can activate or repress genes.
+* Chromatin = DNA wrapped around histones
+* ChIP-seq: <b>Ch</b>romatin <b>I</b>mmuno<b>p</b>recipiation combined with high-throughput <b>seq</b>uencing.
+* __ChIP-seq Identifies the locations in the genome bound by proteins. May also identify, as a result, genes and their functions (eg: if they repress or promote (gene) transcription).__
+* Gene transcription: first step of gene expression, where a particular segment of DNA is copied into RNA (especially the messenger types) by the enzyme RNA polymerase.
+    a. During transcription, DNA seq read by an RNA polymerase, which produces a complementary, antiparallel (two biopolymers which run parallel to each other but with opposite alignments, eg: two strands of a DNA double helix) RNA strand called a _primary transcript_. [^1]
+* __Process:__
+    a. Glue all the proteins bound to the DNA together with the DNA
+    b. Result is DNA with proteins glued
+    c. Isolate desired protein with antibody
+    d. Result is strand of DNA stuck to the protein, and (after separation/removing other strands of DNA) eventually, just the DNA bound by the particular protein we're interested in.
+* This occurs for many cells, so we're left with many DNA segments from many cells. Then we run RNA-seq on these fragments (add adaptors, sequence, filter out garbage reads) and isolate the position on the chromosome from which these reads came from.
+* __Result:__ A 'genome browser track' - genes and chromosome positions in a genome. A histogram of 'frequency of reads' given the position/location of a genome for a particular protein.
+    a. Usually analysed with respect to a _control track_
+    b. This is a browser track created with respect to _no particular protein_, as opposed to before which was done with respect to a certain protein. (Generic, 'unbiased' read frequency). Just used to verify 'base' frequency of reads in a particular region of genome.
+
+<!-- References -->
+[^1]: https://en.wikipedia.org/wiki/Transcription_(biology)
