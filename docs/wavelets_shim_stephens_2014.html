@@ -350,7 +350,7 @@ div.tocify {
 <ul>
 <li>Enzyme called DNase I selectively cuts DNA at locations where chromatin is accessible</li>
 <li>More accessibility generally <span class="math inline">\(\Rightarrow\)</span> cut more often</li>
-<li><span class="math inline">\(c_{b}\)</span> = count of number of reads starting at each base, <span class="math inline">\(b\)</span>, in the genome (humans: <span class="math inline">\(b \approx 1,\dots,3 \times 10^9\)</span>)</li>
+<li><span class="math inline">\(c_{b}\)</span> = count of reads starting at each base, <span class="math inline">\(b\)</span>, in the genome (humans: <span class="math inline">\(b \approx 1,\dots,3 \times 10^9\)</span>)</li>
 <li><span class="math inline">\(d_{b} = \frac{c_{b}}{S}\)</span>, where <span class="math inline">\(S\)</span> is total number of mapped reads. This standardises the read counts</li>
 <li>Generally, higher <span class="math inline">\(d_{b} \Rightarrow\)</span> higher accessibility of base <span class="math inline">\(b\)</span> (through DNase I sensitivity, which is a proxy)</li>
 <li>Counts are 0 in many s=places, but where it exists, shows local spatial autocorrelation</li>
@@ -389,15 +389,15 @@ div.tocify {
 <li>Local effect expected, hence DNase-seq data divided into regions, with each region tested for association with all near-by Single Nucleotide POlymorphisms (SNPs)</li>
 <li><span class="math inline">\(d^i\)</span> is a vector of DNase-seq count data for individual <span class="math inline">\(i\)</span> (to <span class="math inline">\(N\)</span>). Has length <span class="math inline">\(B=2^J\)</span></li>
 <li><span class="math inline">\(y^i\)</span> is a vector of WCs from DWT-transformed <span class="math inline">\(d\)</span>.</li>
-<li><span class="math inline">\(g^i \in {0,1,2}\)</span> is num. of copies of minor allele, at a single SNP of interest for inidividual <span class="math inline">\(i\)</span></li>
+<li><span class="math inline">\(g^i \in {0,1,2}\)</span> is <span class="math inline">\(\#\)</span> of copies of minor allele, at a single SNP of interest for inidividual <span class="math inline">\(i\)</span></li>
 </ul>
 <div id="test-setup" class="section level4">
 <h4>Test setup</h4>
 <ul>
 <li><span class="math inline">\(H_0:\)</span> no association between any WC and <span class="math inline">\(g := \gamma_{sl} = 0 \forall s,l\)</span> (and thus, between <span class="math inline">\(d\)</span> and <span class="math inline">\(g\)</span> also)</li>
-<li>Bayes Factor support for <span class="math inline">\(\gamma_{sl}=1\)</span>: <span class="math display">\[BF_{sl}(y,g)=\frac{p(y_{sl}|g,\gamma_{sl}=1)}{p(y_{sl}|g,\gamma_{sl}=0)}\]</span></li>
+<li>Bayes Factor support for <span class="math inline">\(\gamma_{sl}=1\)</span>: (<span style="color:red"> read supplementary material for what is a Bayes Factor! But pretty much a statistic to conduct a hypothesis test in a Bayesian setting.</span>) <span class="math display">\[BF_{sl}(y,g)=\frac{p(y_{sl}|g,\gamma_{sl}=1)}{p(y_{sl}|g,\gamma_{sl}=0)}\]</span></li>
 <li>Standard normal linear regression for <span class="math inline">\(p(y_{sl}|g,\gamma_{sl})\)</span>: <span class="math display">\[y_{sl}^i = \mu_{sl} + \gamma_{sl}\beta_{sl}g^i+\epsilon^i_{sl}\]</span> <span class="math display">\[\epsilon_{sl}^i \sim N(0,\sigma_{sl}^2)\]</span></li>
-<li>See supplementary material for priors of mu, beta, sigma. Analytic form solution.</li>
+<li>See supplementary material for priors of mu, beta, sigma. Priors were chosen to be able to produce an analytic form solution.</li>
 <li>Hierarchical model: <span class="math inline">\(p(\gamma_{sl}=1|\pi)=\pi_{s}\)</span>
 <ul>
 <li><span class="math inline">\(\pi_s\)</span> = proportion of WCs at <span class="math inline">\(s\)</span> associated with <span class="math inline">\(g\)</span></li>
@@ -407,6 +407,71 @@ div.tocify {
 <li>Null holds if <span class="math inline">\(\pi \equiv 0\)</span>, therefore, likelihood ratio statistic to test <span class="math inline">\(H_0\)</span> is: <span class="math display">\[\hat{\Lambda}(y,g) := \Lambda(\hat{\pi};y,g)\]</span></li>
 <li><span class="math inline">\(\hat{\pi}\)</span> is the maximum likelihood estimate of <span class="math inline">\(\pi\)</span>, parameterised using an EM algo.</li>
 <li>‘whitening property’: <span class="math inline">\(y_{sl}, \beta_{sl}\)</span> conditionally independent given <span class="math inline">\(\pi\)</span> across <span class="math inline">\(s,l\)</span> (moreso than the <span class="math inline">\(d\)</span>’s)</li>
+</ul>
+</div>
+<div id="multiple-snps-permutation-procedure" class="section level4">
+<h4>Multiple SNPs, permutation procedure</h4>
+<ul>
+<li>Permutation procedure to assess significance of observed <span class="math inline">\(\hat{\Lambda}\)</span></li>
+<li>Single SNP with vector <span class="math inline">\(g\)</span> vs <span class="math inline">\(d\)</span>: <span class="math inline">\(\hat{\Lambda}\)</span> used to test this association</li>
+<li>Association between <span class="math inline">\(d\)</span> and ANY of <span class="math inline">\(P\)</span> nearby SNPs, with <span class="math inline">\(g_1,\dots,g_P\)</span>: <span class="math display">\[ \hat{\Lambda}_{max} := \max_{p} \hat{\Lambda}(y,g_p) \]</span>
+<ul>
+<li>Assess significance by generating permutations <span class="math inline">\(\nu_1,\dots,\nu_M\)</span> of <span class="math inline">\((1,\dots,M)\)</span></li>
+<li>Generating random combos of <span class="math inline">\(g^{i}\)</span>’s observed from each of the <span class="math inline">\(i\in(1,\dots,M)\)</span> individuals <span class="math display">\[ \hat{\Lambda}_{max}^j := \max_{p} \hat{\Lambda}(y,\nu_{j}(g_p)) \]</span> <span class="math display">\[ p-val_{\hat{\Lambda_{max}}} = \frac{\#\{j:\hat{\Lambda}_{max}^j \geq \hat{\Lambda}_{max}\}+1}{M+1} \]</span></li>
+<li>This is effectively testing for significance by ‘simulating’ the statistic across a heap of other simulated/potential g_p vectors, and assessing the values of the resultant statistic</li>
+</ul></li>
+</ul>
+</div>
+<div id="filtering-low-count-wcs" class="section level4">
+<h4>Filtering low count WCs</h4>
+<ul>
+<li>Just contribute noise (sampling error) and obscure the signal, so filter them out by allocating <span class="math inline">\(BF_{sl}=1\)</span>, implying no information about association (<span class="math inline">\(p(y|g)\)</span> same for both <span class="math inline">\(\gamma_{sl}=0,1\)</span>)</li>
+<li>WC set <span class="math inline">\(\{y_{sl}^i\}_{i=1}^N\)</span> is “low count” if avg number of reads per individual is less than <span class="math inline">\(L=2\)</span> (for a given scale, location)
+<ul>
+<li>Tried 1,2,3,5,10. Performance identical for <span class="math inline">\(L \in \{2,3,5\}\)</span>, but not for 1,10, suggesting 1 was not filtering enough, 10 was filtering too much (perhaps).</li>
+</ul></li>
+</ul>
+</div>
+<div id="quantile-transformation-to-guard-against-non-normality" class="section level4">
+<h4>Quantile transformation to guard against non-normality</h4>
+<ul>
+<li>Model assumes normally distributed residuals</li>
+<li>Significant non-normal residuals can arise</li>
+<li>To prevent these from distorting the signal, WCs are quantile-transformed to the quantiles of a standard normal distribution
+<ul>
+<li>This means they are ranked, and their ranking percentile (percent_rank) is converted to an equivalent value on a standard normal distribution (eg: 1, 10, 100 may become -3, 0, 3)</li>
+<li>Guarantees that normality of residuals assumption holds under the null, and that Bayes Factors are well behaved under the null</li>
+</ul></li>
+</ul>
+</div>
+<div id="controlling-for-confounding-factors" class="section level4">
+<h4>Controlling for confounding factors</h4>
+<ul>
+<li>PCA regression (regress the first principal components on the quantile transformed WCs), and take the residuals.</li>
+<li>Residuals are then quantile transformed and used in the Bayes Factor calculations <span style="color:red">How? Are these used as <span class="math inline">\(y_i\)</span>’s?</span></li>
+</ul>
+</div>
+<div id="effect-size-estimates" class="section level4">
+<h4>Effect size estimates</h4>
+<ul>
+<li>All of this means we can derive posterior distributions on the effect sizes, but only based on data in the wavelet space.
+<ul>
+<li>Given <span class="math inline">\(\hat{\pi}\)</span>, we can derive <span class="math inline">\(p(\beta_{sl}|y,g,\hat{\pi})\)</span></li>
+<li>Has a point mass at zero, and a 3-parameter t-distribution (see supplementary material)</li>
+</ul></li>
+<li>To make them meaningful, need to inverse discrete wavelet transform (IDWT) back to interpretable effects</li>
+<li>Data form of the linear regression:
+<ul>
+<li>Each individual, <span class="math inline">\(i \in {1,\dots,n}\)</span> with wavelet coefficients from locations <span class="math inline">\(l\in{1,\dots,B}\)</span>, where <span class="math inline">\(B\)</span> is the length of the genome, allows us to write: <span class="math display">\[ Y = M + \beta g + E\]</span></li>
+</ul></li>
+<li><span class="math inline">\(Y\)</span> is a <span class="math inline">\(B \times N\)</span> matrix (each column is an individual, with a <span class="math inline">\(B \times 1\)</span> vector of observed counts along the genome, transformed into WCs)</li>
+<li><span class="math inline">\(M\)</span> is a <span class="math inline">\(B \times N\)</span> matrix of means. Same with <span class="math inline">\(E\)</span> for error terms</li>
+<li><span class="math inline">\(\beta\)</span> is <span class="math inline">\(B \times 1\)</span> - effect for each location</li>
+<li><span class="math inline">\(g\)</span> is <span class="math inline">\(1 \times N\)</span> - differnt genotypes for each individual</li>
+<li><span class="math inline">\(D = W^{-1}Y\)</span> from IDWT before. Pre-multiply by <span class="math inline">\(W^{-1}\)</span> to ‘convert’ our <span class="math inline">\(Y\)</span> into <span class="math inline">\(D\)</span>, and we get <span class="math display">\[ W^{-1}Y = W^{-1}(\dots) \\
+\therefore D = W^{-1}M + W^{-1}\beta g + W^{-1}E \\
+\therefore D = W^{-1}M + \alpha g + W^{-1}E \]</span></li>
+<li>Because <span class="math inline">\(\alpha\)</span> has linear r/ship with <span class="math inline">\(\beta\)</span>, we get a closed form pointwise posterior mean and variance for <span class="math inline">\(\alpha_b\)</span>, where <span class="math inline">\(b = 1,\dots,B\)</span> (ie the effect size at each location on the genotype)</li>
 </ul>
 </div>
 </div>
