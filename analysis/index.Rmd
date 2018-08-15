@@ -16,6 +16,7 @@ _Summaries and notes from important readings_
 - [Wavelet-based Genetic Association Analysis... - Shim and Stephens (2014)](wavelets_shim_stephens_2014.html)
 
 ### Background/Genetics
+- [A very light genetics glossary](genetics_glossary.html)
 - [Intro to RNA-Seq](StatQuest_Intro_RNA_seq.html)
 - [Intro to ChIP-Seq](StatQuest_Intro_ChIP_seq.html)
 
