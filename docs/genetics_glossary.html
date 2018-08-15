@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+
+<meta name="date" content="2018-08-15" />
+
+<title>Genetics glossary</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/flatly.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.0.13/css/fa-svg-with-js.css" rel="stylesheet" />
+<script src="site_libs/font-awesome-5.0.13/js/fontawesome-all.min.js"></script>
+<script src="site_libs/font-awesome-5.0.13/js/fa-v4-shims.min.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 60px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+
+.section h2 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h3 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h4 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h5 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h6 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Masters Project</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/blaw36/Masters_Project">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">Genetics glossary</h1>
+<h4 class="date"><em>15 August 2018</em></h4>
+
+</div>
+
+
+<div id="a-small-glossary-of-genetics-terms" class="section level3">
+<h3>A small glossary of genetics terms</h3>
+<ul>
+<li><strong>Genome</strong>: A genome is an organismâ€™s complete set of DNA, including all of its genes. Each genome contains all of the information needed to build and maintain that organism. In humans, a copy of the entire genomeâ€”more than 3 billion DNA base pairsâ€”is contained in all cells that have a nucleus.<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a></li>
+<li><strong>Ribosomes</strong>: A ribosome is an organelle (thing inside a cell) that process the cell’s genetic instructions to create proteins. <a href="#fn2" class="footnoteRef" id="fnref2"><sup>2</sup></a></li>
+<li><strong>DNA</strong>: Hereditary material in organisms. Nearly every cell in a person’s body has the same DNA. Mainly found in the cell nucleus (nuclear DNA), but also in small quantities in the mitochondria (mitochondrial DNA). <a href="#fn3" class="footnoteRef" id="fnref3"><sup>3</sup></a>
+<ul>
+<li>Consist of four bases; <span style:"color="blue&quot;">adenine (A), thymine (T), </span><span style:"color="green&quot;">guanine (G) and cytosine (C).</span></li>
+<li>Human DNA has about 3 billion bases.</li>
+<li>The order and sequence of the bas es determines the information used to build and maintain organisms. ATs and CGs pair up to form <em>base pairs</em>.</li>
+<li>A base is attached to a sugar and phosphate molecule, this triplet is a <em>nucleotide</em>. The sugar and phsophate forms the vertical sidepieces of the (double helix) ladder, with the base pairs in the middle rungs.</li>
+</ul></li>
+<li><strong>Chromosomes</strong>: DNA is packaged into chromosomes, that contain all of our genes. (Most genes are arranged on chromosomes, found in the nucleus of cells). So a chromosome is a thread-like structure that a DNA molecule is packaged into. We have 23 pairs, for a total of 46, including he 23rd pair, the X (male) or Y (female) chromosome. <a href="#fn4" class="footnoteRef" id="fnref4"><sup>4</sup></a> <a href="#fn5" class="footnoteRef" id="fnref5"><sup>5</sup></a></li>
+<li><strong>Genes</strong>: A gene is a section of DNA that codes up the proteins our body needs to function. A gene is made up of many triplets of the ATGC bases. <a href="#fn6" class="footnoteRef" id="fnref6"><sup>6</sup></a> <a href="#fn7" class="footnoteRef" id="fnref7"><sup>7</sup></a>
+<ul>
+<li>Imagine it as one bead, on a string, where this is formed by uncoiling/stretching out the really tightly coiled up DNA on each chromosome.</li>
+<li>Between these genes are segments of non-coding DNA.</li>
+<li>Chromosomes come in pairs, therefore, so do the genes (two copies).</li>
+<li>Each triplet of ATGC tells the cell to produce a particular amino acid, which are the building blocks of proteins.</li>
+<li>Other DNA (“junk DNA”) have other purposes, some of which aren’t known, but most are believed to separate genes from each other along chromosomes, and perhaps tell the body when to turn genes on and off.</li>
+</ul></li>
+<li><strong>Allele</strong>: An allele is a form of the same gene (a variation of a gene) with small differences in their sequence of DNA bases. These small differences contribute to each person’s unique physical features. <a href="#fn8" class="footnoteRef" id="fnref8"><sup>8</sup></a> We get one allele from each parent at the same position on a chromosome. A pair of alleles represents the genotype of a specific gene. <a href="#fn9" class="footnoteRef" id="fnref9"><sup>9</sup></a>
+<ul>
+<li><em>Homozygous</em>: If two identical alleles are had at a particular location of the chromosome</li>
+<li><em>Heterozygous</em>: If two different alleles are at the particular location</li>
+</ul></li>
+<li><strong>Phenotype</strong>: outward appearance of the organism, generally made up of ones’ alleles. Alleles are usually responsible for influencing a gene’s phenotype. <a href="#fn10" class="footnoteRef" id="fnref10"><sup>10</sup></a></li>
+<li><strong>RNA</strong>: Ribonucleic acid is a nucleic acid present in all living cells, made up of one or more nucleotides (base, sugar, phosphate triplet). Its principal role is to act as a messenger carrying instructions from DNA for controlling the synthesis of proteins, although in some viruses RNA rather than DNA carries the genetic information. It’s made from DNA templates, used to create proteins. <a href="#fn11" class="footnoteRef" id="fnref11"><sup>11</sup></a> <a href="#fn12" class="footnoteRef" id="fnref12"><sup>12</sup></a>
+<ul>
+<li><em>Transcription</em>: RNA copy of a segment of DNA, or <em>messenger RNA</em> (mRNA) is made, sent out of the nucleus and into the cytoplasm of the cell, where it is read by a ribosome to form a protein. Inside this ribosome, specially folded RNA molecules called ribozymes (<em>Ribosomal RNAs, or rRNA</em>) do the chemical reaction work. To adapt these chains of sugars into becoming proteins, another type of RNA, the transfer RNAs (<em>tRNAs</em>), form ‘adaptors’ which pair to their mirror images in mRNA, and when tRNAs and mRNAs are lined up, form the amino acid sequence required to make the protein. The rRNA then takes over to trigger the reaction. Then mRNAs decay or are degraded. This is how RNA (the messenger type) is a messenger.</li>
+<li>RNA is like a chemical cousin of DNA. RNA is found in single-stranded, rather than double-stranded forms like DNA. It can fold into complex, 3D structures, with the same type of base-base interactions as in DNA, but where a single strand bonds with another single strand (rather than between two strands like in DNA). (Half the ladder folding, rather than the whole ladder?)</li>
+<li>The attribute of complex folding and instability allows it to be a lot more versatile at messaging and forming proteins around the body than DNA (which is just like a secure vault of stable information).</li>
+<li>RNA has <strong>an extra oxygen atom, making them more unstable</strong>, which is why some viruses use RNA to mutate. Also, it appears that the proof reading activity in the enzymes that replicate RNA are poor.</li>
+<li>Small inihibitor RNAs <em>siRNAs</em>, fine tune the output of messenger RNAs, by binding mRNAs on themselves and inhibiting their function (which requires them to be unbound to be read properly?). These function ‘digitally’ - turning genes/diseases on/off.</li>
+<li>Although only 2% of our genome encodes protein, a much larger proportion of our genome is encoded into RNA. Gives rise to non-protein coding RNAs, called long non-coding RNAs <em>lncRNAs</em>. Their role is still being investigated, but relates to either catalysing chemical reactions or binding other RNAs/DNAs to inhibit their purposes.</li>
+</ul></li>
+</ul>
+<div class="figure">
+<img src="dna_rna_conversation.png" alt="RNA vs DNA, from The Conversation article" />
+<p class="caption">RNA vs DNA, from ‘The Conversation’ article<a href="#fn13" class="footnoteRef" id="fnref13"><sup>13</sup></a></p>
+</div>
+<!--     \begin{figure}[h] -->
+<!--         \centering -->
+<!--         \includegraphics[scale = 0.2]{dna_rna_conversation} -->
+<!--         \caption{RNA vs DNA, from 'The Conversation' article} -->
+<!--         \label{fig:my_label} -->
+<!--     \end{figure} -->
+<ul>
+<li><strong>b.p.</strong>: Acronym - ‘base pairs’ (of DNA).</li>
+</ul>
+<!-- References -->
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p><a href="https://ghr.nlm.nih.gov/primer/hgp/genome" class="uri">https://ghr.nlm.nih.gov/primer/hgp/genome</a><a href="#fnref1">↩</a></p></li>
+<li id="fn2"><p><a href="https://ghr.nlm.nih.gov/primer/basics/cell" class="uri">https://ghr.nlm.nih.gov/primer/basics/cell</a><a href="#fnref2">↩</a></p></li>
+<li id="fn3"><p><a href="https://ghr.nlm.nih.gov/primer/basics/dna" class="uri">https://ghr.nlm.nih.gov/primer/basics/dna</a><a href="#fnref3">↩</a></p></li>
+<li id="fn4"><p><a href="https://ghr.nlm.nih.gov/primer/basics/chromosome" class="uri">https://ghr.nlm.nih.gov/primer/basics/chromosome</a><a href="#fnref4">↩</a></p></li>
+<li id="fn5"><p><a href="http://www.genetics.edu.au/publications-and-resources/facts-sheets/fact-sheet-1-an-introduction-to-dna-genes-and-chromosomes" class="uri">http://www.genetics.edu.au/publications-and-resources/facts-sheets/fact-sheet-1-an-introduction-to-dna-genes-and-chromosomes</a><a href="#fnref5">↩</a></p></li>
+<li id="fn6"><p><a href="http://www.genetics.edu.au/publications-and-resources/facts-sheets/fact-sheet-1-an-introduction-to-dna-genes-and-chromosomes" class="uri">http://www.genetics.edu.au/publications-and-resources/facts-sheets/fact-sheet-1-an-introduction-to-dna-genes-and-chromosomes</a><a href="#fnref6">↩</a></p></li>
+<li id="fn7"><p><a href="https://ghr.nlm.nih.gov/primer/basics/gene" class="uri">https://ghr.nlm.nih.gov/primer/basics/gene</a><a href="#fnref7">↩</a></p></li>
+<li id="fn8"><p><a href="https://ghr.nlm.nih.gov/primer/basics/gene" class="uri">https://ghr.nlm.nih.gov/primer/basics/gene</a><a href="#fnref8">↩</a></p></li>
+<li id="fn9"><p><a href="https://www.nature.com/scitable/definition/allele-48" class="uri">https://www.nature.com/scitable/definition/allele-48</a><a href="#fnref9">↩</a></p></li>
+<li id="fn10"><p><a href="https://www.nature.com/scitable/definition/allele-48" class="uri">https://www.nature.com/scitable/definition/allele-48</a><a href="#fnref10">↩</a></p></li>
+<li id="fn11"><p><a href="http://exploringorigins.org/rna.html" class="uri">http://exploringorigins.org/rna.html</a><a href="#fnref11">↩</a></p></li>
+<li id="fn12"><p><a href="http://theconversation.com/explainer-what-is-rna-15169" class="uri">http://theconversation.com/explainer-what-is-rna-15169</a><a href="#fnref12">↩</a></p></li>
+<li id="fn13"><p><a href="http://theconversation.com/explainer-what-is-rna-15169" class="uri">http://theconversation.com/explainer-what-is-rna-15169</a><a href="#fnref13">↩</a></p></li>
+</ol>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
