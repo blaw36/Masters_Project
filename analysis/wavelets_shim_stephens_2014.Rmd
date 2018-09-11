@@ -1,5 +1,5 @@
 ---
-title: "Wavelet-based Genetic Association Analysis... - Shim and Stephens (2014)"
+title: "Wavelet-based Genetic Association Analysis... - Shim and Stephens (2015)"
 date: "8 August 2018"
 output: html_document
 ---
