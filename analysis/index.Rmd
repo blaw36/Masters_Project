@@ -22,8 +22,8 @@ _Summaries and notes from important readings_
 
 ### Mathematical/other
 A link to some handy mathematical resources I found.
-  
-  
+
+
 ## Analysis, code
 _Code chunks, RMarkdowns, LaTeX documents._
 
@@ -34,8 +34,8 @@ _Code chunks, RMarkdowns, LaTeX documents._
 - Derivation of EM algorithm applied to Hidden Markov Trees (HMTs) with the properties as described in Crouse et al (1998). Includes derivation of the steps in the upward/downward or forward/backward algorithm involved in its derivation. [PDF file](EM_algo_HMT.pdf)
  
 - Derivation of the EM algorithm to find the latent state probability parameters in the Shim and Stephens (2015) paper. Also extended to incorporate HMT dependencies (rather than independence) between the states at different scales and locations. [PDF file](EM_algo_Shim_Stephens_2015_v2.pdf)
-  
-  
+
+
 ## Papers, presentations, resources
 _Most of the readings and resources I've used._
 
