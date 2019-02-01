@@ -2,7 +2,7 @@ name: "Masters_Project"
 output_dir: "../docs"
 exclude: ["include"]
 navbar:
-  title: "Masters Project"
+  title: "Brendan's Masters Project"
   left:
     - text: "Home"
       href: index.html

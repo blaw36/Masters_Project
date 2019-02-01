@@ -20,6 +20,14 @@ _Summaries and notes from important readings_
 - [Intro to RNA-Seq](StatQuest_Intro_RNA_seq.html)
 - [Intro to ChIP-Seq](StatQuest_Intro_ChIP_seq.html)
 
+### Mathematical/other
+A link to some handy mathematical resources I found:
 
 ## Analysis, code
-Code chunks and RMarkdowns
+
+### Expectation-Maximisation
+Code chunks, RMarkdowns, LaTeX documents
+
+- [Derivation of EM applied in a simple case - Gaussian Mixture Models (GMM)](EM_algo_GMM.pdf)
+- [Derivation of EM applied to Hidden Markov Trees (HMT)](EM_algo_HMT.pdf)
+- [Derivation of EM applied to Shim and Stephens (2015), with an extension to HMT](EM_algo_Shim_Stephens_2015_v2.pdf)
