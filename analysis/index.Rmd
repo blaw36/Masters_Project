@@ -9,10 +9,10 @@ This is a website designed to organise readings, notes and code related to my ma
 
 ***
 
-## Readings and notes
+## Notes
 _Summaries and notes from important readings_
 
-### Wavelets
+### Multiscale models
 - [Wavelet-based Genetic Association Analysis... - Shim and Stephens (2015)](wavelets_shim_stephens_2014.html)
 
 ### Background/Genetics
@@ -23,11 +23,41 @@ _Summaries and notes from important readings_
 ### Mathematical/other
 A link to some handy mathematical resources I found:
 
+
 ## Analysis, code
+_Code chunks, RMarkdowns, LaTeX documents._
 
 ### Expectation-Maximisation
-Code chunks, RMarkdowns, LaTeX documents
 
 - [Derivation of EM applied in a simple case - Gaussian Mixture Models (GMM)](EM_algo_GMM.pdf)
 - [Derivation of EM applied to Hidden Markov Trees (HMT)](EM_algo_HMT.pdf)
 - [Derivation of EM applied to Shim and Stephens (2015), with an extension to HMT](EM_algo_Shim_Stephens_2015_v2.pdf)
+
+
+## Papers, presentations, resources
+_Most of the readings and resources I've used._
+
+### Multiscale models
+- [Shim and Stephens (2015) - Wavelets for Genomic data](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5795621/)
+- [Crouse et al (1998) - Wavelets, HMT](https://ieeexplore.ieee.org/abstract/document/668544)
+- [Kolaczyk (1999) - Bayesian Multiscale Models for Poisson](https://www.tandfonline.com/doi/abs/10.1080/01621459.1999.10474197)
+- [Xing (2016) - Extends Shim/Stephens (2015) to Poisson](https://search.proquest.com/openview/2b17b34545bbb5c3eab53b48983d41c8/1?pq-origsite=gscholar&cbl=18750&diss=y)
+- [Servin and Stephens (2007) - original closed form Bayesian association model](https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.0030114)
+
+### Wavelets
+- [Morris and Carroll (2006) - data to wavelet space](https://rss.onlinelibrary.wiley.com/doi/abs/10.1111/j.1467-9868.2006.00539.x)
+- [Torrence et al - Practical guide to wavelets](https://journals.ametsoc.org/doi/abs/10.1175/1520-0477(1998)079%3C0061:APGTWA%3E2.0.CO;2)
+
+### EM Algorithm, applied to Hidden Markov Models
+- [Rabiner (1989) - EM in HMM for speech recognition](https://ieeexplore.ieee.org/abstract/document/18626)
+- Bishop's book: Pattern Recognition and Machine Learning
+- [Grosse and Srivastava - EM for GMM notes](http://www.cs.toronto.edu/~rgrosse/csc321/mixture_models.pdf)
+- [Li - EM for HMM notes](http://www.personal.psu.edu/jol2/course/stat597e/notes2/hmm.pdf)
+- [Borman - short tutorial on EM](https://www.cs.utah.edu/~piyush/teaching/EM_algorithm.pdf)
+
+### GLMs
+- [Rodriguez - Poisson GLM for count data](https://data.princeton.edu/wws509/notes/c4.pdf)
+
+### Bayesian regression
+- [Reich - Bayesian regression](https://www4.stat.ncsu.edu/~reich/ABA/notes/BLR.pdf)
+- [Statlect - Bayesian regression](https://www.statlect.com/fundamentals-of-statistics/Bayesian-regression)
