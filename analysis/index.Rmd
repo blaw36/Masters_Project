@@ -29,11 +29,20 @@ _Code chunks, RMarkdowns, LaTeX documents._
 
 ### Expectation-Maximisation (EM) derivations
 
+#### Gaussian Mixture Models (GMMs)
+
 - Derivation of EM algorithm applied in a simple (canonical) case of Gaussian Mixture Models (GMM). Written more for my understanding/learning of the steps involved. [PDF file](EM_algo_GMM.pdf)
+
+#### Hidden Markov Trees (HMT)
  
 - Derivation of EM algorithm applied to Hidden Markov Trees (HMTs) with the properties as described in Crouse et al (1998). Includes derivation of the steps in the upward/downward or forward/backward algorithm involved in its derivation. [PDF file](EM_algo_HMT.pdf)
  
+#### Shim and Stephens (2015)
 - Derivation of the EM algorithm to find the latent state probability parameters in the Shim and Stephens (2015) paper. Also extended to incorporate HMT dependencies (rather than independence) between the states at different scales and locations. [PDF file](EM_algo_Shim_Stephens_2015_v2.pdf)
+
+- Augmented E-step of the above EM algorithm, when incorporating the HMT dependencies. This is required so that the intermediate steps of the algorithm uses Bayes Factors and remains in a closed form. [PDF file](EM_algo_Shim_Stephens_E_step.pdf)
+
+#### S & S(2015) extended to Poisson multiscale model case
 
 ***
 
