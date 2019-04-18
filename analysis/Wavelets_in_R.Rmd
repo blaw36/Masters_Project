@@ -1,0 +1,172 @@
+---
+title: "Wavelets_in_R"
+author: "Brendan Law"
+date: "5 March 2019"
+output:
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Wavelets in R - wavelet package
+
+Just trying to emulate basic Haar Discrete Wavelet Transform in R (the original DWT). Using the 'USAccDeaths' dataset (a time series), here is some code that wavelet transforms this time series.
+
+```{r deaths, echo = FALSE}
+plot(USAccDeaths)
+
+```
+
+Now here is some code in the 'wavelets' library to do a Haar DWT on the time series. We can see that there are two decomopositions, 'W' and 'V':
+
+```{r wavelets_1}
+library(wavelets)
+wc <- wavelets::dwt(c(USAccDeaths), filter = "haar")
+attr(wc,'W')
+attr(wc,'V')
+```
+
+So what do these mean? Presumably, the first level (W1, V1) are the lowest level (finest) scales. But why are there two? Are there two types of transforms, or perhaps they use each other. Another thing we know is the top level is half the length (36) of the full dataset (72), so its clear that some aggregation is going on. In this case, we suspect subtraction, which it is, up to some scaling constant. The scaling constant happens to be $\frac{1}{\sqrt(2)}$, which I believe is something to do with making the basis vectors orthnormal (length 1).
+
+Turns out that W is the difference between adjacent terms, recursed to the most granular level.
+
+```{r wavelets_2}
+# Look at W for example
+
+# Not quite the same
+USAccDeaths[2]-USAccDeaths[1]
+attr(wc,'W')$W1[1]
+
+# Scaling factor of 1/sqrt(2)
+(USAccDeaths[2]-USAccDeaths[1])/attr(wc,'W')$W1[1]
+round(attr(wc,'W')$W1[1],10) == round((USAccDeaths[2]-USAccDeaths[1]) * 1/sqrt(2),10)
+
+
+# Same scaling everywhere
+for(i in 1:length(attr(wc,'W')$W1)){
+  print((USAccDeaths[2*i]-USAccDeaths[2*i-1])/attr(wc,'W')$W1[[i]])
+}
+```
+
+What is series V? Turns out it's the addition of the first two elements, etc etc.
+```{r wavelets_3}
+# Look at V for example
+
+# Not quite the same
+USAccDeaths[2]+USAccDeaths[1]
+attr(wc,'V')$V1[1]
+
+# Scaling factor of 1/sqrt(2)
+(USAccDeaths[2]+USAccDeaths[1])/attr(wc,'V')$V1[1]
+round(attr(wc,'V')$V1[1],10) == round((USAccDeaths[2]+USAccDeaths[1]) * 1/sqrt(2),10)
+
+# Same scaling everywhere
+for(i in 1:length(attr(wc,'W')$W1)){
+  print((USAccDeaths[2*i]+USAccDeaths[2*i-1])/attr(wc,'V')$V1[[i]])
+}
+```
+
+Now for some plots...
+```{r wavelets_plots1}
+plot(USAccDeaths)
+plot(attr(wc,'W')$W1, main = 'Difference w/lets', type = "l")
+plot(attr(wc,'V')$V1, main = 'Sum w/lets', type = "l")
+```
+
+To go one level up, we take the added wavelet coefficients (stored in V), and aggregate them by differencing (result will be W2), or summing (result will be V2).
+```{r wavelets_4}
+# Differencing
+(attr(wc,'V')$V1[2] - attr(wc,'V')$V1[1])/attr(wc,'W')$W2[1]
+
+# Summing
+(attr(wc,'V')$V1[2] + attr(wc,'V')$V1[1])/attr(wc,'V')$V2[1]
+```
+
+Etc. And this is how we work our way up the wavelet 'tree'. Turns out (according to HJ's presentation), we just take the differences at each level, which corresponds to only using the 'W' part of the wavelet transform (V just for working). Although it should be analogous to just taking the W part - both should have the same informational content? (Both are 1:1, as long as one or the other are used?) 
+
+What I mean is that, by default, the set 'W' consists of the following info:
+
+Base data:
+\begin{align*}
+X_1, X_2, X_3, X_4 \\
+\end{align*}
+
+Set $'W'$:
+\begin{align*}
+X_1 - X_2, X_3 - X_4 \\
+(X_1 + X_2) - (X_3 + X_4) \\
+(X_1 + X_2) + (X_3 + X_4) \\
+\end{align*}
+
+Contains all info to reconstruct all 4. (4 eqns, 4 variables). Should contain same informational content as:
+\begin{align*}
+\text{Set }'W_{alt}': \\
+X_1 + X_2, X_3 + X_4 \\
+(X_1 - X_2) + (X_3 - X_4) \\
+(X_1 - X_2) - (X_3 - X_4) \\
+\end{align*}
+
+## Wavelets in R - 'wavethresh' package
+Let's see if we can replicate the above using the 'wavethresh' package
+```{r wavethresh_1}
+library(wavethresh)
+wthresh <- wavethresh::wd(c(USAccDeaths), filter.number=1, family="DaubExPhase")
+```
+
+'wavethresh' only accepts data which has a length which is a power of two.
+```{r wavethresh_2}
+length(c(USAccDeaths))
+USAccDeaths_pwr2 <- ts(c(USAccDeaths[1:64]),start = 1973,frequency = 12)
+plot(USAccDeaths_pwr2)
+wthresh <- wavethresh::wd(c(USAccDeaths_pwr2), filter.number=1, family="DaubExPhase")
+str(wthresh)
+```
+
+Two main outputs here:
+```{r wavethresh_2}
+length(wthresh$C)
+length(wthresh$D)
+```
+
+And we see that the outputs are:
+- C has length 127
+- D has length 63
+- nlevels = 6 (2^6 = 64)
+What do these mean?
+
+C's elements are all the sums at all the scales. This INCLUDES the bottom scale. Ie, the bottom scale is the sum of each value (just itself). Then at the next scale, it takes the sum of adjacent bottom scale values. These are all scaled, also, by the scaling coefficient, H (see below). In this case, H is $1/sqrt(2)$. This goes all the way until the end, which is the sum of the previous two values in C, scaled. Note that we power the scaling coefficient here, as we do our summing on the raw data, rather than the lower scale results (which are scaled). Hence, we need to multiply the raw data sums by as many times as they would be required to be scaled in getting to that level's result, as if we were to achieve the result using coefficients from lower scales.
+```{r wavethresh_3}
+c_vect <- c()
+for(i in 0:(wthresh$nlevels)){
+  starts = seq(1,64, by = 2^(i))
+  ends = starts + (2^(i)) - 1
+  add_to_vect <- c()
+  for(j in 1:length(starts)){
+    add_to_vect <- c(add_to_vect
+                     ,(sum(USAccDeaths_pwr2[starts[j]:ends[j]])*(wthresh$filter$H[1])^i))
+  }
+  c_vect <- c(c_vect,add_to_vect)
+}
+all.equal(c_vect,wthresh$C)
+```
+
+D's elements are (from finest to coarsest) the wavelet coefficients we're after. We start by differencing adjacent values of the raw datya, then scaling the difference. Next level is the difference of the adjacent sums of two larger windows (ie the next scale up in the 'C' datset which captured the adjacent sums), and the difference scaled once more. All scaled by the 'H' value under the wthresh filter (H[1], which is equal to H[2] in this case). Once again, we'll do the transform on the raw data, hence powering the scaling coefficient by one more time each level up, to represent the fact that differences are calculated on (already scaled) adjacent sums.
+```{r wavethresh_4}
+# Replicate our own 'D' vector:
+d_vect <- c()
+for(i in 1:wthresh$nlevels){
+  starts = seq(1,64, by = 2^(i-1))
+  ends = starts + (2^(i-1)) - 1
+  add_to_vect <- c()
+  for(j in 1:(length(starts)/2)){
+    add_to_vect <- c(add_to_vect
+                     ,(sum(USAccDeaths_pwr2[starts[(2*j) - 1]:ends[(2*j) - 1]]) - 
+                         sum(USAccDeaths_pwr2[starts[(2*j)]:ends[(2*j)]])) *
+                        (wthresh$filter$H[1]^i))
+  }
+  d_vect <- c(d_vect,add_to_vect)
+}
+all.equal(d_vect,wthresh$D)
+```
