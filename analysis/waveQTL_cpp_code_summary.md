@@ -40,8 +40,10 @@ The EM algorithm is (for each SNP/covariate/genotype):
 - _epsilon_: convergence tolerance
 - _delta_: for permutation test (not required for us)
 - _col_: = 2 in this case, probably just 2 as one mu, one beta (for one SNP at a time)
+<!-- WHAT ARE THESE??? START -->
 - _inv_va_: = 0.0. Goes into 'bf_uni' function. Not sure what it does...
 - _inv_vd_: = 0.0. Goes into 'bf_uni' function. Not sure what it does... 
+<!-- WHAT ARE THESE??? END -->
 - _logbf_: (real) is the log of bayes factor, for a given scale-loc
 - _nPH\_use_ (int): is the NUMBER of phenotypes to use
 - _nPH\_no_use_ (int): is the NUMBER of phonotypes not to use (should be total - nPH_use)
@@ -53,8 +55,10 @@ The EM algorithm is (for each SNP/covariate/genotype):
 #### Seemingly global variables:
 - nPH: Assuming it's number of phenotypes <==> number of WCs for each indiv
 - col: = 1 + m\_df, which in this case means col = 2.
+<!-- CLARIFY THIS START -->
 - nCohort: Assuming this is nIndiv (n), if nPanel = 0. I'm hoping in all our cases, nPanel is always 0. Then nCohort and nIndiv are the same. Otherwise, need to check this.
 - nIndiv: Defined in 'model.h' as nCohort + nPanel. What's nPanel?
+<!-- CLARIFY THIS END -->
 - vv_phval: WCs, at scale-locs 1,...,nPH, for each individual, 1,...,nIndiv
 - nLoci: Assuming it's number of SNPs (covariates)
 

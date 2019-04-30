@@ -87,6 +87,11 @@ using namespace std;
 #define com_nullcheck 7005
 //--- wavelets end   ---//
 
+//--- BL_HMT start --//
+#define com_functional_ph_hmt 7006
+// What does this actually mean?
+//--- BL_HMT end --//
+
 CtrlParam::CtrlParam(void)
 {
 	pMD = NULL;
@@ -196,6 +201,10 @@ CtrlParam::CtrlParam(void)
 	hcom["-numPerm"] = com_num_Perm;
 	hcom["-nullcheck"] = com_nullcheck;
 	//--- wavelets end --//
+
+	//--- BL_HMT start --//
+	hcom["-hmt"] = com_functional_ph_hmt;
+	//--- BL_HMT end --//
 } 
 
 CtrlParam::~CtrlParam(void)
@@ -306,8 +315,12 @@ void CtrlParam::BatchRun(int argc, char ** argv)
 	//--- wavelets start --//
 	int fph = 0;
 	int numPerm = 10000;
-        int nullcheck = 0; 
+    int nullcheck = 0; 
 	//--- wavelets end --//
+
+	//--- BL_HMT start --//
+	int hmt = 0;
+	//--- BL_HMT end --//
 
 	string fnEM; 
 	string fnGene;  
@@ -758,6 +771,19 @@ void CtrlParam::BatchRun(int argc, char ** argv)
 
 		        //--- wavelets end --//
 
+	    	//--- BL_HMT start --//
+			case com_functional_ph_hmt:
+				if(argv[i+1] == NULL || argv[i+1][0] == '-') continue;
+				if(!isdigit(argv[i+1][0]))
+				{
+					cout << "wrong argument after option." << endl; 
+					exit(0); 
+				}
+				hmt = atoi(argv[i+1]);
+				break;
+			//--- BL_HMT end --//
+
+
 			default:
 				fprintf(stderr,"Bad option %s\n", argv[i]);
 				OnHelp();
@@ -929,11 +955,20 @@ void CtrlParam::BatchRun(int argc, char ** argv)
 		//--- wavelets start --//
 		if(fph > 0) 
 		{
-		        pMD->read_extra_information_for_functional_phenotype(); 
+		    pMD->read_extra_information_for_functional_phenotype(); 
 			pMD->single_snp_functional_phenotype(fph, numPerm, nullcheck);
 			return; 
 		}
 		//--- wavelets end --//
+
+		//--- BL_HMT start --//
+		if(hmt > 0) 
+		{
+			pMD->read_extra_information_for_functional_phenotype(); 
+			pMD->single_snp_functional_phenotype_HMT(nullcheck);
+			return; 
+		}
+		//--- BL_HMT end --//		
 
 
 
