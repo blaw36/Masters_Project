@@ -16,7 +16,24 @@
 // 2) Anything regarding phenotype groups, and numbers in each group will change.
 // Each case will be treated individually, and we'll need to loop through each s,l
 // according to backward/forward algorithm.
-// 3) Expanding out the pi_list vector to now be of size s,l.
+// 3) Reducing the pi_list vector to now be of size 1, as we only need pi_{1,1}, for 
+// state = 1. (intiialise in downward algo)
+// 4) Inclusion of an eps_list ("epsilon list") vector to be of size (s,l), to capture
+// epsilon values for each s,l. There needs to be three of these to capture each of the 
+// 3 state combinations required to fully parameterise. eps_list_11, eps_list_01, eps_list_10.
+// To be initialised at 0.25, each.
+// 5) pp_joint for the joint posterior between pheno and parent, size (s,l) - 1. Each phenotype
+// needs to have a pp_joint, and each only has 1 parent. However, (1,1) doesn't have a parent,
+// so only (s,l) - 1 values here.
+// 6) Up-down algo needs:
+  // beta_sl, for each s,l, for states 0, and 1
+  // beta_sl_psl, for each s,l, for states 0, and 1
+  // beta_psl, for each s,l, for states 0, and 1
+  // beta_psl_no_sl, for each s,l, for states 0, and 1
+  // alpha_sl, for each s,l, for states 0, and 1
+// 7) group_start must be set to a default (), such that group sizes and start/ends
+// represent the standard wavelet transform scales; [0, 1, 2, 4, 8, ..., 512, 1024].
+// Keeping this structure will allow us to run the algorithm between scale levels.
 
 
 //-- Pre-amble --//
@@ -53,7 +70,7 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
 
 
   int niter = 1000;
-  double epsilon = 0.0005;
+  double tol = 0.0005;
   
   //-- WaveQTL.1.1 start --//
   double delta = 0.01;  
@@ -68,8 +85,17 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   int nPH_no_use;
   
   vector<double> pi_list; // log of a prior prob for each phenotype being associated with genotype
-  // vector<int> group_end; // end position for each group
-  // vector<int> nPH_GP;    // number of phenotypes in each group
+
+  //--- BL_HMT start ---//
+  // log of a prior joint (phenotype-parent) prob for that phenotype being associated with genotype
+  // 3 different state combinations to fully parameterise
+  vector<double> eps_list_11;
+  vector<double> eps_list_10;
+  vector<double> eps_list_01;
+  //--- BL_HMT end ---//
+
+  vector<int> group_end; // end position for each group
+  vector<int> nPH_GP;    // number of phenotypes in each group
   vector<double> logLR_list;  // logLR for each SNP (for permutation test)
 
 
@@ -88,17 +114,20 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
 
 
 
-  // //set group end positions
-  // //set number of phenotypes in each group
-  // int numG = (int)group_start.size();
-  // group_end.resize(0);
-  // nPH_GP.resize(0);
-  // for(int i = 1; i < numG; i++){
-  //   group_end.push_back(group_start[i]-1);
-  //   nPH_GP.push_back(group_start[i] - group_start[i-1]);
-  // }
-  // group_end.push_back(nPH);
-  // nPH_GP.push_back(nPH - group_end[numG-2]);
+  //set group end positions
+  //set number of phenotypes in each group
+  //--- BL_HMT start ---//
+  // Must ensure this is kept at default, and not changeable for the HMT version.
+  //--- BL_HMT end ---//
+  int numG = (int)group_start.size();
+  group_end.resize(0);
+  nPH_GP.resize(0);
+  for(int i = 1; i < numG; i++){
+    group_end.push_back(group_start[i]-1);
+    nPH_GP.push_back(group_start[i] - group_start[i-1]);
+  }
+  group_end.push_back(nPH);
+  nPH_GP.push_back(nPH - group_end[numG-2]);
 
 
 
@@ -157,7 +186,17 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
     exit(0); 
   }
 
-
+  //--- BL_HMT start ---//
+  fstream outfile_eps; 
+  string sfn_eps("output/");
+  sfn_eps.append(fnOutput);
+  sfn_eps.append(".fph.eps.txt");
+  outfile_eps.open(sfn_eps.c_str(), ios::out);
+  if(!outfile_eps.is_open()) {
+    cout << "can't open file ... " << endl;  
+    exit(0); 
+  }
+  //--- BL_HMT end ---//
 
 
   fstream outfile_mean; 
@@ -318,7 +357,7 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
 
        diff = N_obllikli - O_obllikli;
 
-       if(diff < epsilon){
+       if(diff < tol){
          break;
        }else{
          O_obllikli = N_obllikli;		
@@ -453,6 +492,12 @@ outfile_pi.close();
 cout << sfn_pi << " has been created." << endl;
 
 
+//--- BL_HMT start ---//
+outfile_eps.close(); 
+cout << sfn_eps << " has been created." << endl;
+//--- BL_HMT start ---//
+
+
   //--- wavelets_v1.3 start ---//
 
 
@@ -475,8 +520,8 @@ outfile_phi.close();
 cout << sfn_phi << " has been created." << endl;
 
 pi_list.resize(0);
-// nPH_GP.resize(0);
-// group_end.resize(0);
+nPH_GP.resize(0);
+group_end.resize(0);
 
 
 group_start.resize(0);
