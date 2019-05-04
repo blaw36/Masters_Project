@@ -87,10 +87,10 @@ using namespace std;
 #define com_nullcheck 7005
 //--- wavelets end   ---//
 
-//--- BL_HMT start --//
+//--- BL_HMT start ---//
 #define com_functional_ph_hmt 7006
 // What does this actually mean?
-//--- BL_HMT end --//
+//--- BL_HMT end ---//
 
 CtrlParam::CtrlParam(void)
 {
@@ -202,9 +202,9 @@ CtrlParam::CtrlParam(void)
 	hcom["-nullcheck"] = com_nullcheck;
 	//--- wavelets end --//
 
-	//--- BL_HMT start --//
+	//--- BL_HMT start ---//
 	hcom["-hmt"] = com_functional_ph_hmt;
-	//--- BL_HMT end --//
+	//--- BL_HMT end ---//
 } 
 
 CtrlParam::~CtrlParam(void)
