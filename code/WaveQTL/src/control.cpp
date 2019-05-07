@@ -89,7 +89,6 @@ using namespace std;
 
 //--- BL_HMT start ---//
 #define com_functional_ph_hmt 7006
-// What does this actually mean?
 //--- BL_HMT end ---//
 
 CtrlParam::CtrlParam(void)

@@ -190,7 +190,7 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   fstream outfile_eps_11; 
   string sfn_eps_11("output/");
   sfn_eps_11.append(fnOutput);
-  sfn_eps_11.append(".fph.eps.txt");
+  sfn_eps_11.append(".fph.eps_11.txt");
   outfile_eps_11.open(sfn_eps_11.c_str(), ios::out);
   if(!outfile_eps_11.is_open()) {
     cout << "can't open file ... " << endl;  
@@ -200,7 +200,7 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   fstream outfile_eps_10; 
   string sfn_eps_10("output/");
   sfn_eps_10.append(fnOutput);
-  sfn_eps_10.append(".fph.eps.txt");
+  sfn_eps_10.append(".fph.eps_10.txt");
   outfile_eps_10.open(sfn_eps_10.c_str(), ios::out);
   if(!outfile_eps_10.is_open()) {
     cout << "can't open file ... " << endl;  
@@ -210,7 +210,7 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   fstream outfile_eps_01; 
   string sfn_eps_01("output/");
   sfn_eps_01.append(fnOutput);
-  sfn_eps_01.append(".fph.eps.txt");
+  sfn_eps_01.append(".fph.eps_01.txt");
   outfile_eps_01.open(sfn_eps_01.c_str(), ios::out);
   if(!outfile_eps_01.is_open()) {
     cout << "can't open file ... " << endl;  
@@ -407,6 +407,8 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
     double pp_psl;
     double pp_joint_sl_11, pp_joint_sl_10, pp_joint_sl_01;
 
+    double diff;
+
   // Up step - don't do this step at coarsest scale
     for(int gi = (numG - 1); gi > 0; gi--){
 
@@ -427,14 +429,14 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
 
       for(int i = 0; i < numP; i++){
 
-        int parent_indx = wc/2; // integer division
+        int parent_indx = i/2; // integer division
         logParentBF = gsl_vector_get(logBFs,parent_st+parent_indx);
 
         b_sl_1 = gsl_vector_get(beta_sl_1, st + i);
         b_sl_0 = gsl_vector_get(beta_sl_0, st + i);
 
       // If even, grab one to the right, else one to the left
-        if(wc % 2 == 0){
+        if(i % 2 == 0){
           b_sl_adj_1 = gsl_vector_get(beta_sl_1, st + i + 1);
           b_sl_adj_0 = gsl_vector_get(beta_sl_0, st + i + 1);
         }else{
@@ -567,31 +569,30 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
       pi_0 = 1 - pi_1;
 
     // Eps param, for each s,l apart from (1,1)
-      for(int i = 0; i < numP; i++){
+      for(int wc = 0; wc < nPH; wc++){
       // Joint marginal NOT DEFINED for (1,1) - set to 0 for now.
-        if(i > 0){
+        if(wc > 0){
 
-          pp_joint_sl_11 = gsl_vector_get(pp_joint_11, i);
-          pp_joint_sl_10 = gsl_vector_get(pp_joint_10, i);
-          pp_joint_sl_01 = gsl_vector_get(pp_joint_01, i);
-          pp_joint_sl_00 = 1 - pp_joint_sl_11 - pp_joint_sl_10 - pp_joint_sl_01;
+          pp_joint_sl_11 = gsl_vector_get(pp_joint_11, wc);
+          pp_joint_sl_10 = gsl_vector_get(pp_joint_10, wc);
+          pp_joint_sl_01 = gsl_vector_get(pp_joint_01, wc);
 
-          int parent_wc = ((i + 1) / 2) - 1;
+          int parent_wc = ((wc + 1) / 2) - 1;
           pp_psl = gsl_vector_get(pp, parent_wc);
 
           eps_11 = pp_joint_sl_11/pp_psl;
           eps_01 = pp_joint_sl_01/pp_psl;
           eps_10 = pp_joint_sl_10/(1-pp_psl);
 
-          gsl_vector_set(eps_11_vect, i, eps_11);
-          gsl_vector_set(eps_01_vect, i, eps_01);
-          gsl_vector_set(eps_10_vect, i, eps_10);
+          gsl_vector_set(eps_11_vect, wc, eps_11);
+          gsl_vector_set(eps_01_vect, wc, eps_01);
+          gsl_vector_set(eps_10_vect, wc, eps_10);
 
         }else{
 
-          gsl_vector_set(eps_11_vect, i, 0);
-          gsl_vector_set(eps_01_vect, i, 0);
-          gsl_vector_set(eps_10_vect, i, 0);
+          gsl_vector_set(eps_11_vect, wc, 0);
+          gsl_vector_set(eps_01_vect, wc, 0);
+          gsl_vector_set(eps_10_vect, wc, 0);
 
         }
       }
@@ -654,7 +655,7 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
 
         // Both the children will try and update the parents' beta, so
         // only do this once.
-          if(wc % 2 == 0){
+          if(i % 2 == 0){
             gsl_vector_set(beta_sl_1, parent_st + parent_indx, b_psl_1);
             gsl_vector_set(beta_sl_0, parent_st + parent_indx, b_psl_0);  
           }
@@ -730,9 +731,9 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
           b_psl_no_sl_1 = gsl_vector_get(beta_psl_no_sl_1, wc);
           b_psl_no_sl_0 = gsl_vector_get(beta_psl_no_sl_0, wc);       
 
-          eps_11 = gsl_vector_get(eps_11_vect, st + i);
-          eps_01 = gsl_vector_get(eps_01_vect, st + i);
-          eps_10 = gsl_vector_get(eps_10_vect, st + i);
+          eps_11 = gsl_vector_get(eps_11_vect, wc);
+          eps_01 = gsl_vector_get(eps_01_vect, wc);
+          eps_10 = gsl_vector_get(eps_10_vect, wc);
           eps_00 = 1 - eps_11 - eps_01 - eps_10;
 
           pp_joint_sl_11 = (b_sl_1*eps_11*a_psl_1*b_psl_no_sl_1)/denom;
@@ -872,9 +873,9 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
     //-- wavelets_v2_2 end --//
 
   // ~~~ TOFIX; Means, vars, likely to change with simulation.
-    for(int p = 0, p < nPH, p++){
+    for(int p = 0; p < nPH; p++){
       if(use_pheno[p] == 1){
-        phi = pp[p];
+        phi = gsl_vector_get(pp,p);
         mean1_out = gsl_vector_get(mean1,p);
         var1_out = gsl_vector_get(var1,p);
         mean_out = phi*mean1_out;
@@ -908,9 +909,25 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
    //-- wavelets_v2_2 end --//
 
 
+  //--- BL_HMT start ---//
+  gsl_vector_free(beta_sl_0);
+  gsl_vector_free(beta_sl_1);
+  gsl_vector_free(beta_sl_psl_1);
+  gsl_vector_free(beta_sl_psl_0);
+  gsl_vector_free(beta_psl_no_sl_1);
+  gsl_vector_free(beta_psl_no_sl_0);
+  gsl_vector_free(alpha_sl_1);
+  gsl_vector_free(alpha_sl_0);
+  gsl_vector_free(pp);
+  gsl_vector_free(pp_joint_11);
+  gsl_vector_free(pp_joint_10);
+  gsl_vector_free(pp_joint_01);
+  gsl_vector_free(eps_11_vect);
+  gsl_vector_free(eps_10_vect);
+  gsl_vector_free(eps_01_vect);
+  //--- BL_HMT end ---//
+
   }
-
-
 
 
   outfile.close(); 
@@ -930,9 +947,6 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
 
   outfile_eps_01.close(); 
   cout << sfn_eps_01 << " has been created." << endl;
-
-  outfile_eps_00.close(); 
-  cout << sfn_eps_00 << " has been created." << endl;
   //--- BL_HMT end ---//
 
 
@@ -979,23 +993,5 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
 
 
   logLR_list.resize(0);
-
-  //--- BL_HMT start ---//
-  gsl_vector_free(beta_sl_0);
-  gsl_vector_free(beta_sl_1);
-  gsl_vector_free(beta_sl_psl_1);
-  gsl_vector_free(beta_sl_psl_0);
-  gsl_vector_free(beta_psl_no_sl_1);
-  gsl_vector_free(beta_psl_no_sl_0);
-  gsl_vector_free(alpha_sl_1);
-  gsl_vector_free(alpha_sl_0);
-  gsl_vector_free(pp);
-  gsl_vector_free(pp_joint_11);
-  gsl_vector_free(pp_joint_10);
-  gsl_vector_free(pp_joint_01);
-  gsl_vector_free(eps_11_vect);
-  gsl_vector_free(eps_10_vect);
-  gsl_vector_free(eps_01_vect);
-  //--- BL_HMT end ---//
 
 }

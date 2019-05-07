@@ -454,9 +454,6 @@ public:
 	
    //--- wavelets start ---//
    void single_snp_functional_phenotype(int mode, int numPerm, int nullcheck);
-   //--- BL_HMT start ---//
-   void single_snp_functional_phenotype_HMT(int nullcheck);
-   //--- BL_HMT end ---//
    //--- wavelets_v1.3 start ---//
    double bf_uni(real inv_va, real inv_vd, int ni, int ns, gsl_matrix * gXX, gsl_vector * gph);
    void bf_uni(real inv_va, real inv_vd, int ni, int ns, gsl_matrix * gXX, gsl_vector * gph, double * res);
