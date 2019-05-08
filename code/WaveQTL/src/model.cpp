@@ -8893,13 +8893,11 @@ void ModelnData::single_snp_functional_phenotype(int mode, int numPerm, int null
 void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
 {
 
-
+// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+// 	int niter = 1;
+// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
   int niter = 1000;
   double tol = 0.0005;
-  
-  //-- WaveQTL.1.1 start --//
-  double delta = 0.01;  
-  //-- WaveQTL.1.1 end --//
 
   m_df = 1;
   int col =  1 + m_df; 
@@ -8916,7 +8914,6 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   // 3 different state combinations to fully parameterise
   vector<double> eps_11_list;
   vector<double> eps_10_list;
-  vector<double> eps_01_list;
   //--- BL_HMT end ---//
 
   vector<int> group_end; // end position for each group
@@ -8937,8 +8934,6 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   nPH_use = (int) use_pheno_t.size();
   nPH_no_use = (int) use_pheno_f.size(); 
 
-
-
   //set group end positions
   //set number of phenotypes in each group
   //--- BL_HMT start ---//
@@ -8954,6 +8949,24 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   group_end.push_back(nPH);
   nPH_GP.push_back(nPH - group_end[numG-2]);
 
+
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+	// numG--; // for standard trees
+	std::cout << "nPH: " << nPH << "\n";
+	std::cout << "numG: " << numG << "\n";
+	std::cout << "nIndiv: " << nIndiv << "\n";
+	for(int i = 0; i < numG; i++){
+		int grp_start = group_start[i];
+		std::cout << "grp_start: " << grp_start << "\n";
+	}
+	for(int i = 1; i < numG; i++){
+		std::cout << "numG: " << i << "\n";
+		int end = group_start[i]-1;
+		int num_phenos_grp = group_start[i] - group_start[i-1];
+		std::cout << "end: " << end << "\n";
+		std::cout << "num_phenos_grp: " << num_phenos_grp << "\n";
+	}
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
 
 
   if(vsigma_a.size() == 0){
@@ -9031,16 +9044,6 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
     cout << "can't open file ... " << endl;  
     exit(0); 
   }
-
-  fstream outfile_eps_01; 
-  string sfn_eps_01("output/");
-  sfn_eps_01.append(fnOutput);
-  sfn_eps_01.append(".fph.eps_01.txt");
-  outfile_eps_01.open(sfn_eps_01.c_str(), ios::out);
-  if(!outfile_eps_01.is_open()) {
-    cout << "can't open file ... " << endl;  
-    exit(0); 
-  }    
   //--- BL_HMT end ---//
 
 
@@ -9065,6 +9068,128 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
     exit(0); 
   }
 
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+
+fstream outfile_beta_sl_0;
+string sfn_beta_sl_0("output/");
+sfn_beta_sl_0.append(fnOutput);
+sfn_beta_sl_0.append(".fph.beta_sl_0.txt");
+outfile_beta_sl_0.open(sfn_beta_sl_0.c_str(), ios::out);
+if(!outfile_beta_sl_0.is_open()){
+	cout << "can't open file ..." << endl;
+	exit(0);
+}
+
+fstream outfile_beta_sl_1;
+string sfn_beta_sl_1("output/");
+sfn_beta_sl_1.append(fnOutput);
+sfn_beta_sl_1.append(".fph.beta_sl_1.txt");
+outfile_beta_sl_1.open(sfn_beta_sl_1.c_str(), ios::out);
+if(!outfile_beta_sl_1.is_open()){
+	cout << "can't open file ..." << endl;
+	exit(0);
+}
+
+fstream outfile_beta_sl_psl_1;
+string sfn_beta_sl_psl_1("output/");
+sfn_beta_sl_psl_1.append(fnOutput);
+sfn_beta_sl_psl_1.append(".fph.beta_sl_psl_1.txt");
+outfile_beta_sl_psl_1.open(sfn_beta_sl_psl_1.c_str(), ios::out);
+if(!outfile_beta_sl_psl_1.is_open()){
+	cout << "can't open file ..." << endl;
+	exit(0);
+}
+
+fstream outfile_beta_sl_psl_0;
+string sfn_beta_sl_psl_0("output/");
+sfn_beta_sl_psl_0.append(fnOutput);
+sfn_beta_sl_psl_0.append(".fph.beta_sl_psl_0.txt");
+outfile_beta_sl_psl_0.open(sfn_beta_sl_psl_0.c_str(), ios::out);
+if(!outfile_beta_sl_psl_0.is_open()){
+	cout << "can't open file ..." << endl;
+	exit(0);
+}
+
+fstream outfile_beta_psl_no_sl_1;
+string sfn_beta_psl_no_sl_1("output/");
+sfn_beta_psl_no_sl_1.append(fnOutput);
+sfn_beta_psl_no_sl_1.append(".fph.beta_psl_no_sl_1.txt");
+outfile_beta_psl_no_sl_1.open(sfn_beta_psl_no_sl_1.c_str(), ios::out);
+if(!outfile_beta_psl_no_sl_1.is_open()){
+	cout << "can't open file ..." << endl;
+	exit(0);
+}
+
+fstream outfile_beta_psl_no_sl_0;
+string sfn_beta_psl_no_sl_0("output/");
+sfn_beta_psl_no_sl_0.append(fnOutput);
+sfn_beta_psl_no_sl_0.append(".fph.beta_psl_no_sl_0.txt");
+outfile_beta_psl_no_sl_0.open(sfn_beta_psl_no_sl_0.c_str(), ios::out);
+if(!outfile_beta_psl_no_sl_0.is_open()){
+	cout << "can't open file ..." << endl;
+	exit(0);
+}
+
+fstream outfile_alpha_sl_1;
+string sfn_alpha_sl_1("output/");
+sfn_alpha_sl_1.append(fnOutput);
+sfn_alpha_sl_1.append(".fph.alpha_sl_1.txt");
+outfile_alpha_sl_1.open(sfn_alpha_sl_1.c_str(), ios::out);
+if(!outfile_alpha_sl_1.is_open()){
+	cout << "can't open file ..." << endl;
+	exit(0);
+}
+
+fstream outfile_alpha_sl_0;
+string sfn_alpha_sl_0("output/");
+sfn_alpha_sl_0.append(fnOutput);
+sfn_alpha_sl_0.append(".fph.alpha_sl_0.txt");
+outfile_alpha_sl_0.open(sfn_alpha_sl_0.c_str(), ios::out);
+if(!outfile_alpha_sl_0.is_open()){
+	cout << "can't open file ..." << endl;
+	exit(0);
+}
+
+fstream outfile_pp;
+string sfn_pp("output/");
+sfn_pp.append(fnOutput);
+sfn_pp.append(".fph.pp.txt");
+outfile_pp.open(sfn_pp.c_str(), ios::out);
+if(!outfile_pp.is_open()){
+	cout << "can't open file ..." << endl;
+	exit(0);
+}
+
+fstream outfile_pp_joint_11;
+string sfn_pp_joint_11("output/");
+sfn_pp_joint_11.append(fnOutput);
+sfn_pp_joint_11.append(".fph.pp_joint_11.txt");
+outfile_pp_joint_11.open(sfn_pp_joint_11.c_str(), ios::out);
+if(!outfile_pp_joint_11.is_open()){
+	cout << "can't open file ..." << endl;
+	exit(0);
+}
+
+fstream outfile_pp_joint_10;
+string sfn_pp_joint_10("output/");
+sfn_pp_joint_10.append(fnOutput);
+sfn_pp_joint_10.append(".fph.pp_joint_10.txt");
+outfile_pp_joint_10.open(sfn_pp_joint_10.c_str(), ios::out);
+if(!outfile_pp_joint_10.is_open()){
+	cout << "can't open file ..." << endl;
+	exit(0);
+}
+
+fstream outfile_pp_joint_01 ;
+string sfn_pp_joint_01("output/");
+sfn_pp_joint_01.append(fnOutput);
+sfn_pp_joint_01.append(".fph.pp_joint_01.txt");
+outfile_pp_joint_01.open(sfn_pp_joint_01.c_str(), ios::out);
+if(!outfile_pp_joint_01.is_open()){
+	cout << "can't open file ..." << endl;
+	exit(0);
+}
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
 
   gsl_vector * mean1 = gsl_vector_alloc(nPH);
   gsl_vector * var1 = gsl_vector_alloc(nPH);
@@ -9107,8 +9232,11 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   //--- wavelets_v2_2 end ---//
   
   logLR_list.resize(0);
+  //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+	for(int g = 0; g < 1; g++){
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
   // Calculate for each genotype!!
-  for(int g = 0; g < nLoci; g++){
+  // for(int g = 0; g < nLoci; g++){
 
     // assign each genotype 
     ni = 0;
@@ -9147,6 +9275,14 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
       //--- wavelets_v1.3 end ---//
     }
 
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+	for(int i = 0; i < nPH; i++){
+double bf_diag = gsl_vector_get(logBFs, i);
+double use_diag = use_pheno[i];
+std::cout << "logBF - " << i << ": " << bf_diag << "\n";
+std::cout << "useWC - " << i << ": " << use_diag << "\n";
+	}
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
 
 
   //--- BL_HMT start ---//
@@ -9161,10 +9297,12 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
     pi_list.resize(0);
     eps_11_list.resize(0);
     eps_10_list.resize(0);
-    eps_01_list.resize(0);
 
   // With HMT, need to do the EM algorithm for all groups (scales) in one step.
   // Can no longer do separately as they are all linked together.
+  // Note that by coarsest scale, we mean the root of the tree. This scale has one node,
+  // but is distinct from the scaling coefficient, which is the first group referred to
+  // in the group_start vector, and is not part of the tree.
   // ~~~ TO CONFIRM: nCohort same as nIndiv?
 
   // ---- Initialisation of parameters ---- //
@@ -9190,37 +9328,39 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   // Vector of epsilon quantities
     gsl_vector * eps_11_vect = gsl_vector_alloc(nPH);
     gsl_vector * eps_10_vect = gsl_vector_alloc(nPH);
-    gsl_vector * eps_01_vect = gsl_vector_alloc(nPH);
 
   // ---- Initial E-step ---- //
   // 'Zero-th' up-down algorithm using all individuals
 
   // This pi now only represents the 1 node at the coarsest scale (1,1)
-  // Probably easier to have pi not logged this time (?)
-  // double logpi = log(0.5);
-  // double log1pi = logpi;
+  // Probably easier to have pi logged for underflow reasons.
+	// double logpi = log(0.5);
+	// double log1pi = logpi;
     double pi_1 = 0.5;
     double pi_0 = 1 - pi_1;
 
 
-  // Probably (?) easier to also have epsilons not logged
-  // double logeps_11 = log(0.25);
-  // double logeps_01 = log(0.25);
-  // double logeps_10 = log(0.25);
-  // double logeps_00 = log(0.25);
-    double eps_11 = 0.25;
-    double eps_01 = 0.25;
-    double eps_10 = 0.25;
-    double eps_00 = 1 - eps_11 - eps_01 - eps_10;
+  // Probably (?) easier to also have epsilons logged for underflow
+	// double logeps_11 = log(0.5);
+	// double logeps_01 = logeps_11;
+	// double logeps_10 = log(0.5);
+	// double logeps_00 = logeps_10;
+    double eps_11 = 0.5;
+    double eps_01 = 1 - eps_11;
+    double eps_10 = 0.5;
+    double eps_00 = 1 - eps_10;
 
   // Define some variables
     double logBF, logParentBF;
 
     double b_sl_1, b_sl_0;
-  // The beta of the adjacent child (which shares the same parent)
-    double b_sl_adj_1, b_sl_adj_0;
-
     double b_sl_psl_1, b_sl_psl_0;
+    
+    // The betas of the adjacent child (which shares the same parent)
+    double b_sl_adj_1, b_sl_adj_0; 
+    double b_sl_psl_adj_1, b_sl_psl_adj_0;
+    double eps_adj_11, eps_adj_01, eps_adj_10, eps_adj_00;
+
     double b_psl_1, b_psl_0;
     double b_psl_no_sl_1, b_psl_no_sl_0;
 
@@ -9234,14 +9374,14 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
 
     double diff;
 
-  // Up step - don't do this step at coarsest scale
+  // Up step - don't do this step at coarsest scale.
     for(int gi = (numG - 1); gi > 0; gi--){
 
       int numP = nPH_GP[gi];
       int st = group_start[gi] - 1;
       int parent_st = group_start[gi - 1] - 1;
 
-    // Step 0 at finest scale only.
+    // Step 0 at finest scale only (initialisation).
       if(gi == (numG - 1)){
         for(int i = 0; i < numP; i++){
 
@@ -9257,6 +9397,12 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
         int parent_indx = i/2; // integer division
         logParentBF = gsl_vector_get(logBFs,parent_st+parent_indx);
 
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "Up algo:" << "\n";      	
+std::cout << "indx: " << st+i << "\n";
+std::cout << "parent_indx: " << parent_st+parent_indx << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////        
+
         b_sl_1 = gsl_vector_get(beta_sl_1, st + i);
         b_sl_0 = gsl_vector_get(beta_sl_0, st + i);
 
@@ -9271,57 +9417,114 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
 
         b_sl_psl_1 = b_sl_1*eps_11 + b_sl_0*eps_01;
         b_sl_psl_0 = b_sl_0*eps_00 + b_sl_1*eps_10;
+// !!!! There's actually some duplication here: we're kind of calculating all this scale's
+// values in one big chunk, rather than location-wise.
+        b_sl_psl_adj_1 = b_sl_adj_1*eps_11 + b_sl_adj_0*eps_01;
+        b_sl_psl_adj_0 = b_sl_adj_0*eps_00 + b_sl_adj_1*eps_10;
 
-        b_psl_1 = exp(logParentBF) * b_sl_adj_1 * b_sl_1;
-        b_psl_0 = 1 * b_sl_adj_0 * b_sl_0;
+        b_psl_1 = exp(logParentBF) * b_sl_psl_1 * b_sl_psl_adj_1;
+        b_psl_0 = 1 * b_sl_psl_0 * b_sl_psl_adj_0;
 
         b_psl_no_sl_1 = b_psl_1/b_sl_psl_1;
         b_psl_no_sl_0 = b_psl_0/b_sl_psl_0;
 
-        gsl_vector_set(beta_sl_psl_1, st + i, b_sl_psl_1);
-        gsl_vector_set(beta_sl_psl_0, st + i, b_sl_psl_0);
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "b_sl_1: " << b_sl_1 << "\n";
+std::cout << "b_sl_0: " << b_sl_0 << "\n";
+std::cout << "b_sl_adj_1: " << b_sl_adj_1 << "\n";
+std::cout << "b_sl_adj_0: " << b_sl_adj_0 << "\n";
+std::cout << "b_sl_psl_1: " << b_sl_psl_1 << "\n";
+std::cout << "b_sl_psl_0: " << b_sl_psl_0 << "\n";
+std::cout << "b_sl_psl_adj_1: " << b_sl_psl_adj_1 << "\n";
+std::cout << "b_sl_psl_adj_0: " << b_sl_psl_adj_0 << "\n";
+std::cout << "b_psl_1: " << b_psl_1 << "\n";
+std::cout << "b_psl_0: " << b_psl_0 << "\n";
+std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
+std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
+std::cout << "eps_11: " << eps_11 << "\n";
+std::cout << "eps_01: " << eps_01 << "\n";
+std::cout << "eps_00: " << eps_00 << "\n";
+std::cout << "eps_10: " << eps_10 << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////    
 
-      // Both the children will try and update the parents' beta, so
-      // only do this once.
-        if(i % 2 == 0){
-          gsl_vector_set(beta_sl_1, parent_st + parent_indx, b_psl_1);
-          gsl_vector_set(beta_sl_0, parent_st + parent_indx, b_psl_0);  
-        }
+	  		// !!!! Also, don't do this for top (scaling) coefficient - not part of tree.
+	  		// Set all to 0s for now until we know what to do
+	  		if(gi == 1){
 
-        gsl_vector_set(beta_psl_no_sl_1, st + i, b_psl_no_sl_1);
-        gsl_vector_set(beta_psl_no_sl_0, st + i, b_psl_no_sl_0);
+		        gsl_vector_set(beta_sl_psl_1, st + i, 0);
+		        gsl_vector_set(beta_sl_psl_0, st + i, 0);
+	        	gsl_vector_set(beta_sl_1, parent_st + parent_indx, 0);
+	        	gsl_vector_set(beta_sl_0, parent_st + parent_indx, 0);  
+		        gsl_vector_set(beta_psl_no_sl_1, st + i, 0);
+		        gsl_vector_set(beta_psl_no_sl_0, st + i, 0);
+
+		    }else{
+
+		    	gsl_vector_set(beta_sl_psl_1, st + i, b_sl_psl_1);
+	      	gsl_vector_set(beta_sl_psl_0, st + i, b_sl_psl_0);
+
+	      // Both the children will try and update the parents' beta, so
+	      // only do this once.
+	        if(i % 2 == 0){
+	          gsl_vector_set(beta_sl_1, parent_st + parent_indx, b_psl_1);
+	          gsl_vector_set(beta_sl_0, parent_st + parent_indx, b_psl_0);  
+	        }
+
+	        gsl_vector_set(beta_psl_no_sl_1, st + i, b_psl_no_sl_1);
+	        gsl_vector_set(beta_psl_no_sl_0, st + i, b_psl_no_sl_0);
+
+	    	}
 
       }
 
     }
 
   // Down step
-  // Start at coarsest scale, then go until finest - 1.
-    for(int gi = 0; gi < (numG - 1); gi++){
+  // Start at coarsest scale, then go until finest.
+    for(int gi = 0; gi < numG; gi++){
 
       int numP = nPH_GP[gi];
       int st = group_start[gi] - 1;
-      int parent_st = group_start[gi - 1] - 1;
 
     // Step 0 at finest scale only.
-      if(gi == 0){
+    // !!!! Also, don't know what to do at the moment for top (scaling) coefficient - not part of tree.
+  	// Set all as per step 0 for now.
+      if(gi <= 1){
 
         gsl_vector_set(alpha_sl_1, st, pi_1);
         gsl_vector_set(alpha_sl_0, st, pi_0);
 
       }else{
 
+      	int parent_st = group_start[gi - 1] - 1;
+
         for(int i = 0; i < numP; i++){
 
-          b_psl_no_sl_1 = gsl_vector_get(beta_sl_psl_1, st + i);
-          b_psl_no_sl_0 = gsl_vector_get(beta_sl_psl_0, st + i);
+          b_psl_no_sl_1 = gsl_vector_get(beta_psl_no_sl_1, st + i);
+          b_psl_no_sl_0 = gsl_vector_get(beta_psl_no_sl_0, st + i);
 
           int parent_indx = i/2;
           a_psl_1 = gsl_vector_get(alpha_sl_1, parent_st + parent_indx);
           a_psl_0 = gsl_vector_get(alpha_sl_0, parent_st + parent_indx);
 
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "Down algo:" << "\n";      	
+std::cout << "indx: " << st+i << "\n";
+std::cout << "parent_indx: " << parent_st+parent_indx << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
+
           a_sl_1 = eps_11*a_psl_1*b_psl_no_sl_1 + eps_10*a_psl_0*b_psl_no_sl_0;
-          a_sl_0 = eps_01*a_psl_1*b_psl_no_sl_1 + eps_00*a_psl_0*b_psl_no_sl_0;
+          a_sl_0 = eps_01*a_psl_1*b_psl_no_sl_1 + eps_00*a_psl_0*b_psl_no_sl_0;      
+
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
+std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
+std::cout << "a_psl_1: " << a_psl_1 << "\n";
+std::cout << "a_psl_0: " << a_psl_0 << "\n";
+std::cout << "a_sl_1: " << a_sl_1 << "\n";
+std::cout << "a_sl_0: " << a_sl_0 << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////    
+         
           gsl_vector_set(alpha_sl_1, st + i, a_sl_1);
           gsl_vector_set(alpha_sl_0, st + i, a_sl_0);
 
@@ -9333,39 +9536,62 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   // ---- Calculate the E-step quantities (posterior probabilities) ---- //
     for(int wc = 0; wc < nPH; wc++){
 
-      // Posterior marginal of gamma_sl
-      b_sl_1 = gsl_vector_get(beta_sl_1, wc);
-      b_sl_0 = gsl_vector_get(beta_sl_0, wc);
-      a_sl_1 = gsl_vector_get(alpha_sl_1, wc);
-      a_sl_0 = gsl_vector_get(alpha_sl_0, wc);
+	    // !!!! Marginal of gamma_sl NOT DEFINED for first coefficient, as it is a scaling coefficient.
+	    // Set to pi for now.
+	    if(wc > 0){
+				// Posterior marginal of gamma_sl
+				b_sl_1 = gsl_vector_get(beta_sl_1, wc);
+				b_sl_0 = gsl_vector_get(beta_sl_0, wc);
+				a_sl_1 = gsl_vector_get(alpha_sl_1, wc);
+				a_sl_0 = gsl_vector_get(alpha_sl_0, wc);
 
-      denom = b_sl_1*a_sl_1 + b_sl_0*a_sl_0;
-      pp_sl = (b_sl_1*a_sl_1)/denom;
-      gsl_vector_set(pp, wc, pp_sl);
+				denom = b_sl_1*a_sl_1 + b_sl_0*a_sl_0;
+				pp_sl = (b_sl_1*a_sl_1)/denom;
+				gsl_vector_set(pp, wc, pp_sl);
 
-    // Joint marginal NOT DEFINED for (1,1) - set to 0 for now.
-      if(wc > 0){
-      // Posterior joint of gamma_sl, gamma_psl
-      // This is the easiest way I can think of (for now) to get the parents' index.
-      // Use the 'divide' by 2 trick, on a tree with starting index of 1 (not 0)
-        int parent_wc = ((wc + 1) / 2) - 1;
-        a_psl_1 = gsl_vector_get(alpha_sl_1, parent_wc);
-        a_psl_0 = gsl_vector_get(alpha_sl_0, parent_wc);
-        b_psl_no_sl_1 = gsl_vector_get(beta_psl_no_sl_1, wc);
-        b_psl_no_sl_0 = gsl_vector_get(beta_psl_no_sl_0, wc);       
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "pp_sl: " << pp_sl << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////  
 
-        pp_joint_sl_11 = (b_sl_1*eps_11*a_psl_1*b_psl_no_sl_1)/denom;
-        pp_joint_sl_10 = (b_sl_1*eps_10*a_psl_0*b_psl_no_sl_0)/denom;
-        pp_joint_sl_01 = (b_sl_0*eps_01*a_psl_1*b_psl_no_sl_1)/denom;
+	    	// !!!! Joint marginal NOT DEFINED for either of the first two coefficients;
+	    	// First coef is scaling coefficient, and second is top of tree. Set both to 0 for now.
 
-        gsl_vector_set(pp_joint_11, wc, pp_joint_sl_11);
-        gsl_vector_set(pp_joint_10, wc, pp_joint_sl_10);
-        gsl_vector_set(pp_joint_01, wc, pp_joint_sl_01);  
-      }else{
-        gsl_vector_set(pp_joint_11, wc, 0);
-        gsl_vector_set(pp_joint_10, wc, 0);
-        gsl_vector_set(pp_joint_01, wc, 0);
-      }
+				if(wc > 1){
+					// Posterior joint of gamma_sl, gamma_psl
+	
+					int parent_wc = wc/2; // integer division
+					a_psl_1 = gsl_vector_get(alpha_sl_1, parent_wc);
+					a_psl_0 = gsl_vector_get(alpha_sl_0, parent_wc);
+					b_psl_no_sl_1 = gsl_vector_get(beta_psl_no_sl_1, wc);
+					b_psl_no_sl_0 = gsl_vector_get(beta_psl_no_sl_0, wc);       
+
+					pp_joint_sl_11 = (b_sl_1*eps_11*a_psl_1*b_psl_no_sl_1)/denom;
+					pp_joint_sl_10 = (b_sl_1*eps_10*a_psl_0*b_psl_no_sl_0)/denom;
+					pp_joint_sl_01 = (b_sl_0*eps_01*a_psl_1*b_psl_no_sl_1)/denom;
+
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "pp_joint_sl_11: " << pp_joint_sl_11 << "\n";
+std::cout << "pp_joint_sl_10: " << pp_joint_sl_10 << "\n";
+std::cout << "pp_joint_sl_01: " << pp_joint_sl_01 << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////  					
+
+					gsl_vector_set(pp_joint_11, wc, pp_joint_sl_11);
+					gsl_vector_set(pp_joint_10, wc, pp_joint_sl_10);
+					gsl_vector_set(pp_joint_01, wc, pp_joint_sl_01); 
+
+				}else{
+
+					gsl_vector_set(pp_joint_11, wc, 0);
+					gsl_vector_set(pp_joint_10, wc, 0);
+					gsl_vector_set(pp_joint_01, wc, 0);
+				}
+
+	    }else{
+	    	gsl_vector_set(pp, wc, pi_1);
+			gsl_vector_set(pp_joint_11, wc, 0);
+			gsl_vector_set(pp_joint_10, wc, 0);
+			gsl_vector_set(pp_joint_01, wc, 0);
+	    }
 
     }
 
@@ -9373,50 +9599,136 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   // Observed log-likelihood calculated by marginalising beta_11 over the possible
   // states of gamma_11.
 
-    double b_11_1 = gsl_vector_get(beta_sl_1, 0);
-    double b_11_0 = gsl_vector_get(beta_sl_0, 0);
+    double b_11_1 = gsl_vector_get(beta_sl_1, 1);
+    double b_11_0 = gsl_vector_get(beta_sl_0, 1);
 
     N_obllikli = log(b_11_1*pi_1 + b_11_0*pi_0);
     O_obllikli = N_obllikli;
 
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+    double q1_max;
+    double q1_min;
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////    
+
+//     //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+//     // Idea is to get mins an maxes of each vector to see what's happened.
+// double q1_max = gsl_vector_max(beta_sl_0);
+// double q1_min = gsl_vector_min(beta_sl_0);
+// std::cout << "Max beta_sl_0: " << q1_max << "\n";
+// std::cout << "Min beta_sl_0: " << q1_min << "\n";
+
+// q1_max = gsl_vector_max(beta_sl_1);
+// q1_min = gsl_vector_min(beta_sl_1);
+// std::cout << "Max beta_sl_1: " << q1_max << "\n";
+// std::cout << "Min beta_sl_1: " << q1_min << "\n";
+
+// q1_max = gsl_vector_max(beta_sl_psl_1);
+// q1_min = gsl_vector_min(beta_sl_psl_1);
+// std::cout << "Max beta_sl_psl_1: " << q1_max << "\n";
+// std::cout << "Min beta_sl_psl_1: " << q1_min << "\n";
+
+// q1_max = gsl_vector_max(beta_sl_psl_0);
+// q1_min = gsl_vector_min(beta_sl_psl_0);
+// std::cout << "Max beta_sl_psl_0: " << q1_max << "\n";
+// std::cout << "Min beta_sl_psl_0: " << q1_min << "\n";
+
+// q1_max = gsl_vector_max(beta_psl_no_sl_1);
+// q1_min = gsl_vector_min(beta_psl_no_sl_1);
+// std::cout << "Max beta_psl_no_sl_1: " << q1_max << "\n";
+// std::cout << "Min beta_psl_no_sl_1: " << q1_min << "\n";
+
+// q1_max = gsl_vector_max(beta_psl_no_sl_0);
+// q1_min = gsl_vector_min(beta_psl_no_sl_0);
+// std::cout << "Max beta_psl_no_sl_0: " << q1_max << "\n";
+// std::cout << "Min beta_psl_no_sl_0: " << q1_min << "\n";
+
+// q1_max = gsl_vector_max(alpha_sl_1);
+// q1_min = gsl_vector_min(alpha_sl_1);
+// std::cout << "Max alpha_sl_1: " << q1_max << "\n";
+// std::cout << "Min alpha_sl_1: " << q1_min << "\n";
+
+// q1_max = gsl_vector_max(alpha_sl_0);
+// q1_min = gsl_vector_min(alpha_sl_0);
+// std::cout << "Max alpha_sl_0: " << q1_max << "\n";
+// std::cout << "Min alpha_sl_0: " << q1_min << "\n";
+
+// q1_max = gsl_vector_max(pp);
+// q1_min = gsl_vector_min(pp);
+// std::cout << "Max pp: " << q1_max << "\n";
+// std::cout << "Min pp: " << q1_min << "\n";
+
+// q1_max = gsl_vector_max(pp_joint_11);
+// q1_min = gsl_vector_min(pp_joint_11);
+// std::cout << "Max pp_joint_11: " << q1_max << "\n";
+// std::cout << "Min pp_joint_11: " << q1_min << "\n";
+
+// q1_max = gsl_vector_max(pp_joint_10);
+// q1_min = gsl_vector_min(pp_joint_10);
+// std::cout << "Max pp_joint_10: " << q1_max << "\n";
+// std::cout << "Min pp_joint_10: " << q1_min << "\n";
+
+// q1_max = gsl_vector_max(pp_joint_01);
+// q1_min = gsl_vector_min(pp_joint_01);
+// std::cout << "Max pp_joint_01: " << q1_max << "\n";
+// std::cout << "Min pp_joint_01: " << q1_min << "\n";
+
+//     //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
+
 
   // ---- Iterate through first M-step, and subsequent E-steps ---- //
     for(int iter = 0; iter < niter; iter++){
-
+std::cout << "EM iteration number: " << iter << "\n";
+std::cout.precision(6);
+std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
     // ---- M-step ---- //
     // ~~~ TOFIX: Aggregating several parameters to get 'grouped' parameter estimates
     // for pi and epsilons.
     // ie A may be average of A's from several nodes near the top,
     // B may be average of all B/A's from all locations in that scale.
 
-    // Pi param, for (1,1)
-      pi_1 = gsl_vector_get(pp, 0);
+    // Pi param, for (1,1) (NOT the scale coef)
+      pi_1 = gsl_vector_get(pp, 1);
       pi_0 = 1 - pi_1;
 
-    // Eps param, for each s,l apart from (1,1)
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "pi_1: " << pi_1 << "\n";
+std::cout << "pi_0: " << pi_0 << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////  	
+
+    // !!!! Eps param, for each s,l apart from first two coefficients.
+  	// First coef is scaling coef, second is head of tree. Set both to 0 for now.
       for(int wc = 0; wc < nPH; wc++){
-      // Joint marginal NOT DEFINED for (1,1) - set to 0 for now.
-        if(wc > 0){
+      
+        if(wc > 1){
 
           pp_joint_sl_11 = gsl_vector_get(pp_joint_11, wc);
           pp_joint_sl_10 = gsl_vector_get(pp_joint_10, wc);
           pp_joint_sl_01 = gsl_vector_get(pp_joint_01, wc);
 
-          int parent_wc = ((wc + 1) / 2) - 1;
+          int parent_wc = wc / 2; // integer division
           pp_psl = gsl_vector_get(pp, parent_wc);
 
           eps_11 = pp_joint_sl_11/pp_psl;
-          eps_01 = pp_joint_sl_01/pp_psl;
           eps_10 = pp_joint_sl_10/(1-pp_psl);
 
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "wc: " << wc << "\n";
+std::cout << "parent_wc: " << parent_wc << "\n";
+std::cout << "pp_joint_sl_11: " << pp_joint_sl_11 << "\n";
+std::cout << "pp_joint_sl_10: " << pp_joint_sl_10 << "\n";
+std::cout << "pp_joint_sl_01: " << pp_joint_sl_01 << "\n";
+std::cout << "pp_psl: " << pp_psl << "\n";
+std::cout << "eps_11: " << eps_11 << "\n";
+std::cout << "eps_10: " << eps_10 << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////  	
+
+
           gsl_vector_set(eps_11_vect, wc, eps_11);
-          gsl_vector_set(eps_01_vect, wc, eps_01);
           gsl_vector_set(eps_10_vect, wc, eps_10);
 
         }else{
 
           gsl_vector_set(eps_11_vect, wc, 0);
-          gsl_vector_set(eps_01_vect, wc, 0);
           gsl_vector_set(eps_10_vect, wc, 0);
 
         }
@@ -9450,9 +9762,9 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
           logParentBF = gsl_vector_get(logBFs,parent_st + parent_indx);
 
           eps_11 = gsl_vector_get(eps_11_vect, st + i);
-          eps_01 = gsl_vector_get(eps_01_vect, st + i);
+          eps_01 = 1 - eps_11;
           eps_10 = gsl_vector_get(eps_10_vect, st + i);
-          eps_00 = 1 - eps_11 - eps_01 - eps_10;
+          eps_00 = 1 - eps_10;
 
           b_sl_1 = gsl_vector_get(beta_sl_1, st + i);
           b_sl_0 = gsl_vector_get(beta_sl_0, st + i);
@@ -9461,62 +9773,111 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
           if(i % 2 == 0){
             b_sl_adj_1 = gsl_vector_get(beta_sl_1, st + i + 1);
             b_sl_adj_0 = gsl_vector_get(beta_sl_0, st + i + 1);
+	          eps_adj_11 = gsl_vector_get(eps_11_vect, st + i + 1);
+	          eps_adj_01 = 1 - eps_adj_11;
+	          eps_adj_10 = gsl_vector_get(eps_10_vect, st + i + 1);
+	          eps_adj_00 = 1 - eps_adj_10;
           }else{
             b_sl_adj_1 = gsl_vector_get(beta_sl_1, st + i - 1);
             b_sl_adj_0 = gsl_vector_get(beta_sl_0, st + i - 1);
+	          eps_adj_11 = gsl_vector_get(eps_11_vect, st + i - 1);
+	          eps_adj_01 = 1 - eps_adj_11;
+	          eps_adj_10 = gsl_vector_get(eps_10_vect, st + i - 1);
+	          eps_adj_00 = 1 - eps_adj_10;
           }
 
-          b_sl_psl_1 = b_sl_1*eps_11 + b_sl_0*eps_01;
-          b_sl_psl_0 = b_sl_0*eps_00 + b_sl_1*eps_10;
+	        b_sl_psl_1 = b_sl_1*eps_11 + b_sl_0*eps_01;
+	        b_sl_psl_0 = b_sl_0*eps_00 + b_sl_1*eps_10;
+	// !!!! There's actually some duplication here: we're kind of calculating all this scale's
+	// values in one big chunk, rather than location-wise.
+	        b_sl_psl_adj_1 = b_sl_adj_1*eps_adj_11 + b_sl_adj_0*eps_adj_01;
+	        b_sl_psl_adj_0 = b_sl_adj_0*eps_adj_00 + b_sl_adj_1*eps_adj_10;
 
-          b_psl_1 = exp(logParentBF) * b_sl_adj_1 * b_sl_1;
-          b_psl_0 = 1 * b_sl_adj_0 * b_sl_0;
+	        b_psl_1 = exp(logParentBF) * b_sl_psl_1 * b_sl_psl_adj_1;
+	        b_psl_0 = 1 * b_sl_psl_0 * b_sl_psl_adj_0;
 
-          b_psl_no_sl_1 = b_psl_1/b_sl_psl_1;
-          b_psl_no_sl_0 = b_psl_0/b_sl_psl_0;
+          	b_psl_no_sl_1 = b_psl_1/b_sl_psl_1;
+          	b_psl_no_sl_0 = b_psl_0/b_sl_psl_0;
 
-          gsl_vector_set(beta_sl_psl_1, st + i, b_sl_psl_1);
-          gsl_vector_set(beta_sl_psl_0, st + i, b_sl_psl_0);
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "b_sl_1: " << b_sl_1 << "\n";
+std::cout << "b_sl_0: " << b_sl_0 << "\n";
+std::cout << "b_sl_adj_1: " << b_sl_adj_1 << "\n";
+std::cout << "b_sl_adj_0: " << b_sl_adj_0 << "\n";
+std::cout << "b_sl_psl_1: " << b_sl_psl_1 << "\n";
+std::cout << "b_sl_psl_0: " << b_sl_psl_0 << "\n";
+std::cout << "b_sl_psl_adj_1: " << b_sl_psl_adj_1 << "\n";
+std::cout << "b_sl_psl_adj_0: " << b_sl_psl_adj_0 << "\n";
+std::cout << "b_psl_1: " << b_psl_1 << "\n";
+std::cout << "b_psl_0: " << b_psl_0 << "\n";
+std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
+std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
+std::cout << "eps_11: " << eps_11 << "\n";
+std::cout << "eps_01: " << eps_01 << "\n";
+std::cout << "eps_00: " << eps_00 << "\n";
+std::cout << "eps_10: " << eps_10 << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////           	
 
-        // Both the children will try and update the parents' beta, so
-        // only do this once.
-          if(i % 2 == 0){
-            gsl_vector_set(beta_sl_1, parent_st + parent_indx, b_psl_1);
-            gsl_vector_set(beta_sl_0, parent_st + parent_indx, b_psl_0);  
-          }
+			// !!!! Also, don't do this for top (scaling) coefficient - not part of tree.
+	  		// Set all to 0s for now until we know what to do
+		  		if(gi == 1){
 
-          gsl_vector_set(beta_psl_no_sl_1, st + i, b_psl_no_sl_1);
-          gsl_vector_set(beta_psl_no_sl_0, st + i, b_psl_no_sl_0);
+		        gsl_vector_set(beta_sl_psl_1, st + i, 0);
+		        gsl_vector_set(beta_sl_psl_0, st + i, 0);
+          	gsl_vector_set(beta_sl_1, parent_st + parent_indx, 0);
+          	gsl_vector_set(beta_sl_0, parent_st + parent_indx, 0);  
+		        gsl_vector_set(beta_psl_no_sl_1, st + i, 0);
+		        gsl_vector_set(beta_psl_no_sl_0, st + i, 0);
+
+			    }else{
+
+		    		gsl_vector_set(beta_sl_psl_1, st + i, b_sl_psl_1);
+        		gsl_vector_set(beta_sl_psl_0, st + i, b_sl_psl_0);
+
+			      // Both the children will try and update the parents' beta, so
+			      // only do this once.
+		        if(i % 2 == 0){
+		          gsl_vector_set(beta_sl_1, parent_st + parent_indx, b_psl_1);
+		          gsl_vector_set(beta_sl_0, parent_st + parent_indx, b_psl_0);  
+		        }
+
+		        gsl_vector_set(beta_psl_no_sl_1, st + i, b_psl_no_sl_1);
+		        gsl_vector_set(beta_psl_no_sl_0, st + i, b_psl_no_sl_0);
+
+			    }
 
         }
 
       }
 
     // Down step
-    // Start at coarsest scale, then go until finest - 1.
-      for(int gi = 0; gi < (numG - 1); gi++){
+    // Start at coarsest scale, then go until finest.
+      for(int gi = 0; gi < numG; gi++){
 
         int numP = nPH_GP[gi];
         int st = group_start[gi] - 1;
-        int parent_st = group_start[gi - 1] - 1;
 
-      // Step 0 at finest scale only.
-        if(gi == 0){
+		    // Step 0 at finest scale only.
+		    // !!!! Also, don't know what to do at the moment for top (scaling) coefficient - not part of tree.
+		  	// Set all as per step 0 for now.
+        if(gi <= 1){
 
           gsl_vector_set(alpha_sl_1, st, pi_1);
           gsl_vector_set(alpha_sl_0, st, pi_0);
 
         }else{
 
+          int parent_st = group_start[gi - 1] - 1;
+
           for(int i = 0; i < numP; i++){
 
-            b_psl_no_sl_1 = gsl_vector_get(beta_sl_psl_1, st + i);
-            b_psl_no_sl_0 = gsl_vector_get(beta_sl_psl_0, st + i);
+            b_psl_no_sl_1 = gsl_vector_get(beta_psl_no_sl_1, st + i);
+            b_psl_no_sl_0 = gsl_vector_get(beta_psl_no_sl_0, st + i);
 
             eps_11 = gsl_vector_get(eps_11_vect, st + i);
-            eps_01 = gsl_vector_get(eps_01_vect, st + i);
+            eps_01 = 1 - eps_11;
             eps_10 = gsl_vector_get(eps_10_vect, st + i);
-            eps_00 = 1 - eps_11 - eps_01 - eps_10;
+            eps_00 = 1 - eps_10;
 
             int parent_indx = i/2;
             a_psl_1 = gsl_vector_get(alpha_sl_1, parent_st + parent_indx);
@@ -9527,61 +9888,101 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
             gsl_vector_set(alpha_sl_1, st + i, a_sl_1);
             gsl_vector_set(alpha_sl_0, st + i, a_sl_0);
 
+
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+            if(iter == 24){
+std::cout << "eps_11: " << eps_11 << "\n";
+std::cout << "a_psl_1: " << a_psl_1 << "\n";
+std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
+std::cout << "eps_10: " << eps_10 << "\n";
+std::cout << "a_psl_0: " << a_psl_0 << "\n";
+std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
+std::cout << "a_sl_1: " << a_sl_1 << "\n";
+}
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
+
           }
         }
 
       } 
 
-    // ---- Calculate the E-step quantities (posterior probabilities) ---- //
-      for(int wc = 0; wc < nPH; wc++){
+	  // ---- Calculate the E-step quantities (posterior probabilities) ---- //
+	    for(int wc = 0; wc < nPH; wc++){
 
-        // Posterior marginal of gamma_sl
-        b_sl_1 = gsl_vector_get(beta_sl_1, wc);
-        b_sl_0 = gsl_vector_get(beta_sl_0, wc);
-        a_sl_1 = gsl_vector_get(alpha_sl_1, wc);
-        a_sl_0 = gsl_vector_get(alpha_sl_0, wc);
+		    // !!!! Marginal of gamma_sl NOT DEFINED for first coefficient, as it is a scaling coefficient.
+		    // Set to pi for now.
+		    if(wc > 0){
+					// Posterior marginal of gamma_sl
+					b_sl_1 = gsl_vector_get(beta_sl_1, wc);
+					b_sl_0 = gsl_vector_get(beta_sl_0, wc);
+					a_sl_1 = gsl_vector_get(alpha_sl_1, wc);
+					a_sl_0 = gsl_vector_get(alpha_sl_0, wc);
 
-        denom = b_sl_1*a_sl_1 + b_sl_0*a_sl_0;
-        pp_sl = (b_sl_1*a_sl_1)/denom;
-        gsl_vector_set(pp, wc, pp_sl);
+					denom = b_sl_1*a_sl_1 + b_sl_0*a_sl_0;
+					pp_sl = (b_sl_1*a_sl_1)/denom;
+					gsl_vector_set(pp, wc, pp_sl);
 
-      // Joint marginal NOT DEFINED for (1,1) - set to 0 for now.
-        if(wc > 0){
-        // Posterior joint of gamma_sl, gamma_psl
-        // This is the easiest way I can think of (for now) to get the parents' index.
-        // Use the 'divide' by 2 trick, on a tree with starting index of 1 (not 0)
-          int parent_wc = ((wc + 1) / 2) - 1;
-          a_psl_1 = gsl_vector_get(alpha_sl_1, parent_wc);
-          a_psl_0 = gsl_vector_get(alpha_sl_0, parent_wc);
-          b_psl_no_sl_1 = gsl_vector_get(beta_psl_no_sl_1, wc);
-          b_psl_no_sl_0 = gsl_vector_get(beta_psl_no_sl_0, wc);       
+		    	// !!!! Joint marginal NOT DEFINED for either of the first two coefficients;
+		    	// First coef is scaling coefficient, and second is top of tree. Set both to 0 for now.
 
-          eps_11 = gsl_vector_get(eps_11_vect, wc);
-          eps_01 = gsl_vector_get(eps_01_vect, wc);
-          eps_10 = gsl_vector_get(eps_10_vect, wc);
-          eps_00 = 1 - eps_11 - eps_01 - eps_10;
+					if(wc > 1){
+						// Posterior joint of gamma_sl, gamma_psl
+							
+						int parent_wc = wc/2; // integer division
+						a_psl_1 = gsl_vector_get(alpha_sl_1, parent_wc);
+						a_psl_0 = gsl_vector_get(alpha_sl_0, parent_wc);
+						b_psl_no_sl_1 = gsl_vector_get(beta_psl_no_sl_1, wc);
+						b_psl_no_sl_0 = gsl_vector_get(beta_psl_no_sl_0, wc);  
+            
+            eps_11 = gsl_vector_get(eps_11_vect, wc);
+            eps_01 = 1 - eps_11;
+            eps_10 = gsl_vector_get(eps_10_vect, wc);
+            eps_00 = 1 - eps_10;						     
 
-          pp_joint_sl_11 = (b_sl_1*eps_11*a_psl_1*b_psl_no_sl_1)/denom;
-          pp_joint_sl_10 = (b_sl_1*eps_10*a_psl_0*b_psl_no_sl_0)/denom;
-          pp_joint_sl_01 = (b_sl_0*eps_01*a_psl_1*b_psl_no_sl_1)/denom;
+						pp_joint_sl_11 = (b_sl_1*eps_11*a_psl_1*b_psl_no_sl_1)/denom;
+						pp_joint_sl_10 = (b_sl_1*eps_10*a_psl_0*b_psl_no_sl_0)/denom;
+						pp_joint_sl_01 = (b_sl_0*eps_01*a_psl_1*b_psl_no_sl_1)/denom;
 
-          gsl_vector_set(pp_joint_11, wc, pp_joint_sl_11);
-          gsl_vector_set(pp_joint_10, wc, pp_joint_sl_10);
-          gsl_vector_set(pp_joint_01, wc, pp_joint_sl_01);  
-        }else{
-          gsl_vector_set(pp_joint_11, wc, 0);
-          gsl_vector_set(pp_joint_10, wc, 0);
-          gsl_vector_set(pp_joint_01, wc, 0);
-        }
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "wc: " << wc << "\n";
+std::cout << "parent_wc: " << parent_wc << "\n";
+std::cout << "b_sl_1: " << b_sl_1 << "\n";
+std::cout << "b_sl_0: " << b_sl_0 << "\n";
+std::cout << "a_psl_1: " << a_psl_1 << "\n";
+std::cout << "a_psl_0: " << a_psl_0 << "\n";
+std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
+std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
+std::cout << "pp_sl: " << pp_sl << "\n";
+std::cout << "eps_11: " << eps_11 << "\n";
+std::cout << "eps_01: " << eps_01 << "\n";
+std::cout << "eps_10: " << eps_10 << "\n";
+std::cout << "denom: " << denom << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
 
-      }
+						gsl_vector_set(pp_joint_11, wc, pp_joint_sl_11);
+						gsl_vector_set(pp_joint_10, wc, pp_joint_sl_10);
+						gsl_vector_set(pp_joint_01, wc, pp_joint_sl_01);  
+					}else{
+						gsl_vector_set(pp_joint_11, wc, 0);
+						gsl_vector_set(pp_joint_10, wc, 0);
+						gsl_vector_set(pp_joint_01, wc, 0);
+					}
+
+		    }else{
+		    	gsl_vector_set(pp, wc, pi_1);
+					gsl_vector_set(pp_joint_11, wc, 0);
+					gsl_vector_set(pp_joint_10, wc, 0);
+					gsl_vector_set(pp_joint_01, wc, 0);
+		    }
+
+	    }
 
       // ---- Calculate initial observed log-likelihood ---- //
       // Observed log-likelihood calculated by marginalising beta_11 over the possible
       // states of gamma_11.
 
-      double b_11_1 = gsl_vector_get(beta_sl_1, 0);
-      double b_11_0 = gsl_vector_get(beta_sl_0, 0);
+      double b_11_1 = gsl_vector_get(beta_sl_1, 1);
+      double b_11_0 = gsl_vector_get(beta_sl_0, 1);
 
       N_obllikli = log(b_11_1*pi_1 + b_11_0*pi_0);
       
@@ -9594,6 +9995,80 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
       }
     }
 
+    //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+    // Idea is to get mins an maxes of each vector to see what's happened.
+q1_max = gsl_vector_max(beta_sl_0);
+q1_min = gsl_vector_min(beta_sl_0);
+std::cout << "Max beta_sl_0: " << q1_max << "\n";
+std::cout << "Min beta_sl_0: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(beta_sl_1);
+q1_min = gsl_vector_min(beta_sl_1);
+std::cout << "Max beta_sl_1: " << q1_max << "\n";
+std::cout << "Min beta_sl_1: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(beta_sl_psl_1);
+q1_min = gsl_vector_min(beta_sl_psl_1);
+std::cout << "Max beta_sl_psl_1: " << q1_max << "\n";
+std::cout << "Min beta_sl_psl_1: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(beta_sl_psl_0);
+q1_min = gsl_vector_min(beta_sl_psl_0);
+std::cout << "Max beta_sl_psl_0: " << q1_max << "\n";
+std::cout << "Min beta_sl_psl_0: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(beta_psl_no_sl_1);
+q1_min = gsl_vector_min(beta_psl_no_sl_1);
+std::cout << "Max beta_psl_no_sl_1: " << q1_max << "\n";
+std::cout << "Min beta_psl_no_sl_1: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(beta_psl_no_sl_0);
+q1_min = gsl_vector_min(beta_psl_no_sl_0);
+std::cout << "Max beta_psl_no_sl_0: " << q1_max << "\n";
+std::cout << "Min beta_psl_no_sl_0: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(alpha_sl_1);
+q1_min = gsl_vector_min(alpha_sl_1);
+std::cout << "Max alpha_sl_1: " << q1_max << "\n";
+std::cout << "Min alpha_sl_1: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(alpha_sl_0);
+q1_min = gsl_vector_min(alpha_sl_0);
+std::cout << "Max alpha_sl_0: " << q1_max << "\n";
+std::cout << "Min alpha_sl_0: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(pp);
+q1_min = gsl_vector_min(pp);
+std::cout << "Max pp: " << q1_max << "\n";
+std::cout << "Min pp: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(pp_joint_11);
+q1_min = gsl_vector_min(pp_joint_11);
+std::cout << "Max pp_joint_11: " << q1_max << "\n";
+std::cout << "Min pp_joint_11: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(pp_joint_10);
+q1_min = gsl_vector_min(pp_joint_10);
+std::cout << "Max pp_joint_10: " << q1_max << "\n";
+std::cout << "Min pp_joint_10: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(pp_joint_01);
+q1_min = gsl_vector_min(pp_joint_01);
+std::cout << "Max pp_joint_01: " << q1_max << "\n";
+std::cout << "Min pp_joint_01: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(eps_11_vect);
+q1_min = gsl_vector_min(eps_11_vect);
+std::cout << "Max eps_11_vect: " << q1_max << "\n";
+std::cout << "Min eps_11_vect: " << q1_min << "\n";
+
+q1_max = gsl_vector_max(eps_10_vect);
+q1_min = gsl_vector_min(eps_10_vect);
+std::cout << "Max eps_10_vect: " << q1_max << "\n";
+std::cout << "Min eps_10_vect: " << q1_min << "\n";
+
+    //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
+
   // ---- Print things to outfiles ---- //
 
   // Only one of these values for the whole algorithm
@@ -9605,15 +10080,12 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
       if(p == 0){
         eps_11_list.push_back(0);
         eps_10_list.push_back(0);
-        eps_01_list.push_back(0);
       }else{
         eps_11 = gsl_vector_get(eps_11_vect, p);
-        eps_01 = gsl_vector_get(eps_01_vect, p);
         eps_10 = gsl_vector_get(eps_10_vect, p);
 
         eps_11_list.push_back(eps_11);
-        eps_10_list.push_back(eps_01);
-        eps_01_list.push_back(eps_10);
+        eps_10_list.push_back(eps_10);
       }
     }
 
@@ -9655,7 +10127,6 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   // epsilon
     outfile_eps_11 << vsRsnum.at(g) << " ";
     outfile_eps_10 << vsRsnum.at(g) << " ";
-    outfile_eps_01 << vsRsnum.at(g) << " ";
     for(int p = 0; p < nPH; p++){
       eps_11 = eps_11_list[p];
       if(eps_11 < 1e-5){
@@ -9672,18 +10143,125 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
         sprintf(buf, "%+.5f ", eps_10);   
       }
       outfile_eps_10 << buf;
-
-      eps_01 = eps_01_list[p];
-      if(eps_01 < 1e-5){
-        sprintf(buf, "%.5f ", eps_01);  
-      }else{
-        sprintf(buf, "%+.5f ", eps_01);   
-      }
-      outfile_eps_01 << buf;
     }
     outfile_eps_11 << endl;
     outfile_eps_10 << endl;
-    outfile_eps_01 << endl;
+
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+	outfile_beta_sl_0 << vsRsnum.at(g) << " ";
+	outfile_beta_sl_1 << vsRsnum.at(g) << " ";
+	outfile_beta_sl_psl_1 << vsRsnum.at(g) << " ";
+	outfile_beta_sl_psl_0 << vsRsnum.at(g) << " ";
+	outfile_beta_psl_no_sl_1 << vsRsnum.at(g) << " ";
+	outfile_beta_psl_no_sl_0 << vsRsnum.at(g) << " ";
+	outfile_alpha_sl_1 << vsRsnum.at(g) << " ";
+	outfile_alpha_sl_0 << vsRsnum.at(g) << " ";
+	outfile_pp << vsRsnum.at(g) << " ";
+	outfile_pp_joint_11 << vsRsnum.at(g) << " ";
+	outfile_pp_joint_10 << vsRsnum.at(g) << " ";
+	outfile_pp_joint_01 << vsRsnum.at(g) << " ";
+
+	for(int p = 0; p < nPH; p++){
+		double beta_sl_0_v = gsl_vector_get(beta_sl_0, p);
+		double beta_sl_1_v = gsl_vector_get(beta_sl_1, p);
+		double beta_sl_psl_1_v = gsl_vector_get(beta_sl_psl_1, p);
+		double beta_sl_psl_0_v = gsl_vector_get(beta_sl_psl_0, p);
+		double beta_psl_no_sl_1_v = gsl_vector_get(beta_psl_no_sl_1, p);
+		double beta_psl_no_sl_0_v = gsl_vector_get(beta_psl_no_sl_0, p);
+		double alpha_sl_1_v = gsl_vector_get(alpha_sl_1, p);
+		double alpha_sl_0_v = gsl_vector_get(alpha_sl_0, p);
+		double pp_v = gsl_vector_get(pp, p);
+		double pp_joint_11_v = gsl_vector_get(pp_joint_11, p);
+		double pp_joint_10_v = gsl_vector_get(pp_joint_10, p);
+		double pp_joint_01_v = gsl_vector_get(pp_joint_01, p);
+
+		if(beta_sl_0_v < 1e-5){
+			sprintf(buf, "%.5f ", beta_sl_0_v);
+		}else{
+			sprintf(buf, "%+.5f ", beta_sl_0_v);
+		}
+		outfile_beta_sl_0 << buf;
+		if(beta_sl_1_v < 1e-5){
+			sprintf(buf, "%.5f ", beta_sl_1_v);
+		}else{
+			sprintf(buf, "%+.5f ", beta_sl_1_v);
+		}
+		outfile_beta_sl_1 << buf;
+		if(beta_sl_psl_1_v < 1e-5){
+			sprintf(buf, "%.5f ",  beta_sl_psl_1_v);
+		}else{
+			sprintf(buf, "%+.5f ", beta_sl_psl_1_v);
+		}
+		outfile_beta_sl_psl_1 << buf;
+		if(beta_sl_psl_0_v < 1e-5){
+			sprintf(buf, "%.5f ",  beta_sl_psl_0_v);
+		}else{
+			sprintf(buf, "%+.5f ", beta_sl_psl_0_v);
+		}
+		outfile_beta_sl_psl_0 << buf;
+		if(beta_psl_no_sl_1_v < 1e-5){
+			sprintf(buf, "%.5f ", beta_psl_no_sl_1_v);
+		}else{
+			sprintf(buf, "%+.5f ", beta_psl_no_sl_1_v);
+		}
+		outfile_beta_psl_no_sl_1 << buf;
+		if(beta_psl_no_sl_0_v < 1e-5){
+			sprintf(buf, "%.5f ", beta_psl_no_sl_0_v);
+		}else{
+			sprintf(buf, "%+.5f ", beta_psl_no_sl_0_v);
+		}
+		outfile_beta_psl_no_sl_0 << buf;
+		if(alpha_sl_1_v < 1e-5){
+			sprintf(buf, "%.5f ", alpha_sl_1_v);
+		}else{
+			sprintf(buf, "%+.5f ", alpha_sl_1_v);
+		}
+		outfile_alpha_sl_1 << buf;
+		if(alpha_sl_0_v < 1e-5){
+			sprintf(buf, "%.5f ", alpha_sl_0_v);
+		}else{
+			sprintf(buf, "%+.5f ", alpha_sl_0_v);
+		}
+		outfile_alpha_sl_0 << buf;
+		if(pp_v < 1e-5){
+			sprintf(buf, "%.5f ", pp_v);
+		}else{
+			sprintf(buf, "%+.5f ", pp_v);
+		}
+		outfile_pp << buf;
+		if(pp_joint_11_v < 1e-5){
+			sprintf(buf, "%.5f ", pp_joint_11_v);
+		}else{
+			sprintf(buf, "%+.5f ", pp_joint_11_v);
+		}
+		outfile_pp_joint_11 << buf;
+		if(pp_joint_10_v < 1e-5){
+			sprintf(buf, "%.5f ", pp_joint_10_v);
+		}else{
+			sprintf(buf, "%+.5f ", pp_joint_10_v);
+		}
+		outfile_pp_joint_10 << buf;
+		if(pp_joint_01_v < 1e-5){
+			sprintf(buf, "%.5f ", pp_joint_01_v);
+		}else{
+			sprintf(buf, "%+.5f ", pp_joint_01_v);
+		}
+		outfile_pp_joint_01 << buf;
+	}
+
+	outfile_beta_sl_0 << endl;
+	outfile_beta_sl_1 << endl;
+	outfile_beta_sl_psl_1 << endl;
+	outfile_beta_sl_psl_0 << endl;
+	outfile_beta_psl_no_sl_1 << endl;
+	outfile_beta_psl_no_sl_0 << endl;
+	outfile_alpha_sl_1 << endl;
+	outfile_alpha_sl_0 << endl;
+	outfile_pp << endl;
+	outfile_pp_joint_11 << endl;
+	outfile_pp_joint_10 << endl;
+	outfile_pp_joint_01 << endl;  
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////    
 
   // ---- Compile estimates of phi, means and vars ---- //
 
@@ -9749,7 +10327,6 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   gsl_vector_free(pp_joint_01);
   gsl_vector_free(eps_11_vect);
   gsl_vector_free(eps_10_vect);
-  gsl_vector_free(eps_01_vect);
   //--- BL_HMT end ---//
 
   }
@@ -9769,11 +10346,34 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
 
   outfile_eps_10.close(); 
   cout << sfn_eps_10 << " has been created." << endl;
-
-  outfile_eps_01.close(); 
-  cout << sfn_eps_01 << " has been created." << endl;
   //--- BL_HMT end ---//
 
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+	outfile_beta_sl_0.close();
+	cout << sfn_beta_sl_0 << " has been created." << endl;
+	outfile_beta_sl_1.close();
+	cout << sfn_beta_sl_1 << " has been created." << endl;
+	outfile_beta_sl_psl_1.close();
+	cout << sfn_beta_sl_psl_1 << " has been created." << endl;
+	outfile_beta_sl_psl_0.close();
+	cout << sfn_beta_sl_psl_0 << " has been created." << endl;
+	outfile_beta_psl_no_sl_1.close();
+	cout << sfn_beta_psl_no_sl_1 << " has been created." << endl;
+	outfile_beta_psl_no_sl_0.close();
+	cout << sfn_beta_psl_no_sl_0 << " has been created." << endl;
+	outfile_alpha_sl_1.close();
+	cout << sfn_alpha_sl_1 << " has been created." << endl;
+	outfile_alpha_sl_0.close();
+	cout << sfn_alpha_sl_0 << " has been created." << endl;
+	outfile_pp.close();
+	cout << sfn_pp << " has been created." << endl;
+	outfile_pp_joint_11.close();
+	cout << sfn_pp_joint_11 << " has been created." << endl;
+	outfile_pp_joint_10.close();
+	cout << sfn_pp_joint_10 << " has been created." << endl;
+	outfile_pp_joint_01.close();
+	cout << sfn_pp_joint_01 << " has been created." << endl;
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////    
 
   //--- wavelets_v1.3 start ---//
 
@@ -9800,7 +10400,6 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   //--- BL_HMT start ---//
   eps_11_list.resize(0);
   eps_10_list.resize(0);
-  eps_01_list.resize(0);
   //--- BL_HMT end ---//
   nPH_GP.resize(0);
   group_end.resize(0);
