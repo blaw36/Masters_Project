@@ -44,6 +44,23 @@ _Code chunks, RMarkdowns, LaTeX documents._
 
 #### S & S(2015) extended to Poisson multiscale model case
 
+### Implementation - WaveQTL
+Some writings about the simulations and data analysis exercises we undertook around the HMT implementation of the WaveQTL package. This is after all the C++ code for WaveQTL was updated to incorporate the HMT case. See 'code/WaveQTL' and specifically, 'model.cpp' for the new base code incorporating the HMT case.
+
+#### Simulation - three parameter t-distribution
+- Goal here is to figure out how to draw samples from the three parameter (generalised) student's t-distribution.
+- Turns out, it's not too bad. See [here](tdist_3_param.Rmd)
+
+#### Simulation - estimating coefficients in data space
+- Goal here is to draw samples from the posterior distribution of $\beta_{sl}$, and use the inverse wavelet matrix to convert estimate model coefficients in the data space.
+- Due to the HMT priors, it's no longer guaranteed that the posterior variance of $\beta$ at each scale-location is independent (or additive) as per the non-HMT case. Hence, we proceed to estimate the mean and variance quantities through simulation.
+- __Work is coming soon__.
+
+
+#### Simulation - HMT code verification
+- Goal here is to simulate wavelet data, using pre-determined parameters (pi, the probability at the head of the tree, and epsilon, the transition probabilities), pass it through the HMT code, and recover the original parameters, therefore verifying the correctness of the HMT code.
+- __Work is coming soon__.
+
 ***
 
 ## Papers, presentations, resources

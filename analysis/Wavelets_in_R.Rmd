@@ -109,13 +109,7 @@ X_1 + X_2, X_3 + X_4 \\
 \end{align*}
 
 ## Wavelets in R - 'wavethresh' package
-Let's see if we can replicate the above using the 'wavethresh' package
-```{r wavethresh_1}
-library(wavethresh)
-wthresh <- wavethresh::wd(c(USAccDeaths), filter.number=1, family="DaubExPhase")
-```
-
-'wavethresh' only accepts data which has a length which is a power of two.
+Let's see if we can replicate the above using the 'wavethresh' package. Note that 'wavethresh' only accepts data which has a length which is a power of two.
 ```{r wavethresh_2}
 length(c(USAccDeaths))
 USAccDeaths_pwr2 <- ts(c(USAccDeaths[1:64]),start = 1973,frequency = 12)
@@ -125,7 +119,7 @@ str(wthresh)
 ```
 
 Two main outputs here:
-```{r wavethresh_2}
+```{r wavethresh_outputs}
 length(wthresh$C)
 length(wthresh$D)
 ```

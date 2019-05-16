@@ -1,0 +1,41 @@
+---
+title: "tdist_3_param"
+author: "Brendan Law"
+date: "16 May 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+```
+
+
+## The three-parameter (generalised) student's t-distribution 
+
+The student's t-distribution (one parameter, degrees of freedom) can be generalised to a three-parameter location-scale family:
+
+$$ X = \mu + \sigma T$$ or
+
+$$ T = \frac{X - \mu}{\sigma}$$
+where $\mu$ is a location parameter, $\sigma$ is a scale parameter, and T is a random variable with the classic student's t-distribution.
+
+For more details, you can view: <https://en.wikipedia.org/wiki/Student%27s_t-distribution#Generalized_Student's_t-distribution>.
+
+Hence, sampling from the 3-parameter t-distribution should be fairly straightforward - use R's inbuilt functions to sample from the t-distribution, then scale by the other two parameters.
+
+### Sampling from a classic t-distribution
+For example, take the following spec:
+$$ \nu = 10, \mu = 5, \sigma = 2 $$
+```{r classic_t}
+nu = 10
+mu = 5
+sigma = 2
+t_sample <- stats::rt(n = 1000, df = nu)
+t_sample_3p <- mu+(sigma*t_sample)
+hist(t_sample)
+hist(t_sample_3p)
+ggplot() +
+  geom_histogram(data = data.frame(t_sample),aes(x = t_sample, alpha = 0.5, fill = "classic")) +
+  geom_histogram(data = data.frame(t_sample_3p),aes(x = t_sample_3p, alpha = 0.5, fill = "3param"))
+```
