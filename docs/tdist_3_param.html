@@ -9,10 +9,11 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="Brendan" />
+<meta name="author" content="Brendan Law" />
 
+<meta name="date" content="2019-05-16" />
 
-<title>sample_markdown</title>
+<title>tdist_3_param</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -405,107 +406,39 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">sample_markdown</h1>
-<h4 class="author"><em>Brendan</em></h4>
-<h4 class="date"><em>5 August 2018</em></h4>
+<h1 class="title toc-ignore">tdist_3_param</h1>
+<h4 class="author"><em>Brendan Law</em></h4>
+<h4 class="date"><em>16 May 2019</em></h4>
 
 </div>
 
 
-<div id="playing-around-with-r-markdown" class="section level2">
-<h2>Playing around with R Markdown</h2>
+<div id="the-three-parameter-generalised-students-t-distribution" class="section level2">
+<h2>The three-parameter (generalised) student’s t-distribution</h2>
+<p>The student’s t-distribution (one parameter, degrees of freedom) can be generalised to a three-parameter location-scale family:</p>
+<p><span class="math display">\[ X = \mu + \sigma T\]</span> or</p>
+<p><span class="math display">\[ T = \frac{X - \mu}{\sigma}\]</span> where <span class="math inline">\(\mu\)</span> is a location parameter, <span class="math inline">\(\sigma\)</span> is a scale parameter, and T is a random variable with the classic student’s t-distribution.</p>
+<p>For more details, you can view: <a href="https://en.wikipedia.org/wiki/Student%27s_t-distribution#Generalized_Student&#39;s_t-distribution">https://en.wikipedia.org/wiki/Student%27s_t-distribution#Generalized_Student's_t-distribution</a>.</p>
+<p>Hence, sampling from the 3-parameter t-distribution should be fairly straightforward - use R’s inbuilt functions to sample from the t-distribution, then scale by the other two parameters.</p>
+<div id="sampling-from-a-classic-t-distribution" class="section level3">
+<h3>Sampling from a classic t-distribution</h3>
+<p>For example, take the following spec: <span class="math display">\[ \nu = 10, \mu = 5, \sigma = 2 \]</span></p>
+<pre class="r"><code>nu = 10
+mu = 5
+sigma = 2
+t_sample &lt;- stats::rt(n = 1000, df = nu)
+t_sample_3p &lt;- mu+(sigma*t_sample)
+hist(t_sample)</code></pre>
+<p><img src="tdist_3_param_files/figure-html/classic_t-1.png" width="672" /></p>
+<pre class="r"><code>hist(t_sample_3p)</code></pre>
+<p><img src="tdist_3_param_files/figure-html/classic_t-2.png" width="672" /></p>
+<pre class="r"><code>ggplot() +
+  geom_histogram(data = data.frame(t_sample),aes(x = t_sample, alpha = 0.5, fill = &quot;classic&quot;)) +
+  geom_histogram(data = data.frame(t_sample_3p),aes(x = t_sample_3p, alpha = 0.5, fill = &quot;3param&quot;))</code></pre>
+<pre><code>## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
+<p><img src="tdist_3_param_files/figure-html/classic_t-3.png" width="672" /></p>
 </div>
-<div id="header-sizes-depend-on-the-number-of-hashes-you-use" class="section level1">
-<h1>Header sizes depend on the number of hashes you use</h1>
-<hr />
-<p>Guide <a href="https://rmarkdown.rstudio.com/authoring_basics.html">here</a></p>
-<p>So apparently, you can write  in markdown. As well as doing a whole heap of pretty cool stuff like saying that <span class="math inline">\(\frac{3}{9} = \frac{1}{3}\)</span>, or that <span class="math inline">\(\sqrt{16} = 4\)</span>, or just typing <span class="math inline">\(\alpha, \beta, \gamma\)</span> for lolz.</p>
-<p>Or <span class="math inline">\(x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}\)</span> <span class="math display">\[x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}\]</span> — ***</p>
-<p>Nice.</p>
-<p>You can also put in R code using three back-ticks, and ‘echo = FALSE’ if you don’t want the code to be printed.</p>
-<pre><code>##                    mpg cyl disp  hp drat    wt  qsec vs am gear carb
-## Mazda RX4         21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
-## Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
-## Datsun 710        22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
-## Hornet 4 Drive    21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
-## Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
-## Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1</code></pre>
-<p>But if you set echo = TRUE, it will print:</p>
-<pre class="r"><code>head(mtcars)</code></pre>
-<pre><code>##                    mpg cyl disp  hp drat    wt  qsec vs am gear carb
-## Mazda RX4         21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
-## Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
-## Datsun 710        22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
-## Hornet 4 Drive    21.4   6  258 110 3.08 3.215 19.44  1  0    3    1
-## Hornet Sportabout 18.7   8  360 175 3.15 3.440 17.02  0  0    3    2
-## Valiant           18.1   6  225 105 2.76 3.460 20.22  1  0    3    1</code></pre>
-<p>If you don’t want to evaluate it, eval = FALSE</p>
-<pre class="r"><code>head(mtcars)</code></pre>
-<p>Here are some lists:</p>
-<ul>
-<li>blah</li>
-<li>blah</li>
-<li>blah
-<ul>
-<li>blah (plus, and DOUBLE TAB for indented parts)</li>
-</ul></li>
-<li>1 underscore or asterisk for <em>italic</em></li>
-<li>2 &quot; &quot; &quot; for <strong>bold</strong></li>
-<li>Superscript uses the hat<sup>as_per_usual</sup>. No spaces allowed in the superscripts.</li>
-<li><del>Strikethrough</del> uses the tilde</li>
-</ul>
-<p>Numeric lists:</p>
-<ol style="list-style-type: decimal">
-<li>Hi</li>
-<li>Hi again
-<ol style="list-style-type: lower-alpha">
-<li>Hi again
-<ol style="list-style-type: lower-roman">
-<li>And again?</li>
-</ol></li>
-</ol></li>
-</ol>
-<p>I will cite myself <a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>.</p>
-<blockquote>
-<p>A quote</p>
-</blockquote>
-<div id="inline-r-code" class="section level2">
-<h2>Inline R code</h2>
-<p>For when you want programmatic inputs. Wrap the inline code in a single back-tick, with something at the front to stipulate the language (‘r’, for code to be executed in R) I have 15 sheep.</p>
-</div>
-<div id="images" class="section level2">
-<h2>Images</h2>
-<p>I’ll have to have some in this directory (but i should add their formats to the gitignore as they’re large) if I want to upload.</p>
-<pre><code>More verbatim code. Not necessarily in R.
-print(&quot;Hello world&quot;)</code></pre>
-</div>
-<div id="links" class="section level2">
-<h2>Links!</h2>
-<p>A <a href="http://www.google.com" title="Hmm">linked phrase</a>.</p>
-<p>Alternatively, A <a href="http://www.google.com">linked phrase</a></p>
-</div>
-<div id="a-plot" class="section level2">
-<h2>A Plot</h2>
-<pre class="r"><code>library(ggplot2)
-summary(cars)</code></pre>
-<pre><code>##      speed           dist       
-##  Min.   : 4.0   Min.   :  2.00  
-##  1st Qu.:12.0   1st Qu.: 26.00  
-##  Median :15.0   Median : 36.00  
-##  Mean   :15.4   Mean   : 42.98  
-##  3rd Qu.:19.0   3rd Qu.: 56.00  
-##  Max.   :25.0   Max.   :120.00</code></pre>
-<pre class="r"><code>qplot(speed,dist,data=cars) + geom_smooth()</code></pre>
-<p><img src="sample_r_markdown_files/figure-html/qplot-1.png" width="384" /></p>
-<!-- Here we'll put links -->
-<!-- Here we'll put references/biblio -->
-</div>
-</div>
-<div class="footnotes">
-<hr />
-<ol>
-<li id="fn1"><p>Me.<a href="#fnref1">↩</a></p></li>
-</ol>
 </div>
 
 

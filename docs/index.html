@@ -459,6 +459,32 @@ div.tocify {
 </div>
 <div id="s-s2015-extended-to-poisson-multiscale-model-case" class="section level4">
 <h4>S &amp; S(2015) extended to Poisson multiscale model case</h4>
+</div>
+</div>
+<div id="implementation---waveqtl" class="section level3">
+<h3>Implementation - WaveQTL</h3>
+<p>Some writings about the simulations and data analysis exercises we undertook around the HMT implementation of the WaveQTL package. This is after all the C++ code for WaveQTL was updated to incorporate the HMT case. See ‘code/WaveQTL’ and specifically, ‘model.cpp’ for the new base code incorporating the HMT case.</p>
+<div id="simulation---three-parameter-t-distribution" class="section level4">
+<h4>Simulation - three parameter t-distribution</h4>
+<ul>
+<li>Goal here is to figure out how to draw samples from the three parameter (generalised) student’s t-distribution.</li>
+<li>Turns out, it’s not too bad. See <a href="tdist_3_param.Rmd">here</a></li>
+</ul>
+</div>
+<div id="simulation---estimating-coefficients-in-data-space" class="section level4">
+<h4>Simulation - estimating coefficients in data space</h4>
+<ul>
+<li>Goal here is to draw samples from the posterior distribution of <span class="math inline">\(\beta_{sl}\)</span>, and use the inverse wavelet matrix to convert estimate model coefficients in the data space.</li>
+<li>Due to the HMT priors, it’s no longer guaranteed that the posterior variance of <span class="math inline">\(\beta\)</span> at each scale-location is independent (or additive) as per the non-HMT case. Hence, we proceed to estimate the mean and variance quantities through simulation.</li>
+<li><strong>Work is coming soon</strong>.</li>
+</ul>
+</div>
+<div id="simulation---hmt-code-verification" class="section level4">
+<h4>Simulation - HMT code verification</h4>
+<ul>
+<li>Goal here is to simulate wavelet data, using pre-determined parameters (pi, the probability at the head of the tree, and epsilon, the transition probabilities), pass it through the HMT code, and recover the original parameters, therefore verifying the correctness of the HMT code.</li>
+<li><strong>Work is coming soon</strong>.</li>
+</ul>
 <hr />
 </div>
 </div>
