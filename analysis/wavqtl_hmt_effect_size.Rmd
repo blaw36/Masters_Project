@@ -1,0 +1,25 @@
+---
+title: "waveqtlHMT_effect_size"
+author: "Brendan Law"
+date: "17 May 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Estimating data-space effect size properties in WaveQTL with HMT
+
+The idea here is to simulate the key statistical properties (mean, variance), of the effect size in the data space. We know that the posterior distribution of $\beta_{s,l}$ follows a mixture distribution of a 3-parameter t-distribution, and a point mass at zero, with mixing probability $\phi$. See the paper/derivations for more details.
+
+Unfortunately, due to the dependency between the mixing probabilities imposed by the HMT priors, we no longer have independent posterior distributions of $\beta_{s,l}$. Therefore the closed form of the means and variances in the data space aren't available in closed form, like they were in the non-HMT case. We have the following simulation procedure:
+
+1. Generate $\beta_{s,l}$ posterior simulations:
+$$ cases stuff$$
+2. Transform simluations from posterior into data space simulations using inverse Haar wavelet matrix
+3. Repeat steps 1 and 2 (say, 1000 times), until we can calculate a sampling mean and variance for each data space parameter, $\alpha_b$, for $b = 1,\dots,B$.
+
+```{r cars}
+summary(cars)
+```

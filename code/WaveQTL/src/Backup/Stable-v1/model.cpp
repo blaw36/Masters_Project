@@ -8950,23 +8950,23 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   nPH_GP.push_back(nPH - group_end[numG-2]);
 
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-// 	// numG--; // for standard trees
-// 	std::cout << "nPH: " << nPH << "\n";
-// 	std::cout << "numG: " << numG << "\n";
-// 	std::cout << "nIndiv: " << nIndiv << "\n";
-// 	for(int i = 0; i < numG; i++){
-// 		int grp_start = group_start[i];
-// 		std::cout << "grp_start: " << grp_start << "\n";
-// 	}
-// 	for(int i = 1; i < numG; i++){
-// 		std::cout << "numG: " << i << "\n";
-// 		int end = group_start[i]-1;
-// 		int num_phenos_grp = group_start[i] - group_start[i-1];
-// 		std::cout << "end: " << end << "\n";
-// 		std::cout << "num_phenos_grp: " << num_phenos_grp << "\n";
-// 	}
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+	// numG--; // for standard trees
+	std::cout << "nPH: " << nPH << "\n";
+	std::cout << "numG: " << numG << "\n";
+	std::cout << "nIndiv: " << nIndiv << "\n";
+	for(int i = 0; i < numG; i++){
+		int grp_start = group_start[i];
+		std::cout << "grp_start: " << grp_start << "\n";
+	}
+	for(int i = 1; i < numG; i++){
+		std::cout << "numG: " << i << "\n";
+		int end = group_start[i]-1;
+		int num_phenos_grp = group_start[i] - group_start[i-1];
+		std::cout << "end: " << end << "\n";
+		std::cout << "num_phenos_grp: " << num_phenos_grp << "\n";
+	}
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
 
 
   if(vsigma_a.size() == 0){
@@ -9232,7 +9232,7 @@ if(!outfile_pp_joint_01.is_open()){
   //--- wavelets_v2_2 end ---//
   
   logLR_list.resize(0);
-//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+  //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
 	for(int g = 0; g < 1; g++){
 //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
   // Calculate for each genotype!!
@@ -9275,14 +9275,14 @@ if(!outfile_pp_joint_01.is_open()){
       //--- wavelets_v1.3 end ---//
     }
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-// 	for(int i = 0; i < nPH; i++){
-// double bf_diag = gsl_vector_get(logBFs, i);
-// double use_diag = use_pheno[i];
-// std::cout << "logBF - " << i << ": " << bf_diag << "\n";
-// std::cout << "useWC - " << i << ": " << use_diag << "\n";
-// 	}
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+	for(int i = 0; i < nPH; i++){
+double bf_diag = gsl_vector_get(logBFs, i);
+double use_diag = use_pheno[i];
+std::cout << "logBF - " << i << ": " << bf_diag << "\n";
+std::cout << "useWC - " << i << ": " << use_diag << "\n";
+	}
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
 
 
   //--- BL_HMT start ---//
@@ -9397,11 +9397,11 @@ if(!outfile_pp_joint_01.is_open()){
         int parent_indx = i/2; // integer division
         logParentBF = gsl_vector_get(logBFs,parent_st+parent_indx);
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-// std::cout << "Up algo:" << "\n";      	
-// std::cout << "indx: " << st+i << "\n";
-// std::cout << "parent_indx: " << parent_st+parent_indx << "\n";
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////        
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "Up algo:" << "\n";      	
+std::cout << "indx: " << st+i << "\n";
+std::cout << "parent_indx: " << parent_st+parent_indx << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////        
 
         b_sl_1 = gsl_vector_get(beta_sl_1, st + i);
         b_sl_0 = gsl_vector_get(beta_sl_0, st + i);
@@ -9428,24 +9428,24 @@ if(!outfile_pp_joint_01.is_open()){
         b_psl_no_sl_1 = b_psl_1/b_sl_psl_1;
         b_psl_no_sl_0 = b_psl_0/b_sl_psl_0;
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-// std::cout << "b_sl_1: " << b_sl_1 << "\n";
-// std::cout << "b_sl_0: " << b_sl_0 << "\n";
-// std::cout << "b_sl_adj_1: " << b_sl_adj_1 << "\n";
-// std::cout << "b_sl_adj_0: " << b_sl_adj_0 << "\n";
-// std::cout << "b_sl_psl_1: " << b_sl_psl_1 << "\n";
-// std::cout << "b_sl_psl_0: " << b_sl_psl_0 << "\n";
-// std::cout << "b_sl_psl_adj_1: " << b_sl_psl_adj_1 << "\n";
-// std::cout << "b_sl_psl_adj_0: " << b_sl_psl_adj_0 << "\n";
-// std::cout << "b_psl_1: " << b_psl_1 << "\n";
-// std::cout << "b_psl_0: " << b_psl_0 << "\n";
-// std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
-// std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
-// std::cout << "eps_11: " << eps_11 << "\n";
-// std::cout << "eps_01: " << eps_01 << "\n";
-// std::cout << "eps_00: " << eps_00 << "\n";
-// std::cout << "eps_10: " << eps_10 << "\n";
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////    
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "b_sl_1: " << b_sl_1 << "\n";
+std::cout << "b_sl_0: " << b_sl_0 << "\n";
+std::cout << "b_sl_adj_1: " << b_sl_adj_1 << "\n";
+std::cout << "b_sl_adj_0: " << b_sl_adj_0 << "\n";
+std::cout << "b_sl_psl_1: " << b_sl_psl_1 << "\n";
+std::cout << "b_sl_psl_0: " << b_sl_psl_0 << "\n";
+std::cout << "b_sl_psl_adj_1: " << b_sl_psl_adj_1 << "\n";
+std::cout << "b_sl_psl_adj_0: " << b_sl_psl_adj_0 << "\n";
+std::cout << "b_psl_1: " << b_psl_1 << "\n";
+std::cout << "b_psl_0: " << b_psl_0 << "\n";
+std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
+std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
+std::cout << "eps_11: " << eps_11 << "\n";
+std::cout << "eps_01: " << eps_01 << "\n";
+std::cout << "eps_00: " << eps_00 << "\n";
+std::cout << "eps_10: " << eps_10 << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////    
 
 	  		// !!!! Also, don't do this for top (scaling) coefficient - not part of tree.
 	  		// Set all to 0s for now until we know what to do
@@ -9507,23 +9507,23 @@ if(!outfile_pp_joint_01.is_open()){
           a_psl_1 = gsl_vector_get(alpha_sl_1, parent_st + parent_indx);
           a_psl_0 = gsl_vector_get(alpha_sl_0, parent_st + parent_indx);
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-// std::cout << "Down algo:" << "\n";      	
-// std::cout << "indx: " << st+i << "\n";
-// std::cout << "parent_indx: " << parent_st+parent_indx << "\n";
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "Down algo:" << "\n";      	
+std::cout << "indx: " << st+i << "\n";
+std::cout << "parent_indx: " << parent_st+parent_indx << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
 
           a_sl_1 = eps_11*a_psl_1*b_psl_no_sl_1 + eps_10*a_psl_0*b_psl_no_sl_0;
           a_sl_0 = eps_01*a_psl_1*b_psl_no_sl_1 + eps_00*a_psl_0*b_psl_no_sl_0;      
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-// std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
-// std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
-// std::cout << "a_psl_1: " << a_psl_1 << "\n";
-// std::cout << "a_psl_0: " << a_psl_0 << "\n";
-// std::cout << "a_sl_1: " << a_sl_1 << "\n";
-// std::cout << "a_sl_0: " << a_sl_0 << "\n";
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////    
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
+std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
+std::cout << "a_psl_1: " << a_psl_1 << "\n";
+std::cout << "a_psl_0: " << a_psl_0 << "\n";
+std::cout << "a_sl_1: " << a_sl_1 << "\n";
+std::cout << "a_sl_0: " << a_sl_0 << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////    
          
           gsl_vector_set(alpha_sl_1, st + i, a_sl_1);
           gsl_vector_set(alpha_sl_0, st + i, a_sl_0);
@@ -9549,9 +9549,9 @@ if(!outfile_pp_joint_01.is_open()){
 				pp_sl = (b_sl_1*a_sl_1)/denom;
 				gsl_vector_set(pp, wc, pp_sl);
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-// std::cout << "pp_sl: " << pp_sl << "\n";
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////  
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "pp_sl: " << pp_sl << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////  
 
 	    	// !!!! Joint marginal NOT DEFINED for either of the first two coefficients;
 	    	// First coef is scaling coefficient, and second is top of tree. Set both to 0 for now.
@@ -9569,11 +9569,11 @@ if(!outfile_pp_joint_01.is_open()){
 					pp_joint_sl_10 = (b_sl_1*eps_10*a_psl_0*b_psl_no_sl_0)/denom;
 					pp_joint_sl_01 = (b_sl_0*eps_01*a_psl_1*b_psl_no_sl_1)/denom;
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-// std::cout << "pp_joint_sl_11: " << pp_joint_sl_11 << "\n";
-// std::cout << "pp_joint_sl_10: " << pp_joint_sl_10 << "\n";
-// std::cout << "pp_joint_sl_01: " << pp_joint_sl_01 << "\n";
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////  					
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "pp_joint_sl_11: " << pp_joint_sl_11 << "\n";
+std::cout << "pp_joint_sl_10: " << pp_joint_sl_10 << "\n";
+std::cout << "pp_joint_sl_01: " << pp_joint_sl_01 << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////  					
 
 					gsl_vector_set(pp_joint_11, wc, pp_joint_sl_11);
 					gsl_vector_set(pp_joint_10, wc, pp_joint_sl_10);
@@ -9605,10 +9605,10 @@ if(!outfile_pp_joint_01.is_open()){
     N_obllikli = log(b_11_1*pi_1 + b_11_0*pi_0);
     O_obllikli = N_obllikli;
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-//     double q1_max;
-//     double q1_min;
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////    
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+    double q1_max;
+    double q1_min;
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////    
 
 //     //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
 //     // Idea is to get mins an maxes of each vector to see what's happened.
@@ -9690,10 +9690,10 @@ std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
       pi_1 = gsl_vector_get(pp, 1);
       pi_0 = 1 - pi_1;
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-// std::cout << "pi_1: " << pi_1 << "\n";
-// std::cout << "pi_0: " << pi_0 << "\n";
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////  	
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "pi_1: " << pi_1 << "\n";
+std::cout << "pi_0: " << pi_0 << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////  	
 
     // !!!! Eps param, for each s,l apart from first two coefficients.
   	// First coef is scaling coef, second is head of tree. Set both to 0 for now.
@@ -9711,16 +9711,16 @@ std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
           eps_11 = pp_joint_sl_11/pp_psl;
           eps_10 = pp_joint_sl_10/(1-pp_psl);
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-// std::cout << "wc: " << wc << "\n";
-// std::cout << "parent_wc: " << parent_wc << "\n";
-// std::cout << "pp_joint_sl_11: " << pp_joint_sl_11 << "\n";
-// std::cout << "pp_joint_sl_10: " << pp_joint_sl_10 << "\n";
-// std::cout << "pp_joint_sl_01: " << pp_joint_sl_01 << "\n";
-// std::cout << "pp_psl: " << pp_psl << "\n";
-// std::cout << "eps_11: " << eps_11 << "\n";
-// std::cout << "eps_10: " << eps_10 << "\n";
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////  	
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "wc: " << wc << "\n";
+std::cout << "parent_wc: " << parent_wc << "\n";
+std::cout << "pp_joint_sl_11: " << pp_joint_sl_11 << "\n";
+std::cout << "pp_joint_sl_10: " << pp_joint_sl_10 << "\n";
+std::cout << "pp_joint_sl_01: " << pp_joint_sl_01 << "\n";
+std::cout << "pp_psl: " << pp_psl << "\n";
+std::cout << "eps_11: " << eps_11 << "\n";
+std::cout << "eps_10: " << eps_10 << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////  	
 
 
           gsl_vector_set(eps_11_vect, wc, eps_11);
@@ -9799,24 +9799,24 @@ std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
           	b_psl_no_sl_1 = b_psl_1/b_sl_psl_1;
           	b_psl_no_sl_0 = b_psl_0/b_sl_psl_0;
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-// std::cout << "b_sl_1: " << b_sl_1 << "\n";
-// std::cout << "b_sl_0: " << b_sl_0 << "\n";
-// std::cout << "b_sl_adj_1: " << b_sl_adj_1 << "\n";
-// std::cout << "b_sl_adj_0: " << b_sl_adj_0 << "\n";
-// std::cout << "b_sl_psl_1: " << b_sl_psl_1 << "\n";
-// std::cout << "b_sl_psl_0: " << b_sl_psl_0 << "\n";
-// std::cout << "b_sl_psl_adj_1: " << b_sl_psl_adj_1 << "\n";
-// std::cout << "b_sl_psl_adj_0: " << b_sl_psl_adj_0 << "\n";
-// std::cout << "b_psl_1: " << b_psl_1 << "\n";
-// std::cout << "b_psl_0: " << b_psl_0 << "\n";
-// std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
-// std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
-// std::cout << "eps_11: " << eps_11 << "\n";
-// std::cout << "eps_01: " << eps_01 << "\n";
-// std::cout << "eps_00: " << eps_00 << "\n";
-// std::cout << "eps_10: " << eps_10 << "\n";
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////           	
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "b_sl_1: " << b_sl_1 << "\n";
+std::cout << "b_sl_0: " << b_sl_0 << "\n";
+std::cout << "b_sl_adj_1: " << b_sl_adj_1 << "\n";
+std::cout << "b_sl_adj_0: " << b_sl_adj_0 << "\n";
+std::cout << "b_sl_psl_1: " << b_sl_psl_1 << "\n";
+std::cout << "b_sl_psl_0: " << b_sl_psl_0 << "\n";
+std::cout << "b_sl_psl_adj_1: " << b_sl_psl_adj_1 << "\n";
+std::cout << "b_sl_psl_adj_0: " << b_sl_psl_adj_0 << "\n";
+std::cout << "b_psl_1: " << b_psl_1 << "\n";
+std::cout << "b_psl_0: " << b_psl_0 << "\n";
+std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
+std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
+std::cout << "eps_11: " << eps_11 << "\n";
+std::cout << "eps_01: " << eps_01 << "\n";
+std::cout << "eps_00: " << eps_00 << "\n";
+std::cout << "eps_10: " << eps_10 << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////           	
 
 			// !!!! Also, don't do this for top (scaling) coefficient - not part of tree.
 	  		// Set all to 0s for now until we know what to do
@@ -9889,17 +9889,17 @@ std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
             gsl_vector_set(alpha_sl_0, st + i, a_sl_0);
 
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-//             if(iter == 24){
-// std::cout << "eps_11: " << eps_11 << "\n";
-// std::cout << "a_psl_1: " << a_psl_1 << "\n";
-// std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
-// std::cout << "eps_10: " << eps_10 << "\n";
-// std::cout << "a_psl_0: " << a_psl_0 << "\n";
-// std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
-// std::cout << "a_sl_1: " << a_sl_1 << "\n";
-// }
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+            if(iter == 24){
+std::cout << "eps_11: " << eps_11 << "\n";
+std::cout << "a_psl_1: " << a_psl_1 << "\n";
+std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
+std::cout << "eps_10: " << eps_10 << "\n";
+std::cout << "a_psl_0: " << a_psl_0 << "\n";
+std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
+std::cout << "a_sl_1: " << a_sl_1 << "\n";
+}
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
 
           }
         }
@@ -9943,21 +9943,21 @@ std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
 						pp_joint_sl_10 = (b_sl_1*eps_10*a_psl_0*b_psl_no_sl_0)/denom;
 						pp_joint_sl_01 = (b_sl_0*eps_01*a_psl_1*b_psl_no_sl_1)/denom;
 
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-// std::cout << "wc: " << wc << "\n";
-// std::cout << "parent_wc: " << parent_wc << "\n";
-// std::cout << "b_sl_1: " << b_sl_1 << "\n";
-// std::cout << "b_sl_0: " << b_sl_0 << "\n";
-// std::cout << "a_psl_1: " << a_psl_1 << "\n";
-// std::cout << "a_psl_0: " << a_psl_0 << "\n";
-// std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
-// std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
-// std::cout << "pp_sl: " << pp_sl << "\n";
-// std::cout << "eps_11: " << eps_11 << "\n";
-// std::cout << "eps_01: " << eps_01 << "\n";
-// std::cout << "eps_10: " << eps_10 << "\n";
-// std::cout << "denom: " << denom << "\n";
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+std::cout << "wc: " << wc << "\n";
+std::cout << "parent_wc: " << parent_wc << "\n";
+std::cout << "b_sl_1: " << b_sl_1 << "\n";
+std::cout << "b_sl_0: " << b_sl_0 << "\n";
+std::cout << "a_psl_1: " << a_psl_1 << "\n";
+std::cout << "a_psl_0: " << a_psl_0 << "\n";
+std::cout << "b_psl_no_sl_1: " << b_psl_no_sl_1 << "\n";
+std::cout << "b_psl_no_sl_0: " << b_psl_no_sl_0 << "\n";
+std::cout << "pp_sl: " << pp_sl << "\n";
+std::cout << "eps_11: " << eps_11 << "\n";
+std::cout << "eps_01: " << eps_01 << "\n";
+std::cout << "eps_10: " << eps_10 << "\n";
+std::cout << "denom: " << denom << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
 
 						gsl_vector_set(pp_joint_11, wc, pp_joint_sl_11);
 						gsl_vector_set(pp_joint_10, wc, pp_joint_sl_10);
@@ -9995,79 +9995,79 @@ std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
       }
     }
 
-//     //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-//     // Idea is to get mins an maxes of each vector to see what's happened.
-// q1_max = gsl_vector_max(beta_sl_0);
-// q1_min = gsl_vector_min(beta_sl_0);
-// std::cout << "Max beta_sl_0: " << q1_max << "\n";
-// std::cout << "Min beta_sl_0: " << q1_min << "\n";
+    //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
+    // Idea is to get mins an maxes of each vector to see what's happened.
+q1_max = gsl_vector_max(beta_sl_0);
+q1_min = gsl_vector_min(beta_sl_0);
+std::cout << "Max beta_sl_0: " << q1_max << "\n";
+std::cout << "Min beta_sl_0: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(beta_sl_1);
-// q1_min = gsl_vector_min(beta_sl_1);
-// std::cout << "Max beta_sl_1: " << q1_max << "\n";
-// std::cout << "Min beta_sl_1: " << q1_min << "\n";
+q1_max = gsl_vector_max(beta_sl_1);
+q1_min = gsl_vector_min(beta_sl_1);
+std::cout << "Max beta_sl_1: " << q1_max << "\n";
+std::cout << "Min beta_sl_1: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(beta_sl_psl_1);
-// q1_min = gsl_vector_min(beta_sl_psl_1);
-// std::cout << "Max beta_sl_psl_1: " << q1_max << "\n";
-// std::cout << "Min beta_sl_psl_1: " << q1_min << "\n";
+q1_max = gsl_vector_max(beta_sl_psl_1);
+q1_min = gsl_vector_min(beta_sl_psl_1);
+std::cout << "Max beta_sl_psl_1: " << q1_max << "\n";
+std::cout << "Min beta_sl_psl_1: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(beta_sl_psl_0);
-// q1_min = gsl_vector_min(beta_sl_psl_0);
-// std::cout << "Max beta_sl_psl_0: " << q1_max << "\n";
-// std::cout << "Min beta_sl_psl_0: " << q1_min << "\n";
+q1_max = gsl_vector_max(beta_sl_psl_0);
+q1_min = gsl_vector_min(beta_sl_psl_0);
+std::cout << "Max beta_sl_psl_0: " << q1_max << "\n";
+std::cout << "Min beta_sl_psl_0: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(beta_psl_no_sl_1);
-// q1_min = gsl_vector_min(beta_psl_no_sl_1);
-// std::cout << "Max beta_psl_no_sl_1: " << q1_max << "\n";
-// std::cout << "Min beta_psl_no_sl_1: " << q1_min << "\n";
+q1_max = gsl_vector_max(beta_psl_no_sl_1);
+q1_min = gsl_vector_min(beta_psl_no_sl_1);
+std::cout << "Max beta_psl_no_sl_1: " << q1_max << "\n";
+std::cout << "Min beta_psl_no_sl_1: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(beta_psl_no_sl_0);
-// q1_min = gsl_vector_min(beta_psl_no_sl_0);
-// std::cout << "Max beta_psl_no_sl_0: " << q1_max << "\n";
-// std::cout << "Min beta_psl_no_sl_0: " << q1_min << "\n";
+q1_max = gsl_vector_max(beta_psl_no_sl_0);
+q1_min = gsl_vector_min(beta_psl_no_sl_0);
+std::cout << "Max beta_psl_no_sl_0: " << q1_max << "\n";
+std::cout << "Min beta_psl_no_sl_0: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(alpha_sl_1);
-// q1_min = gsl_vector_min(alpha_sl_1);
-// std::cout << "Max alpha_sl_1: " << q1_max << "\n";
-// std::cout << "Min alpha_sl_1: " << q1_min << "\n";
+q1_max = gsl_vector_max(alpha_sl_1);
+q1_min = gsl_vector_min(alpha_sl_1);
+std::cout << "Max alpha_sl_1: " << q1_max << "\n";
+std::cout << "Min alpha_sl_1: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(alpha_sl_0);
-// q1_min = gsl_vector_min(alpha_sl_0);
-// std::cout << "Max alpha_sl_0: " << q1_max << "\n";
-// std::cout << "Min alpha_sl_0: " << q1_min << "\n";
+q1_max = gsl_vector_max(alpha_sl_0);
+q1_min = gsl_vector_min(alpha_sl_0);
+std::cout << "Max alpha_sl_0: " << q1_max << "\n";
+std::cout << "Min alpha_sl_0: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(pp);
-// q1_min = gsl_vector_min(pp);
-// std::cout << "Max pp: " << q1_max << "\n";
-// std::cout << "Min pp: " << q1_min << "\n";
+q1_max = gsl_vector_max(pp);
+q1_min = gsl_vector_min(pp);
+std::cout << "Max pp: " << q1_max << "\n";
+std::cout << "Min pp: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(pp_joint_11);
-// q1_min = gsl_vector_min(pp_joint_11);
-// std::cout << "Max pp_joint_11: " << q1_max << "\n";
-// std::cout << "Min pp_joint_11: " << q1_min << "\n";
+q1_max = gsl_vector_max(pp_joint_11);
+q1_min = gsl_vector_min(pp_joint_11);
+std::cout << "Max pp_joint_11: " << q1_max << "\n";
+std::cout << "Min pp_joint_11: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(pp_joint_10);
-// q1_min = gsl_vector_min(pp_joint_10);
-// std::cout << "Max pp_joint_10: " << q1_max << "\n";
-// std::cout << "Min pp_joint_10: " << q1_min << "\n";
+q1_max = gsl_vector_max(pp_joint_10);
+q1_min = gsl_vector_min(pp_joint_10);
+std::cout << "Max pp_joint_10: " << q1_max << "\n";
+std::cout << "Min pp_joint_10: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(pp_joint_01);
-// q1_min = gsl_vector_min(pp_joint_01);
-// std::cout << "Max pp_joint_01: " << q1_max << "\n";
-// std::cout << "Min pp_joint_01: " << q1_min << "\n";
+q1_max = gsl_vector_max(pp_joint_01);
+q1_min = gsl_vector_min(pp_joint_01);
+std::cout << "Max pp_joint_01: " << q1_max << "\n";
+std::cout << "Min pp_joint_01: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(eps_11_vect);
-// q1_min = gsl_vector_min(eps_11_vect);
-// std::cout << "Max eps_11_vect: " << q1_max << "\n";
-// std::cout << "Min eps_11_vect: " << q1_min << "\n";
+q1_max = gsl_vector_max(eps_11_vect);
+q1_min = gsl_vector_min(eps_11_vect);
+std::cout << "Max eps_11_vect: " << q1_max << "\n";
+std::cout << "Min eps_11_vect: " << q1_min << "\n";
 
-// q1_max = gsl_vector_max(eps_10_vect);
-// q1_min = gsl_vector_min(eps_10_vect);
-// std::cout << "Max eps_10_vect: " << q1_max << "\n";
-// std::cout << "Min eps_10_vect: " << q1_min << "\n";
+q1_max = gsl_vector_max(eps_10_vect);
+q1_min = gsl_vector_min(eps_10_vect);
+std::cout << "Max eps_10_vect: " << q1_max << "\n";
+std::cout << "Min eps_10_vect: " << q1_min << "\n";
 
-//     //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
+    //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
 
   // ---- Print things to outfiles ---- //
 

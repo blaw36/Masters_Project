@@ -28,14 +28,29 @@ Hence, sampling from the 3-parameter t-distribution should be fairly straightfor
 For example, take the following spec:
 $$ \nu = 10, \mu = 5, \sigma = 2 $$
 ```{r classic_t}
+num_samples = 10000
 nu = 10
 mu = 5
 sigma = 2
-t_sample <- stats::rt(n = 1000, df = nu)
+t_sample <- stats::rt(n = num_samples, df = nu)
 t_sample_3p <- mu+(sigma*t_sample)
 hist(t_sample)
 hist(t_sample_3p)
 ggplot() +
   geom_histogram(data = data.frame(t_sample),aes(x = t_sample, alpha = 0.5, fill = "classic")) +
   geom_histogram(data = data.frame(t_sample_3p),aes(x = t_sample_3p, alpha = 0.5, fill = "3param"))
+```
+
+Now we should verify that these samples somewhat represent the underlying distributions. For the standard t distribution, we should have (see the wiki):
+$$ E[T] = 0, V(T) = \frac{\nu}{\nu - 2}$$
+```{r standard_chk}
+mean(t_sample)
+var(t_sample); (nu)/(nu-2)
+```
+
+For the generalised t distribution, we should have (once again, see the wiki):
+$$ E[T] = \mu, (\nu > 1), \; V(T) = \sigma^2 \frac{\nu}{\nu - 2}, (\nu > 2)$$
+```{r generalised_chk}
+mean(t_sample_3p); mu
+var(t_sample_3p); sigma^2*(nu)/(nu-2)
 ```
