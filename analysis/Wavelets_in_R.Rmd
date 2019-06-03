@@ -44,10 +44,10 @@ attr(wc,'W')$W1[1]
 round(attr(wc,'W')$W1[1],10) == round((USAccDeaths[2]-USAccDeaths[1]) * 1/sqrt(2),10)
 
 
-# Same scaling everywhere
-for(i in 1:length(attr(wc,'W')$W1)){
-  print((USAccDeaths[2*i]-USAccDeaths[2*i-1])/attr(wc,'W')$W1[[i]])
-}
+# # Same scaling everywhere - this is a check
+# for(i in 1:length(attr(wc,'W')$W1)){
+#   print((USAccDeaths[2*i]-USAccDeaths[2*i-1])/attr(wc,'W')$W1[[i]])
+# }
 ```
 
 What is series V? Turns out it's the addition of the first two elements, etc etc.
@@ -62,10 +62,10 @@ attr(wc,'V')$V1[1]
 (USAccDeaths[2]+USAccDeaths[1])/attr(wc,'V')$V1[1]
 round(attr(wc,'V')$V1[1],10) == round((USAccDeaths[2]+USAccDeaths[1]) * 1/sqrt(2),10)
 
-# Same scaling everywhere
-for(i in 1:length(attr(wc,'W')$W1)){
-  print((USAccDeaths[2*i]+USAccDeaths[2*i-1])/attr(wc,'V')$V1[[i]])
-}
+# Same scaling everywhere - this is a check
+# for(i in 1:length(attr(wc,'W')$W1)){
+#   print((USAccDeaths[2*i]+USAccDeaths[2*i-1])/attr(wc,'V')$V1[[i]])
+# }
 ```
 
 Now for some plots...
@@ -109,7 +109,7 @@ X_1 + X_2, X_3 + X_4 \\
 \end{align*}
 
 ## Wavelets in R - 'wavethresh' package
-Let's see if we can replicate the above using the 'wavethresh' package. Note that 'wavethresh' only accepts data which has a length which is a power of two.
+Let's see if we can replicate the above using the 'wavethresh' package. Note that 'wavethresh' only accepts data which has a length which is a power of two. Also, regarding plotting, this is a good reference: (https://ahsanijaz.github.io/2016-09-13-EMG/)
 ```{r wavethresh_2}
 length(c(USAccDeaths))
 USAccDeaths_pwr2 <- ts(c(USAccDeaths[1:64]),start = 1973,frequency = 12)
@@ -146,7 +146,7 @@ for(i in 0:(wthresh$nlevels)){
 all.equal(c_vect,wthresh$C)
 ```
 
-D's elements are (from finest to coarsest) the wavelet coefficients we're after. We start by differencing adjacent values of the raw datya, then scaling the difference. Next level is the difference of the adjacent sums of two larger windows (ie the next scale up in the 'C' datset which captured the adjacent sums), and the difference scaled once more. All scaled by the 'H' value under the wthresh filter (H[1], which is equal to H[2] in this case). Once again, we'll do the transform on the raw data, hence powering the scaling coefficient by one more time each level up, to represent the fact that differences are calculated on (already scaled) adjacent sums.
+D's elements are (from finest to coarsest) the wavelet coefficients we're after. We start by differencing adjacent values of the raw data, then scaling the difference. Next level is the difference of the adjacent sums of two larger windows (ie the next scale up in the 'C' datset which captured the adjacent sums), and the difference scaled once more. All scaled by the 'H' value under the wthresh filter (H[1], which is equal to H[2] in this case). Once again, we'll do the transform on the raw data, hence powering the scaling coefficient by one more time each level up, to represent the fact that differences are calculated on (already scaled) adjacent sums.
 ```{r wavethresh_4}
 # Replicate our own 'D' vector:
 d_vect <- c()
@@ -163,4 +163,45 @@ for(i in 1:wthresh$nlevels){
   d_vect <- c(d_vect,add_to_vect)
 }
 all.equal(d_vect,wthresh$D)
+```
+
+```{r plot_wavethresh}
+# oldpar <- par(mfrow = c(2,1))
+plot(USAccDeaths_pwr2)
+plot(wthresh, scaling = "by.level") # different coefficient scaling at each level
+plot(wthresh) # same scaling for all levels - shows difference in effect sizes at each level
+plot(wthresh$D[1:32],type="h", main = "ResLvl5")
+plot(wthresh$D[33:48],type="h", main = "ResLvl4")
+plot(wthresh$D[49:56],type="h", main = "ResLvl3")
+plot(wthresh$D[57:60],type="h", main = "ResLvl2")
+plot(wthresh$D[61:62],type="h", main = "ResLvl1")
+plot(wthresh$D[63],type="h", main = "ResLvl0")
+```
+
+How about if the data was a big more sparse at some random point? Like a bit flat? What if the second half was a bit flat?
+
+```{r flat_2nd_half, echo = F}
+usDeaths_flat_2nd <- c(USAccDeaths)[1:64]
+usDeaths_flat_2nd[33:64] <- 0
+plot(usDeaths_flat_2nd, type = "l")
+
+wlet_flat_2nd <- wavethresh::wd(usDeaths_flat_2nd, filter.number = 1, family = "DaubExPhase")
+plot(wlet_flat_2nd, scaling = "by.level")
+```
+
+How about if the data was really peaky by being randomly flat? This kind of shows us how it's useful for converting 'even-ness' across an area into sparsity (around 0) in the wavelet space.
+
+```{r random_2nd_half, echo = F}
+usDeaths_flat_rndm <- c(USAccDeaths)[1:64]
+random_excl = rbinom(n = 64,size = 1,prob = 0.8)
+usDeaths_flat_rndm[which(random_excl == 0)] <- 0
+plot(usDeaths_flat_rndm,type = "l")
+
+wlet_flat_rndm <- wavethresh::wd(usDeaths_flat_rndm, filter.number = 1, family = "DaubExPhase")
+plot(wlet_flat_rndm, scaling = "by.level")
+
+# plot together
+newpar <- par(mfrow = c(2,1))
+plot(usDeaths_flat_rndm,type = "l")
+plot(wlet_flat_rndm, scaling = "by.level", main = "")
 ```
