@@ -11,6 +11,7 @@
 
 <meta name="author" content="Brendan Law" />
 
+<meta name="date" content="2019-03-05" />
 
 <title>Wavelets_in_R</title>
 
@@ -609,46 +610,10 @@ USAccDeaths[2]-USAccDeaths[1]</code></pre>
 <pre><code>## [1] 1.414214</code></pre>
 <pre class="r"><code>round(attr(wc,&#39;W&#39;)$W1[1],10) == round((USAccDeaths[2]-USAccDeaths[1]) * 1/sqrt(2),10)</code></pre>
 <pre><code>## [1] TRUE</code></pre>
-<pre class="r"><code># Same scaling everywhere
-for(i in 1:length(attr(wc,&#39;W&#39;)$W1)){
-  print((USAccDeaths[2*i]-USAccDeaths[2*i-1])/attr(wc,&#39;W&#39;)$W1[[i]])
-}</code></pre>
-<pre><code>## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214</code></pre>
+<pre class="r"><code># # Same scaling everywhere - this is a check
+# for(i in 1:length(attr(wc,&#39;W&#39;)$W1)){
+#   print((USAccDeaths[2*i]-USAccDeaths[2*i-1])/attr(wc,&#39;W&#39;)$W1[[i]])
+# }</code></pre>
 <p>What is series V? Turns out it’s the addition of the first two elements, etc etc.</p>
 <pre class="r"><code># Look at V for example
 
@@ -662,46 +627,10 @@ USAccDeaths[2]+USAccDeaths[1]</code></pre>
 <pre><code>## [1] 1.414214</code></pre>
 <pre class="r"><code>round(attr(wc,&#39;V&#39;)$V1[1],10) == round((USAccDeaths[2]+USAccDeaths[1]) * 1/sqrt(2),10)</code></pre>
 <pre><code>## [1] TRUE</code></pre>
-<pre class="r"><code># Same scaling everywhere
-for(i in 1:length(attr(wc,&#39;W&#39;)$W1)){
-  print((USAccDeaths[2*i]+USAccDeaths[2*i-1])/attr(wc,&#39;V&#39;)$V1[[i]])
-}</code></pre>
-<pre><code>## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214
-## [1] 1.414214</code></pre>
+<pre class="r"><code># Same scaling everywhere - this is a check
+# for(i in 1:length(attr(wc,&#39;W&#39;)$W1)){
+#   print((USAccDeaths[2*i]+USAccDeaths[2*i-1])/attr(wc,&#39;V&#39;)$V1[[i]])
+# }</code></pre>
 <p>Now for some plots…</p>
 <pre class="r"><code>plot(USAccDeaths)</code></pre>
 <p><img src="Wavelets_in_R_files/figure-html/wavelets_plots1-1.png" width="672" /></p>
@@ -718,27 +647,24 @@ for(i in 1:length(attr(wc,&#39;W&#39;)$W1)){
 <pre><code>## [1] 1.414214</code></pre>
 <p>Etc. And this is how we work our way up the wavelet ‘tree’. Turns out (according to HJ’s presentation), we just take the differences at each level, which corresponds to only using the ‘W’ part of the wavelet transform (V just for working). Although it should be analogous to just taking the W part - both should have the same informational content? (Both are 1:1, as long as one or the other are used?)</p>
 <p>What I mean is that, by default, the set ‘W’ consists of the following info:</p>
-Base data:
-<span class="math display">\[\begin{align*}
+<p>Base data: <span class="math display">\[\begin{align*}
 X_1, X_2, X_3, X_4 \\
-\end{align*}\]</span>
-Set <span class="math inline">\(&#39;W&#39;\)</span>:
-<span class="math display">\[\begin{align*}
+\end{align*}\]</span></p>
+<p>Set <span class="math inline">\(&#39;W&#39;\)</span>: <span class="math display">\[\begin{align*}
 X_1 - X_2, X_3 - X_4 \\
 (X_1 + X_2) - (X_3 + X_4) \\
 (X_1 + X_2) + (X_3 + X_4) \\
-\end{align*}\]</span>
-Contains all info to reconstruct all 4. (4 eqns, 4 variables). Should contain same informational content as:
-<span class="math display">\[\begin{align*}
+\end{align*}\]</span></p>
+<p>Contains all info to reconstruct all 4. (4 eqns, 4 variables). Should contain same informational content as: <span class="math display">\[\begin{align*}
 \text{Set }&#39;W_{alt}&#39;: \\
 X_1 + X_2, X_3 + X_4 \\
 (X_1 - X_2) + (X_3 - X_4) \\
 (X_1 - X_2) - (X_3 - X_4) \\
-\end{align*}\]</span>
+\end{align*}\]</span></p>
 </div>
 <div id="wavelets-in-r---wavethresh-package" class="section level2">
 <h2>Wavelets in R - ‘wavethresh’ package</h2>
-<p>Let’s see if we can replicate the above using the ‘wavethresh’ package. Note that ‘wavethresh’ only accepts data which has a length which is a power of two.</p>
+<p>Let’s see if we can replicate the above using the ‘wavethresh’ package. Note that ‘wavethresh’ only accepts data which has a length which is a power of two. Also, regarding plotting, this is a good reference: (<a href="https://ahsanijaz.github.io/2016-09-13-EMG/" class="uri">https://ahsanijaz.github.io/2016-09-13-EMG/</a>)</p>
 <pre class="r"><code>length(c(USAccDeaths))</code></pre>
 <pre><code>## [1] 72</code></pre>
 <pre class="r"><code>USAccDeaths_pwr2 &lt;- ts(c(USAccDeaths[1:64]),start = 1973,frequency = 12)
@@ -769,7 +695,7 @@ str(wthresh)</code></pre>
 ##   ..$ filter.number: num 1
 ##  $ type    : chr &quot;wavelet&quot;
 ##  $ bc      : chr &quot;periodic&quot;
-##  $ date    : chr &quot;Thu May 16 23:55:55 2019&quot;
+##  $ date    : chr &quot;Tue Jun 04 00:08:03 2019&quot;
 ##  - attr(*, &quot;class&quot;)= chr &quot;wd&quot;</code></pre>
 <p>Two main outputs here:</p>
 <pre class="r"><code>length(wthresh$C)</code></pre>
@@ -791,7 +717,7 @@ for(i in 0:(wthresh$nlevels)){
 }
 all.equal(c_vect,wthresh$C)</code></pre>
 <pre><code>## [1] TRUE</code></pre>
-<p>D’s elements are (from finest to coarsest) the wavelet coefficients we’re after. We start by differencing adjacent values of the raw datya, then scaling the difference. Next level is the difference of the adjacent sums of two larger windows (ie the next scale up in the ‘C’ datset which captured the adjacent sums), and the difference scaled once more. All scaled by the ‘H’ value under the wthresh filter (H[1], which is equal to H[2] in this case). Once again, we’ll do the transform on the raw data, hence powering the scaling coefficient by one more time each level up, to represent the fact that differences are calculated on (already scaled) adjacent sums.</p>
+<p>D’s elements are (from finest to coarsest) the wavelet coefficients we’re after. We start by differencing adjacent values of the raw data, then scaling the difference. Next level is the difference of the adjacent sums of two larger windows (ie the next scale up in the ‘C’ datset which captured the adjacent sums), and the difference scaled once more. All scaled by the ‘H’ value under the wthresh filter (H[1], which is equal to H[2] in this case). Once again, we’ll do the transform on the raw data, hence powering the scaling coefficient by one more time each level up, to represent the fact that differences are calculated on (already scaled) adjacent sums.</p>
 <pre class="r"><code># Replicate our own &#39;D&#39; vector:
 d_vect &lt;- c()
 for(i in 1:wthresh$nlevels){
@@ -808,6 +734,35 @@ for(i in 1:wthresh$nlevels){
 }
 all.equal(d_vect,wthresh$D)</code></pre>
 <pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code># oldpar &lt;- par(mfrow = c(2,1))
+plot(USAccDeaths_pwr2)</code></pre>
+<p><img src="Wavelets_in_R_files/figure-html/plot_wavethresh-1.png" width="672" /></p>
+<pre class="r"><code>plot(wthresh, scaling = &quot;by.level&quot;) # different coefficient scaling at each level</code></pre>
+<p><img src="Wavelets_in_R_files/figure-html/plot_wavethresh-2.png" width="672" /></p>
+<pre><code>## [1]  935.5023  869.0000 2731.5535 2288.0000  612.1777 2905.2500</code></pre>
+<pre class="r"><code>plot(wthresh) # same scaling for all levels - shows difference in effect sizes at each level</code></pre>
+<p><img src="Wavelets_in_R_files/figure-html/plot_wavethresh-3.png" width="672" /></p>
+<pre><code>## [1] 2905.25 2905.25 2905.25 2905.25 2905.25 2905.25</code></pre>
+<pre class="r"><code>plot(wthresh$D[1:32],type=&quot;h&quot;, main = &quot;ResLvl5&quot;)</code></pre>
+<p><img src="Wavelets_in_R_files/figure-html/plot_wavethresh-4.png" width="672" /></p>
+<pre class="r"><code>plot(wthresh$D[33:48],type=&quot;h&quot;, main = &quot;ResLvl4&quot;)</code></pre>
+<p><img src="Wavelets_in_R_files/figure-html/plot_wavethresh-5.png" width="672" /></p>
+<pre class="r"><code>plot(wthresh$D[49:56],type=&quot;h&quot;, main = &quot;ResLvl3&quot;)</code></pre>
+<p><img src="Wavelets_in_R_files/figure-html/plot_wavethresh-6.png" width="672" /></p>
+<pre class="r"><code>plot(wthresh$D[57:60],type=&quot;h&quot;, main = &quot;ResLvl2&quot;)</code></pre>
+<p><img src="Wavelets_in_R_files/figure-html/plot_wavethresh-7.png" width="672" /></p>
+<pre class="r"><code>plot(wthresh$D[61:62],type=&quot;h&quot;, main = &quot;ResLvl1&quot;)</code></pre>
+<p><img src="Wavelets_in_R_files/figure-html/plot_wavethresh-8.png" width="672" /></p>
+<pre class="r"><code>plot(wthresh$D[63],type=&quot;h&quot;, main = &quot;ResLvl0&quot;)</code></pre>
+<p><img src="Wavelets_in_R_files/figure-html/plot_wavethresh-9.png" width="672" /></p>
+<p>How about if the data was a big more sparse at some random point? Like a bit flat? What if the second half was a bit flat?</p>
+<p><img src="Wavelets_in_R_files/figure-html/flat_2nd_half-1.png" width="672" /><img src="Wavelets_in_R_files/figure-html/flat_2nd_half-2.png" width="672" /></p>
+<pre><code>## [1]   637.1032   864.5000  2731.5535  2288.0000   612.1777 36320.1250</code></pre>
+<p>How about if the data was really peaky by being randomly flat? This kind of shows us how it’s useful for converting ‘even-ness’ across an area into sparsity (around 0) in the wavelet space.</p>
+<p><img src="Wavelets_in_R_files/figure-html/random_2nd_half-1.png" width="672" /><img src="Wavelets_in_R_files/figure-html/random_2nd_half-2.png" width="672" /></p>
+<pre><code>## [1] 7155.9206 7846.0000 8827.8746 3805.0000  916.5872 3300.8750</code></pre>
+<p><img src="Wavelets_in_R_files/figure-html/random_2nd_half-3.png" width="672" /></p>
+<pre><code>## [1] 7155.9206 7846.0000 8827.8746 3805.0000  916.5872 3300.8750</code></pre>
 </div>
 
 

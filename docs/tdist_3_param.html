@@ -418,15 +418,16 @@ div.tocify {
 <p>The student’s t-distribution (one parameter, degrees of freedom) can be generalised to a three-parameter location-scale family:</p>
 <p><span class="math display">\[ X = \mu + \sigma T\]</span> or</p>
 <p><span class="math display">\[ T = \frac{X - \mu}{\sigma}\]</span> where <span class="math inline">\(\mu\)</span> is a location parameter, <span class="math inline">\(\sigma\)</span> is a scale parameter, and T is a random variable with the classic student’s t-distribution.</p>
-<p>For more details, you can view: <a href="https://en.wikipedia.org/wiki/Student%27s_t-distribution#Generalized_Student&#39;s_t-distribution">https://en.wikipedia.org/wiki/Student%27s_t-distribution#Generalized_Student's_t-distribution</a>.</p>
+<p>For more details, you can view: <a href="https://en.wikipedia.org/wiki/Student%27s_t-distribution#Generalized_Student&#39;s_t-distribution" class="uri">https://en.wikipedia.org/wiki/Student%27s_t-distribution#Generalized_Student's_t-distribution</a>.</p>
 <p>Hence, sampling from the 3-parameter t-distribution should be fairly straightforward - use R’s inbuilt functions to sample from the t-distribution, then scale by the other two parameters.</p>
 <div id="sampling-from-a-classic-t-distribution" class="section level3">
 <h3>Sampling from a classic t-distribution</h3>
 <p>For example, take the following spec: <span class="math display">\[ \nu = 10, \mu = 5, \sigma = 2 \]</span></p>
-<pre class="r"><code>nu = 10
+<pre class="r"><code>num_samples = 10000
+nu = 10
 mu = 5
 sigma = 2
-t_sample &lt;- stats::rt(n = 1000, df = nu)
+t_sample &lt;- stats::rt(n = num_samples, df = nu)
 t_sample_3p &lt;- mu+(sigma*t_sample)
 hist(t_sample)</code></pre>
 <p><img src="tdist_3_param_files/figure-html/classic_t-1.png" width="672" /></p>
@@ -438,6 +439,19 @@ hist(t_sample)</code></pre>
 <pre><code>## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.</code></pre>
 <p><img src="tdist_3_param_files/figure-html/classic_t-3.png" width="672" /></p>
+<p>Now we should verify that these samples somewhat represent the underlying distributions. For the standard t distribution, we should have (see the wiki): <span class="math display">\[ E[T] = 0, V(T) = \frac{\nu}{\nu - 2}\]</span></p>
+<pre class="r"><code>mean(t_sample)</code></pre>
+<pre><code>## [1] 0.01051584</code></pre>
+<pre class="r"><code>var(t_sample); (nu)/(nu-2)</code></pre>
+<pre><code>## [1] 1.24876</code></pre>
+<pre><code>## [1] 1.25</code></pre>
+<p>For the generalised t distribution, we should have (once again, see the wiki): <span class="math display">\[ E[T] = \mu, (\nu &gt; 1), \; V(T) = \sigma^2 \frac{\nu}{\nu - 2}, (\nu &gt; 2)\]</span></p>
+<pre class="r"><code>mean(t_sample_3p); mu</code></pre>
+<pre><code>## [1] 5.021032</code></pre>
+<pre><code>## [1] 5</code></pre>
+<pre class="r"><code>var(t_sample_3p); sigma^2*(nu)/(nu-2)</code></pre>
+<pre><code>## [1] 4.995039</code></pre>
+<pre><code>## [1] 5</code></pre>
 </div>
 </div>
 
