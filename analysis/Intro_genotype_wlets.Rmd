@@ -77,10 +77,11 @@ pheno.and.geno.2$snp = rep(eg_geno.2$chr17.10159002,each = 1024)
 
 ggplot(pheno.and.geno.2) + 
   geom_path(aes(x = loc, y = value, group = factor(snp), colour = snp, alpha = 0.5))
-ggplotly(
-  ggplot(pheno.and.geno.2) + 
-    geom_path(aes(x = loc, y = value, group = factor(snp), colour = snp, alpha = 0.5))
-)
+# Not run, as the plotly html widget generated is really large. Try it yourself!
+# ggplotly(
+#   ggplot(pheno.and.geno.2) + 
+#     geom_path(aes(x = loc, y = value, group = factor(snp), colour = snp, alpha = 0.5))
+# )
 ggplot(pheno.and.geno.2) + 
   geom_path(aes(x = loc, y = value, group = factor(snp), colour = between(as.numeric(as.character(snp)), 0.03, 0.08), alpha = 0.5)) +
   guides(colour = F)
@@ -93,11 +94,11 @@ pheno.and.gen.more.2 = melt(pheno.and.gen.more.2)
 pheno.and.gen.more.2$loc = rep(1:1024,70)
 pheno.and.gen.more.2$snp = rep(eg_geno.2$chr17.10161485,each = 1024)
 
-
-ggplotly(
-  ggplot(pheno.and.gen.more.2) + 
-    geom_path(aes(x = loc, y = value, group = factor(snp), colour = snp, alpha = 0.5))
-)
+# Not run, as the plotly html widget generated is really large. Try it yourself!
+# ggplotly(
+#   ggplot(pheno.and.gen.more.2) + 
+#     geom_path(aes(x = loc, y = value, group = factor(snp), colour = snp, alpha = 0.5))
+# )
 ggplot(pheno.and.gen.more.2) + 
   geom_path(aes(x = loc, y = value, group = factor(snp), colour = between(as.numeric(as.character(snp)), 0.9, 1), alpha = 0.5)) +
   guides(colour = F)
