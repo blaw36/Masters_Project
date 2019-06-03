@@ -2,7 +2,7 @@
 # Author: Brendan Law
 # Date: 21 March 2019
 
-# First attempt at running through commands in WaveQTL_manual.PDF from 
+# First attempt at running through commands in WaveQTL_manual.PDF from
 # HJ's WaveQTL package.
 # https://github.com/heejungshim/WaveQTL
 # /doc/manual/WaveQTL_manual.pdf
@@ -45,17 +45,17 @@ pheno.dat.2=data.frame(t(pheno.dat))
 pheno.dat.2 = melt(pheno.dat.2)
 pheno.dat.2$loc = rep(1:1024,70)
 ggplot(pheno.dat.2) + geom_path(aes(x = loc, y = value, group = factor(variable), alpha = 0.5))
-ggplot(melt(t(apply(pheno.dat,2,summary)))) + 
-    geom_path(aes(x = as.numeric(Var1), y = value, group = factor(Var2), colour = factor(Var2))) + 
-    scale_x_continuous(breaks = seq(0,1024,by = 64)) + xlab("Base location") + 
+ggplot(melt(t(apply(pheno.dat,2,summary)))) +
+    geom_path(aes(x = as.numeric(Var1), y = value, group = factor(Var2), colour = factor(Var2))) +
+    scale_x_continuous(breaks = seq(0,1024,by = 64)) + xlab("Base location") +
     guides(colour = guide_legend("Stat"))
 
 # The means are the most interesting
 mean.pheno = data.frame(mean = apply(pheno.dat,2,mean), loc = 1:1024)
-ggplot(mean.pheno) + 
-	geom_line(aes(x = loc, y = mean)) + 
-	scale_x_continuous(breaks = seq(0,1024,by = 64)) + 
-	xlab("Base location")    
+ggplot(mean.pheno) +
+	geom_line(aes(x = loc, y = mean)) +
+	scale_x_continuous(breaks = seq(0,1024,by = 64)) +
+	xlab("Base location")
 
 # read library read depth
 library.read.depth = scan(paste0(data.path, "library.read.depth.dat"))
@@ -71,7 +71,7 @@ dim(Covariates)
 # corrected for (here, four principal components we used to control for confounding factors in our
 # dsQTL analysis of [4]).
 # BL: Oh. This is the part where we believe there are 'other' covariates outside of the y,g we're studying
-# and so, as part of pre-processing (but after doing wavelet t/forms), 
+# and so, as part of pre-processing (but after doing wavelet t/forms),
 # we find the (4 in this case) principal components which capture
 # the most variation. We PCA regress these covariates out (to attempt to remove the effects of anything else
 # from our analysis), and then we take the residuals afterwards, and start from there.
@@ -107,7 +107,7 @@ res = WaveQTL_preprocess(Data = pheno.dat
                          , Covariates = Covariates
                          , meanR.thresh = meanR.thresh)
 ### A more in-depth look into the FWT function and the underlying
-### 'wd' function for the wavelet transform can be found in my 
+### 'wd' function for the wavelet transform can be found in my
 ### 'Wavelets_in_R.Rmd' file.
 
 ### In summary, FWT spits out:
@@ -167,7 +167,7 @@ dim(eg_non_geno)
 
 ## Phenotype data (response)
 # WCs, with 70 rows (in the same order as the 70 columns of genotype data)
-# after passing through WaveQTL_preprocess above. 
+# after passing through WaveQTL_preprocess above.
 # Columns represent low - high res/coarse - fine grain/high - low scale WCs.
 
 # Note the supplementary datasets:
@@ -191,6 +191,8 @@ dim(eg_non_geno)
 # setwd("~/WaveQTL/R")
 # source("WaveQTL_preprocess_funcs.R")
 # data.path = "../data/dsQTL/"
+
+# Note this is the same command as above
 pheno.dat = as.matrix(read.table(paste0(data.path,
                                         "chr17.10160989.10162012.pheno.dat")))
 library.read.depth = scan(paste0(data.path, "library.read.depth.dat"))
@@ -212,7 +214,7 @@ write.table(res.noQT$WCs, file= paste0(output.path, "WCs.no.QT.txt"), row.names=
 # Here, one snp, with p-val at the bottom (intermediates relate to permutation testing)
 pval = as.matrix(read.table("~/Cpp/WaveQTL/test/dsQTL/output/test.fph.pval.txt"))
 
-# 2) LogLR of each of 24 'nearby' SNPs. 
+# 2) LogLR of each of 24 'nearby' SNPs.
 # 1st col = name of SNP
 # 2nd col = LogLR for each SNP, ie the ratio of pi vs pi = 0
 # 3rd and remaining cols = BFs for each scale,loc, for that SNP
@@ -240,7 +242,7 @@ source("get_effectSizeinDataSpace.R")
   # Posterior variance (like in the supp mtl, for each base, sum of wlet^2 x mean across all sl's)
   # Looking for either significantly above or significantly below zero:
     # left bounds (data - 3 SDs) > 0
-    # right bounds (data + 3 SDs) < 0 
+    # right bounds (data + 3 SDs) < 0
   # Outputs pdf of plot:
     # effect size (y) vs base location (x)
     # pink bars are base location of significant effect (either above or below zero)
