@@ -13,7 +13,7 @@
 
 <meta name="date" content="2019-03-06" />
 
-<title>Intro_genotype_wlets</title>
+<title>Intro to genotype wavelets</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -406,7 +406,7 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">Intro_genotype_wlets</h1>
+<h1 class="title toc-ignore">Intro to genotype wavelets</h1>
 <h4 class="author"><em>Brendan Law</em></h4>
 <h4 class="date"><em>03/06/2019</em></h4>
 
@@ -415,7 +415,7 @@ div.tocify {
 
 <div id="load-snp-data" class="section level3">
 <h3>Load SNP data</h3>
-<p>24 SNPs, for 70 individuals.</p>
+<p>24 SNPs, for 70 individuals. SNPs are single nucleotide polymorphism - a common type of genetic variation among people (must be seen in at least some x% threshold of the population to be a valid SNP). An SNP may be replacing a particular nucleotide of a DNA (C for a T, for example). See <a href="https://ghr.nlm.nih.gov/primer/genomicresearch/snp">here</a> for some details. Our data is genotype data at genetic variants (mainly SNPs), coded as a number, <span class="math inline">\(g \in \{0,1,2\}\)</span>, representing the number of copies of the minor allele (which may be one of the A,T,G,C I think?). An example illustrated in class showed how we may have, for two nucleotides, say AG, the possible combinations: AA, AG, GA, GG, with one of these being coded as a ‘minor allele’, and hence giving us either 0, 1 or 2 copies of it. Some (standard) imputation is then performed to generate probabilities of each combination, and the final number (a value between 0 and 2) represents the probability-weighted average of the number of copies of the minor allele at the single SNP of interest. <a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a></p>
 <pre><code>## $chr17.10159002
 ## 
 ##     0 0.020 0.021 0.025 0.031 0.034 0.037 0.042 0.052 0.053 0.058 0.068 
@@ -565,11 +565,43 @@ div.tocify {
 <div id="combining-both" class="section level3">
 <h3>Combining both</h3>
 <p>The goal of this project is to: - Identify base locations which contain significant effects between individual SNPs and the count data obtained from sequencing - Estimate the effect of the SNP value on the sequenced count data at each base</p>
-<p>So, this exercise involves taking two SNPs, for example, and trying to plot 70 individuals’ worth of counts, and giving different colours depending on their SNP values. A fairly fruitless and noisy task.</p>
+<p>So, this exercise involves taking two SNPs, for example, and trying to plot 70 individuals’ worth of counts, and giving different colours depending on their SNP values. A fairly fruitless task given how noisy the data is.</p>
 <pre><code>## No id variables; using all as measure variables</code></pre>
 <p><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-2-1.png" width="672" /><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-2-2.png" width="672" /></p>
 <pre><code>## No id variables; using all as measure variables</code></pre>
 <p><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-2-3.png" width="672" /></p>
+<p>Another way we can represent this is to, for example, bin our observations into the SNP they are closest to (based on the SNP data we’ve been given), and give an average count ‘function’. In a way, we’re reproducing a kind of figure seen on page 14 of the Shim and Stephens (2014) paper. That probably uses slightly adjusted count data (normalised for total read length at each base, covariates regressed out, etc, which we won’t do here). Take the significant, chr17.10161485, for example</p>
+<pre class="r"><code>library(tidyverse)</code></pre>
+<pre><code>## -- Attaching packages -------------------------------------------------------------------------------------------------------------------------------------------------- tidyverse 1.2.1 --</code></pre>
+<pre><code>## v tibble  2.0.1     v purrr   0.3.0
+## v tidyr   0.8.2     v dplyr   0.7.8
+## v readr   1.3.1     v stringr 1.3.1
+## v tibble  2.0.1     v forcats 0.3.0</code></pre>
+<pre><code>## -- Conflicts ----------------------------------------------------------------------------------------------------------------------------------------------------- tidyverse_conflicts() --
+## x dplyr::between()   masks data.table::between()
+## x dplyr::filter()    masks plotly::filter(), stats::filter()
+## x dplyr::first()     masks data.table::first()
+## x dplyr::lag()       masks stats::lag()
+## x dplyr::last()      masks data.table::last()
+## x dplyr::select()    masks MASS::select(), plotly::select()
+## x purrr::transpose() masks data.table::transpose()</code></pre>
+<pre class="r"><code># Bin the individuals up
+# SNP 2:
+# chr17.10161485
+pheno.and.gen.bin = cbind(pheno.dat,snp = as.numeric(as.character(eg_geno.2$chr17.10161485)))
+pheno.and.gen.bin = data.frame(pheno.and.gen.bin)
+pheno.and.gen.bin$bin = round(pheno.and.gen.bin$snp)
+pheno.and.gen.bin.averaged = pheno.and.gen.bin %&gt;% 
+  group_by(bin) %&gt;%
+  summarise_all(funs(mean)) %&gt;%
+  select(-&quot;snp&quot;)
+pheno.and.gen.bin.averaged = melt(pheno.and.gen.bin.averaged, id.vars = &#39;bin&#39;)
+pheno.and.gen.bin.averaged$loc = rep(1:1024, each = 3)
+
+ggplot(pheno.and.gen.bin.averaged) + 
+  geom_path(aes(x = loc, y = value, group = factor(bin), colour = factor(bin))) +
+  labs(colour = &quot;Imputed SNP&quot;)</code></pre>
+<p><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>A short guide to wavelet analysis on the sequenced count data. Let’s try and look at two individuals whose counts data are very different: one displays a lot of variation, the other does not: (note this is the raw wavelet count, NOT pre-processed to filter out low count WCs, or normalised against read counts, just to give a flavour of what wavelets on this data looks like).</p>
 <pre><code>##  [1] 21 16 24 32 30 50 28 61 63 12 40  7 54 11 34 49 70  6 62  1 19 48 52
 ## [24]  4 37 29  5 43 39 17 35 64 58  9 41 31 20 10 59 13 51 46 66 25  2 14
@@ -577,12 +609,24 @@ div.tocify {
 ## [70] 69</code></pre>
 <p>Individuals 21 (little variation) and 69 (a lot of variation)</p>
 <pre><code>## No id variables; using all as measure variables</code></pre>
-<p><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-4-1.png" width="672" /><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-4-2.png" width="672" /><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-4-3.png" width="672" /></p>
+<p><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-5-1.png" width="672" /><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-5-2.png" width="672" /><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-5-3.png" width="672" /></p>
 <pre><code>##  [1] 0.7071068 0.5000000 0.3535534 0.2500000 0.2651650 0.1875000 0.1325825
 ##  [8] 0.0625000 0.1104854 0.0468750</code></pre>
-<p><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-4-4.png" width="672" /><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-4-5.png" width="672" /></p>
+<p><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-5-4.png" width="672" /><img src="Intro_genotype_wlets_files/figure-html/unnamed-chunk-5-5.png" width="672" /></p>
 <pre><code>##  [1] 2.121320 1.500000 1.944544 1.250000 1.856155 0.687500 1.679379
 ##  [8] 1.843750 1.458408 0.593750</code></pre>
+<p>A more relevant exercise would be to take the difference of these two individuals, and then transform that into a wavelet space. Our exercise here is an attempt to model differences in the wavelet space, and then transform the differences back into the data space (in the form of beta coefficients - data space differences), so that the wavelet space (combined with certain choices of priors) can denoise some of the differences between the noisy signals. Let’s see what that looks like:</p>
+<pre><code>## No id variables; using all as measure variables</code></pre>
+<p><img src="Intro_genotype_wlets_files/figure-html/differences-1.png" width="672" /><img src="Intro_genotype_wlets_files/figure-html/differences-2.png" width="672" /></p>
+<pre><code>##  [1] 2.121320 1.500000 1.944544 1.250000 1.944544 0.687500 1.635184
+##  [8] 1.812500 1.347922 0.546875</code></pre>
+<!-- References -->
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>See the Shim and Stephens (2014) paper for some more detail of the input data.<a href="#fnref1" class="footnote-back">↩</a></p></li>
+</ol>
 </div>
 
 
