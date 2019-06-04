@@ -50,6 +50,7 @@ Some writings about the simulations and data analysis exercises we undertook aro
 #### Ad hoc - wavelets
 - Brief explorations of data with Haar wavelets [here](Wavelets_in_R.html)
 - Brief explorations of the genetic data (from WaveQTL) with Haar wavelets [here](Intro_genotype_wlets.html)
+- Brief plots of the WaveQTL outputs [here](Intro_genotype_wlets_plots.html)
 
 #### Simulation - three parameter t-distribution
 - Goal here is to figure out how to draw samples from the three parameter (generalised) student's t-distribution.

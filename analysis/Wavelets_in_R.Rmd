@@ -1,5 +1,5 @@
 ---
-title: "Wavelets_in_R"
+title: "Wavelets in R"
 author: "Brendan Law"
 date: "5 March 2019"
 output:

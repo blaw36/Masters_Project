@@ -1,0 +1,174 @@
+---
+title: "WaveQTL_samplePlots"
+author: "Brendan Law"
+date: "04/06/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(reshape2)
+# setwd("~/Cpp/WaveQTL/R/")
+source("~/Cpp/WaveQTL/R/WaveQTL_preprocess_funcs.R")
+data.path = "~/Cpp/WaveQTL/data/dsQTL/"
+test.path = "~/Cpp/WaveQTL/test/dsQTL/"
+```
+
+Here are some sample plots as per WaveQTL. These are the plots of the base locations, and the means and standard deviations of the data-space effect sizes at these bases. Using these, we can highlight base locations where we believe the SNP has a significant effect. The means, variances and likelihoods are after running the WaveQTL cpp code (see WaveQTL manual). Note that for WaveQTL there is one uniform $\pi$ parameter governing the probability of non-zero effect size at each scale.
+```{r, echo = F}
+pheno.dat = as.matrix(read.table(paste0(data.path,
+                                        "chr17.10160989.10162012.pheno.dat")))
+library.read.depth = scan(paste0(data.path, "library.read.depth.dat"))
+Covariates = as.matrix(read.table(paste0(data.path, "PC4.dat")))
+
+set.seed(1)
+meanR.thresh = 2
+res.noQT = WaveQTL_preprocess(Data = pheno.dat, library.read.depth =
+                                library.read.depth , Covariates = Covariates, meanR.thresh = meanR.thresh, no.QT = TRUE)
+# 1) Evidence for association between any SNPs
+pval = as.matrix(read.table(paste0(test.path,"output/test.fph.pval.txt")))
+# 2) LogLR of each of 24 'nearby' SNPs.
+logLR = as.matrix(read.table(paste0(test.path,"output/test.fph.logLR.txt")))
+# 3) Max L'hood estimates for pi, for EACH scale (11 scales) at each SNP.
+mlePi = as.matrix(read.table(paste0(test.path,"output/test.fph.pi.txt")))
+# 4) Posterior mean of beta effect size, at each s-l, for each SNP
+postMean = as.matrix(read.table(paste0(test.path,"output/test.fph.mean.txt")))
+# 5) Posterior variance of effect size beta, at each s-l, for each SNP
+postVar = as.matrix(read.table(paste0(test.path,"output/test.fph.var.txt")))
+
+## Read DWT matrix (to invert from w/let space to data space)
+Wmat_1024 = read.table("~/Cpp/WaveQTL/data/DWT/Wmat_1024",as.is = TRUE)
+W2mat_1024 = Wmat_1024*Wmat_1024
+
+# Sort the LogLRs to find SNP with highest and lowest LogLR for contrast.
+LRatios <- data.frame(chr = logLR[,1], LR = as.numeric(logLR[,2]),stringsAsFactors = F)
+LRatios[order(-LRatios$LR),]
+```
+
+Turns out SNP 11 has the highest LogLR (this statistic indicates highest probability of contrast between alternative ($\pi =\hat{\pi}$) and null models ($\pi \equiv 0$))
+```{r}
+LRatios[c(11,1),]
+```
+
+SNP 11 analysis. The pink regions denote bases where the mean is significantly (+ 3SDs) away from 0, denoting a significant effect size of SNP at that base in the data space. The light blue lines are the $\pm$3 SD regions from the mean. Hence, the significantly different to 0 regions are regions where the light blue lines capture a region which no longer includes 0 (red line) in it.
+```{r snp11}
+
+## We'll look at effect size of 11th SNP in genotype file
+sel_geno_IX = 11
+
+## Read posterior mean and varaince of effect sizes in Wavelet space
+## Set a path to files
+beta_mean_path= paste0(test.path,"output/test.no.QT.fph.mean.txt")
+beta_var_path = paste0(test.path,"output/test.no.QT.fph.var.txt")
+
+## Read posterior mean in Wavelet space and transform them back to data space 
+beta_mean = as.numeric(read.table(beta_mean_path)[sel_geno_IX,2:1025])
+beta_dataS = as.vector(-matrix(data=beta_mean, nr = 1, nc = 1024)%*%as.matrix(Wmat_1024))
+length(beta_dataS)
+
+
+## Read posterior variance in Wavelet space, transform them back to data space, and get standard deviation
+beta_var = as.numeric(read.table(beta_var_path)[sel_geno_IX,2:1025])
+beta_var_dataS = as.vector(matrix(data=beta_var, nr = 1, nc = 1024)%*%as.matrix(W2mat_1024))
+beta_sd_dataS = sqrt(beta_var_dataS)
+length(beta_sd_dataS)
+
+plot(beta_dataS,type = "l", main = "Posterior mean - data space")
+abline(h = 0, col = "red")
+
+plot(beta_sd_dataS,type = "l", main = "Posterior SD - data space")
+abline(h = 0, col = "red")
+
+## Visualize estimated effect size in the data space
+ymin_beta = min(beta_dataS - 3*beta_sd_dataS) - abs(min(beta_dataS - 3*beta_sd_dataS))*0.0000000001
+ymax_beta = max(beta_dataS + 3*beta_sd_dataS) + abs(max(beta_dataS + 3*beta_sd_dataS))*0.0000000001
+
+beta_l = beta_dataS - 3*beta_sd_dataS
+beta_r = beta_dataS + 3*beta_sd_dataS
+
+# Significance, beyond 3 SDs (for plotting)
+wh_l = which(beta_l > 0)
+wh_r = which(beta_r < 0)
+high_wh = sort(unique(union(wh_l, wh_r)))
+
+xval = 1:1024
+col_posi = xval[high_wh]
+
+par(mar = c(2,4,4,2))
+plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=c(1, 1024),main ="Posterior mean +/-3 posterior standard deviation", axes=FALSE)
+axis(2)
+if(length(col_posi) > 0){
+  for(j in 1:length(col_posi)){
+    polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
+  }
+}
+
+abline(h = 0, col = "red")
+points(xval, beta_dataS, col = "blue", type="l")
+points(xval, beta_l, col = "skyblue", type="l")
+points(xval, beta_r, col = "skyblue", type="l")
+box()
+
+```
+
+SNP 1:
+```{r snp1}
+
+## 1 has the lowest LogLR
+sel_geno_IX = 1
+
+## Read posterior mean and varaince of effect sizes in Wavelet space
+## Set a path to files
+beta_mean_path= paste0(test.path,"output/test.no.QT.fph.mean.txt")
+beta_var_path = paste0(test.path,"output/test.no.QT.fph.var.txt")
+
+## Read posterior mean in Wavelet space and transform them back to data space 
+beta_mean = as.numeric(read.table(beta_mean_path)[sel_geno_IX,2:1025])
+beta_dataS = as.vector(-matrix(data=beta_mean, nr = 1, nc = 1024)%*%as.matrix(Wmat_1024))
+length(beta_dataS)
+
+
+## Read posterior variance in Wavelet space, transform them back to data space, and get standard deviation
+beta_var = as.numeric(read.table(beta_var_path)[sel_geno_IX,2:1025])
+beta_var_dataS = as.vector(matrix(data=beta_var, nr = 1, nc = 1024)%*%as.matrix(W2mat_1024))
+beta_sd_dataS = sqrt(beta_var_dataS)
+length(beta_sd_dataS)
+
+plot(beta_dataS,type = "l", main = "Posterior mean - data space")
+abline(h = 0, col = "red")
+
+plot(beta_sd_dataS,type = "l", main = "Posterior SD - data space")
+abline(h = 0, col = "red")
+
+## Visualize estimated effect size in the data space
+ymin_beta = min(beta_dataS - 3*beta_sd_dataS) - abs(min(beta_dataS - 3*beta_sd_dataS))*0.0000000001
+ymax_beta = max(beta_dataS + 3*beta_sd_dataS) + abs(max(beta_dataS + 3*beta_sd_dataS))*0.0000000001
+
+beta_l = beta_dataS - 3*beta_sd_dataS
+beta_r = beta_dataS + 3*beta_sd_dataS
+
+# Significance, beyond 3 SDs (for plotting)
+wh_l = which(beta_l > 0)
+wh_r = which(beta_r < 0)
+high_wh = sort(unique(union(wh_l, wh_r)))
+
+xval = 1:1024
+col_posi = xval[high_wh]
+
+par(mar = c(2,4,4,2))
+plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=c(1, 1024),main ="Posterior mean +/-3 posterior standard deviation", axes=FALSE)
+axis(2)
+if(length(col_posi) > 0){
+  for(j in 1:length(col_posi)){
+    polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
+  }
+}
+
+abline(h = 0, col = "red")
+points(xval, beta_dataS, col = "blue", type="l")
+points(xval, beta_l, col = "skyblue", type="l")
+points(xval, beta_r, col = "skyblue", type="l")
+box()
+
+```
