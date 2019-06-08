@@ -9,7 +9,12 @@
 rm(list = ls()); gc();
 library(data.table)
 
-# # "chr17.10159002"
+# You can actually retrieve these values from the logLR files, and multiply by
+# log(10) (current values are stored as log of base 10). For example,
+# a <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/all_snp_hmt.fph.logLR.txt"))
+# log(10)*as.numeric(a[11,4:1026])
+
+# "chr17.10159002"
 # logBFs = c(0.350769
 #            ,-2.62E-05
 #            ,-0.0155632
@@ -18,26 +23,34 @@ library(data.table)
 #            ,-0.0964465
 #            ,-0.0330294
 # )
+# Omit the scaling coefficient from this script!
+a <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/all_snp_hmt.fph.logLR.txt"))
+logBFs = log(10)*as.numeric(a[1,4:1026])
 
-# "chr17.10161485"
-logBFs = c(-0.0134792
-           ,9.7995
-           ,5.45466
-           ,-0.334555
-           ,15.2401
-           ,8.63809
-           ,0.20578
-)
+# # "chr17.10161485"
+# logBFs = c(-0.0134792
+#            ,9.7995
+#            ,5.45466
+#            ,-0.334555
+#            ,15.2401
+#            ,8.63809
+#            ,0.20578
+# )
 
 
-groups = c(1, 2, 2, rep(3,4))
-iterations_max = 1000 #0
+groups = floor(log2((1:length(logBFs))))+1
+
+# starting group indicators,
+# tying_groups = NULL
+tying_groups = c(1,2,4,8,16,32,64,128,256,512) # NULL for no tying
+# tying_groups = c(1,2,4) # NULL for no tying
+# Note this should be c(1,2,3,5) in the c++ code to account for
+# scaling coefficient @ 1 always being in its own group.
+
+iterations_max = 1000 #1
 conv_tol = 0.0005
 diff <- Inf
 sumlog_use <- T
-
-### Currently not logged:
-# - probabilities (eps, pi, pp, pp joint, A, B)
 
 # Helper functions with trees ---------------------------------------------
 
@@ -64,15 +77,6 @@ tree_levels <- function(elements){
 }
 
 ## sumlog function to prevent underflow
-## will return the value of log(sum(exp(a + b)))
-# sumlog_waveQTL <- function(a,b){
-#   if(a > b){
-#     res = a + log(1 + exp(b - a))
-#   }else{
-#     res = b + log(1 + exp(a - b))
-#   }
-#   return(res)
-# }
 ## This one takes in vectors a and b
 sumlog_waveQTL_gen <- function(a,b){
   mtx <- matrix(c(a,b), ncol = 2)
@@ -90,6 +94,10 @@ if(!sumlog_use){
   #### LOG ADD ####
   bfs = logBFs
   ## END LOG ADD ##
+}
+
+if(is.null(tying_groups)){
+  tying_groups = c(1:length(groups))
 }
 
 n = 0
@@ -298,7 +306,7 @@ if(!sumlog_use){
 
 # Loop --------------------------------------------------------------------
 
-while(n <= iterations_max && abs(diff) > conv_tol){
+while(n < iterations_max && abs(diff) > conv_tol){
 
   old_logL <- new_logL
   cat(paste0("Iteration: ", n,"\n"))
@@ -348,15 +356,99 @@ while(n <= iterations_max && abs(diff) > conv_tol){
 
   # Update parameters -------------------------------------------------------
 
+  # Set up tying groups
+  num_tying_grps = length(tying_groups)
+
+  tying_start = integer()
+  tying_end = integer()
+  num_pheno_tying_grp = integer()
+  for(i in 1:(num_tying_grps - 1)){
+    tying_start = c(tying_start,tying_groups[i])
+    tying_end = c(tying_end,tying_groups[i + 1] - 1)
+    num_pheno_tying_grp = c(num_pheno_tying_grp,(tying_groups[i + 1] - 1) - tying_groups[i] + 1)
+  }
+  tying_start[num_tying_grps] = tying_groups[num_tying_grps]
+  tying_end[num_tying_grps] = length(groups)
+  num_pheno_tying_grp[num_tying_grps] = tying_end[num_tying_grps] - tying_start[num_tying_grps] + 1
+
+
   if(!sumlog_use){
-    pi <- a[1, `1`]
-    eps <- b[,.(`11`,`10`)]
+    # Tying pi
+    # Pi only has 1 coefficient - the first tying group
+    pi <- pp_i[tying_start[1]:tying_end[1], mean(`1`)]
+
+    # Tying epsilon
+    for(i in 1:num_tying_grps){
+      # Need to exclude tree-root: undefined parameter for that element
+      start_excl_head = max(2,tying_start[i])
+      indices_to_sum <- start_excl_head:tying_end[i]
+      parents_indices_to_sum <- get_parent_indices(indices_to_sum)
+      eps[indices_to_sum,] <-
+        pp_j_i[indices_to_sum , .(`11` = sum(`11`), `10` = sum(`10`), `01` = sum(`01`), `00` = sum(`00`))]/
+        pp_i[parents_indices_to_sum , .(`11` = sum(`1`), `10` = sum(`0`), `01` = sum(`1`), `00` = sum(`0`))]
+    }
+
   }else{
-    #### LOG ADD ####
-    pi <- a[1, `1`]
-    pi_1_minus <- a[1, `0`]
-    eps <- b[,.(`11`,`01`,`10`,`00`)]
-    ## END LOG ADD ##
+    # Tying pi
+    # Pi only has 1 coefficient - the first tying group
+    indices_to_sum <- tying_start[1]:tying_end[1]
+
+    num_pheno_grp_1 <- length(indices_to_sum)
+    if(num_pheno_grp_1 == 1){
+      pi <- pp_i[indices_to_sum, (`1`)]
+      pi_1_minus <- pp_i[indices_to_sum, (`0`)]
+    }else{
+      pi_1_values <- pp_i[indices_to_sum, (`1`)]
+      pi_0_values <- pp_i[indices_to_sum, (`0`)]
+
+      pi <- pi_1_values[1]
+      for(i in 1:(num_pheno_grp_1 - 1)){
+        pi <- sumlog_waveQTL_gen(pi,pi_1_values[i+1])
+      }
+      pi <- pi - log(num_pheno_grp_1)
+
+      pi_1_minus <- pi_0_values[1]
+      for(i in 1:(num_pheno_grp_1 - 1)){
+        pi_1_minus <- sumlog_waveQTL_gen(pi_1_minus,pi_0_values[i+1])
+      }
+      pi_1_minus <- pi_1_minus - log(num_pheno_grp_1)
+
+    }
+
+    # Tying epsilon - need to exclude tree-root: undefined parameter for that element
+    for(i in 1:num_tying_grps){
+      # Need to exclude tree-root: undefined parameter for that element
+      start_excl_head = max(2,tying_start[i])
+      indices_to_sum <- start_excl_head:tying_end[i]
+      parents_indices_to_sum <- get_parent_indices(indices_to_sum)
+
+      if(tying_end[i] < start_excl_head){
+        next
+      }else{
+        num_pheno <- length(indices_to_sum)
+
+        if(num_pheno == 1){
+          eps[indices_to_sum,] <- b[indices_to_sum, .(`11`, `01`, `10`, `00`)]
+
+        }else{
+          pp_values <- pp_i[parents_indices_to_sum,.(`1`,`1`,`0`,`0`)]
+          pp_joint_values <- pp_j_i[indices_to_sum, .(`11`,`01`,`10`,`00`)]
+
+          for(j in 1:4){
+            eps_logs <- pp_joint_values[1][[j]]
+            eps_denom_logs <- pp_values[1][[j]]
+
+            for(k in 1:(num_pheno - 1)){
+              eps_logs <- sumlog_waveQTL_gen(eps_logs,pp_joint_values[k + 1][[j]])
+              eps_denom_logs <- sumlog_waveQTL_gen(eps_denom_logs,pp_values[k + 1][[j]])
+            }
+            eps[indices_to_sum][[j]] <- eps_logs - eps_denom_logs
+          }
+
+        }
+      }
+    }
+
   }
 
   # E-step ------------------------------------------------------------------
@@ -526,3 +618,4 @@ while(n <= iterations_max && abs(diff) > conv_tol){
 
 }
 
+cat(paste0("New LogL: ", new_logL,"\n"))

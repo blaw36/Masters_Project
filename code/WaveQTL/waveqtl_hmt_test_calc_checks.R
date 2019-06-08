@@ -1,6 +1,6 @@
 # wavelet checker
 
-file_prefix = "prod_hmt2"
+file_prefix = "tie_test1"
 path = "Cpp/WaveQTL_HMT/test/dsQTL/output/"
 
 files_to_chk <- list.files(path)
@@ -16,7 +16,7 @@ for(i in files_to_chk){
   }
 }
 
-if(!sumlog_use){
+if(sumlog_use){
   all.equal(round(a_i[,`1`],5),as.numeric(cpp_output$.fph.alpha_sl_1.txt[-(1:2)]))
   all.equal(round(a_i[,`0`],5),as.numeric(cpp_output$.fph.alpha_sl_0.txt[-(1:2)]))
 
@@ -39,7 +39,7 @@ if(!sumlog_use){
   all.equal(round(eps[-1,`10`],5),as.numeric(cpp_output$.fph.eps_10.txt[-(1:3)]))
 
   # Final logL, plus the log_10(BFs) for each other
-  all.equal(round(c(new_logL,log10(bfs)),5),as.numeric(cpp_output$.fph.logLR.txt[-c(1,3)]))
+  all.equal(round(c(new_logL,bfs/log(10)),5),as.numeric(cpp_output$.fph.logLR.txt[-c(1,3)]))
 
 }else{
   all.equal(round(exp(a_i[,`1`]),5),as.numeric(cpp_output$.fph.alpha_sl_1.txt[-(1:2)]))
