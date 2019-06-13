@@ -9837,29 +9837,26 @@ std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
         // just the scaling coefficient)
         for(int gi = 1; gi < numG; gi++){
 
-// eps_11; gsl_vector_set(eps_11_vect, wc, eps_11);
-// eps_01; gsl_vector_set(eps_01_vect, wc, eps_01);
-// eps_10; gsl_vector_set(eps_10_vect, wc, eps_10);
-// eps_00; gsl_vector_set(eps_00_vect, wc, eps_00);
-
-          int numP = nPH_GP[gi];
+          // int numP = nPH_GP[gi];
           int st = group_start[gi] - 1;
           // Make sure all of our groups start at something >= 2,
           // as positions 0 and 1 don't have parents.
           int start_excl_head = max(2, st);
           int end = group_end[gi] - 1;
+          int numP = end - start_excl_head + 1;
+
           if(end < start_excl_head){
             // Nothing in this group to tie, go to next group.
             continue;
           }
 
           if(numP == 1){
-            pp_joint_sl_11 = gsl_vector_get(pp_joint_11, st);
-            pp_joint_sl_10 = gsl_vector_get(pp_joint_10, st);
-            pp_joint_sl_01 = gsl_vector_get(pp_joint_01, st);
-            pp_joint_sl_00 = gsl_vector_get(pp_joint_00, st);
+            pp_joint_sl_11 = gsl_vector_get(pp_joint_11, start_excl_head);
+            pp_joint_sl_10 = gsl_vector_get(pp_joint_10, start_excl_head);
+            pp_joint_sl_01 = gsl_vector_get(pp_joint_01, start_excl_head);
+            pp_joint_sl_00 = gsl_vector_get(pp_joint_00, start_excl_head);
 
-            int parent_wc = st / 2; // integer division
+            int parent_wc = start_excl_head / 2; // integer division
             pp_psl_1 = gsl_vector_get(pp_1, parent_wc);
             pp_psl_0 = gsl_vector_get(pp_0, parent_wc);
 
@@ -9868,25 +9865,25 @@ std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
             eps_10 = pp_joint_sl_10 - pp_psl_0;
             eps_00 = pp_joint_sl_00 - pp_psl_0;
 
-            gsl_vector_set(eps_11_vect, st, eps_11);
-            gsl_vector_set(eps_01_vect, st, eps_01);
-            gsl_vector_set(eps_10_vect, st, eps_10);
-            gsl_vector_set(eps_00_vect, st, eps_00);
+            gsl_vector_set(eps_11_vect, start_excl_head, eps_11);
+            gsl_vector_set(eps_01_vect, start_excl_head, eps_01);
+            gsl_vector_set(eps_10_vect, start_excl_head, eps_10);
+            gsl_vector_set(eps_00_vect, start_excl_head, eps_00);
 
           }else{
           
-            pp_joint_sl_11 = gsl_vector_get(pp_joint_11, st);
-            pp_joint_sl_10 = gsl_vector_get(pp_joint_10, st);
-            pp_joint_sl_01 = gsl_vector_get(pp_joint_01, st);
-            pp_joint_sl_00 = gsl_vector_get(pp_joint_00, st);
+            pp_joint_sl_11 = gsl_vector_get(pp_joint_11, start_excl_head);
+            pp_joint_sl_10 = gsl_vector_get(pp_joint_10, start_excl_head);
+            pp_joint_sl_01 = gsl_vector_get(pp_joint_01, start_excl_head);
+            pp_joint_sl_00 = gsl_vector_get(pp_joint_00, start_excl_head);
 
-            int parent_wc = st / 2; // integer division
+            int parent_wc = start_excl_head / 2; // integer division
             pp_psl_1 = gsl_vector_get(pp_1, parent_wc);
             pp_psl_0 = gsl_vector_get(pp_0, parent_wc);
 
             // //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
             // std::cout << "group:" << gi << "\n";
-            // std::cout << "start:" << st << "\n";
+            // std::cout << "start:" << start_excl_head << "\n";
             // std::cout << "end:" << end << "\n";
             // std::cout << "numP:" << numP << "\n";
             // std::cout << "parent_wc:" << parent_wc << "\n";
@@ -9900,7 +9897,7 @@ std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
 
             int extra_ind = numP - 1;
             for(int i = 0; i < extra_ind; i++){
-              int next_ind = st + 1 + i;
+              int next_ind = start_excl_head + 1 + i;
 
               double pp_joint_sl_11_next = gsl_vector_get(pp_joint_11, next_ind);
               double pp_joint_sl_10_next = gsl_vector_get(pp_joint_10, next_ind);
@@ -9944,10 +9941,10 @@ std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
 
             for(int i = 0; i < numP; i++){
               // Assign same values to all in the group
-              gsl_vector_set(eps_11_vect, st + i, eps_11);
-              gsl_vector_set(eps_01_vect, st + i, eps_01);
-              gsl_vector_set(eps_10_vect, st + i, eps_10);
-              gsl_vector_set(eps_00_vect, st + i, eps_00);  
+              gsl_vector_set(eps_11_vect, start_excl_head + i, eps_11);
+              gsl_vector_set(eps_01_vect, start_excl_head + i, eps_01);
+              gsl_vector_set(eps_10_vect, start_excl_head + i, eps_10);
+              gsl_vector_set(eps_00_vect, start_excl_head + i, eps_00);  
             }
 
           }

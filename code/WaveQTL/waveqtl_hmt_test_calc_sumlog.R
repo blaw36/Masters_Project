@@ -15,17 +15,17 @@ library(data.table)
 # log(10)*as.numeric(a[11,4:1026])
 
 # "chr17.10159002"
-# logBFs = c(0.350769
-#            ,-2.62E-05
-#            ,-0.0155632
-#            ,-0.0895906
-#            ,0.147018
-#            ,-0.0964465
-#            ,-0.0330294
-# )
-# Omit the scaling coefficient from this script!
-a <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/all_snp_hmt.fph.logLR.txt"))
-logBFs = log(10)*as.numeric(a[1,4:1026])
+logBFs = c(0.350769
+           ,-2.62E-05
+           ,-0.0155632
+           ,-0.0895906
+           ,0.147018
+           ,-0.0964465
+           ,-0.0330294
+)
+# # Omit the scaling coefficient from this script!
+# a <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/all_snp_hmt.fph.logLR.txt"))
+# logBFs = log(10)*as.numeric(a[1,4:1026])
 
 # # "chr17.10161485"
 # logBFs = c(-0.0134792
@@ -41,9 +41,11 @@ logBFs = log(10)*as.numeric(a[1,4:1026])
 groups = floor(log2((1:length(logBFs))))+1
 
 # starting group indicators,
-# tying_groups = NULL
-tying_groups = c(1,2,4,8,16,32,64,128,256,512) # NULL for no tying
-# tying_groups = c(1,2,4) # NULL for no tying
+# tying_groups = NULL # for no tying
+# tying_groups = c(1,2,4,8,16,32,64,128,256,512)
+tying_groups = c(1,2)
+
+# tying_groups = c(1,2,4)
 # Note this should be c(1,2,3,5) in the c++ code to account for
 # scaling coefficient @ 1 always being in its own group.
 

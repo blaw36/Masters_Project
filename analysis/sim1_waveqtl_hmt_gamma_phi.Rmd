@@ -1,0 +1,137 @@
+---
+title: "WaveQTL with HMT - Simulation 1 - Generate Gamma, Phi"
+author: "Brendan Law"
+date: "11/06/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/" # change this when you port it all over to the Masters Git repo
+geno_select <- 11 # the one used in the demo
+
+# Helper function to get parent indices of a given index
+# From "../code/WaveQTL/waveqtl_hmt_test_calc_sumlog.R"
+get_parent_indices <- function(indx, tree_root_indx = 1){
+  return_indices <- indx
+  return_indices <- (return_indices - tree_root_indx + 1) %/% 2
+
+  # root of tree doesn't return any index
+  return_indices[which(indx == tree_root_indx)] <- NA_integer_
+  return(return_indices)
+}
+```
+
+## Background
+
+The idea behind this notebook is to generate a sequence of $\gamma_{s,l}$'s for each scale, $s$ and location, $l$. This isn't as straightforward as in the WaveQTL (no HMT) case as the $\gamma_{s,l}$'s are no longer independent of each other (as they are related by the tree prior structure), hence:
+
+$$P(\gamma_{s,l} = m \mid \hat{\pi}, y_{s,l}, g)$$
+is no longer a straightforward quantity to calculate, as the posterior distribution of $\gamma_{s,l}$ now depends on all data, $\mathbf{y} = (y_{1,1},\dots,y_{S,L^S})$. Ie. we now have that:
+
+$$P(\gamma_{s,l} = m \mid \hat{\pi}, \mathbf{y}, g)$$
+
+Hence, the approach we take is to simulate instances of the entire gamma vector, $\boldsymbol{\gamma} = (\gamma_{1,1},\dots,\gamma_{S,L^S}$.
+
+We know that:
+
+$$
+\gamma_{1,1} =
+\begin{cases}
+  1 & \text{wp} & P(\gamma_{1,1} = 1 \mid \hat{\pi}, \mathbf{y}, g) := A_{1,1}(1)\\
+  0 & \text{wp} & 1 - A_{1,1}(1)
+\end{cases}
+$$
+
+We use this to simulate a value for $\gamma_{1,1}$, and then let this flow on sequentially to generate the remaining $\gamma$'s. For scale-location $(2,1)$, for example:
+
+$$
+\gamma_{2,1} =
+\begin{cases}
+  1 & \text{wp} & P(\gamma_{2,1} = 1 \mid \gamma_{1,1} = m, \hat{\pi}, \mathbf{y}, g) := B_{(2,1),(1,1)}(1,m)\\
+  0 & \text{wp} & 1 - B_{(2,1),(1,1)}(1,m)
+\end{cases}
+$$
+which depends on $m$, the simulated state of $\gamma_{1,1}$. In general:
+
+$$
+\gamma_{s,l} =
+\begin{cases}
+  1 & \text{wp} & P(\gamma_{s,l} = m \mid \gamma_{p(sl)} = n, \hat{\pi}, \mathbf{y}, g) := B_{sl,p(sl)}(m,n)\\
+  0 & \text{wp} & 1 - B_{sl,p(sl)}(m,n)
+\end{cases}
+$$
+
+Luckily, both quantites $A$ and $B$ are output from our model. ($B$ can be calculated as our model outputs as joint and marginal distributions, so by dividing them we get the conditional quantity, $B$):
+$$
+P(\gamma_{s,l} = m \mid \gamma_{p(sl)} = n, \hat{\pi}, \mathbf{y}, g) = \frac{P(\gamma_{s,l} = m, \gamma_{p(sl)} = n \mid \hat{\pi}, \mathbf{y}, g)}{P(\gamma_{p(sl)} = n \mid \hat{\pi}, \mathbf{y}, g)}
+$$
+
+Here's an example working based on tree-level tying:
+
+```{r load_data, echo = F}
+a_1 <- as.matrix(read.table(paste0(data_path,"tree_tie.fph.pp.txt")))[geno_select,]
+b_11 <- as.matrix(read.table(paste0(data_path,"tree_tie.fph.pp_joint_11.txt")))[geno_select,]
+b_10 <- as.matrix(read.table(paste0(data_path,"tree_tie.fph.pp_joint_10.txt")))[geno_select,]
+# dim(a_1);dim(b_11);dim(b_10);
+# Just take the 1023 numeric values (excl first one as it's the scaling coefficient), from cols 3:1025. Also, we exp() our values as our software returned everything in logs.
+# Keep in mind that the first value of b_11, b_10 is just a placeholder - as the top element of the tree has no parent.
+a_1 <- exp(as.numeric(a_1[3:1025]))
+b_11 <- exp(as.numeric(b_11[3:1025]))
+b_10 <- exp(as.numeric(b_10[3:1025]))
+```
+
+Now, let's simulate a sequence of $\gamma$'s:
+```{r sim_gamma_1}
+gamma_seq <- numeric()
+set.seed(10)
+rand_seq <- runif(1023)
+gamma_seq[1] <- ifelse(rand_seq[1] < a_1[1], 1, 0)
+
+for(i in 2:1023){
+  indx <- i
+  parent_indx <- get_parent_indices(indx)
+  parent_gamma <- gamma_seq[parent_indx]
+  
+  if(parent_gamma == 1){
+    numerator <- b_11[indx]
+    denominator <- a_1[parent_indx]
+  }else if(parent_gamma == 0){
+    numerator <- b_10[indx]
+    denominator <- 1 - a_1[parent_indx]
+  }
+  
+  post_prob <- numerator/denominator
+  
+  gamma_seq[i] <- ifelse(rand_seq[i] < post_prob, 1, 0)
+  
+}
+```
+
+```{r plot_attempt1}
+# Interleaves vectors with two bookend 0s, and a 0 between each current element
+# (for spacing of elements like a tree in a plot)
+vector_centeriser <- function(vect){
+  in_between_zeros <- length(vect) - 1
+  
+  res_vect <- c(0,vect[1],0)
+    for(i in 1:in_between_zeros){
+      res_vect <- c(res_vect,vect[i + 1],0)
+    }  
+  return(res_vect)
+}
+
+# Kind of a start to visualising tree coefficients
+par(mfrow = c(10,1)
+    ,mar = c(2,2,2,2))
+plot(vector_centeriser(gamma_seq[1]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[2:3]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[4:7]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[8:15]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[16:31]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[32:63]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[64:127]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[128:255]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[256:511]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[512:1023]),type = "h",ylab = "",axes = F)#; axis(1)
+```

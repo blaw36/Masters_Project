@@ -1,6 +1,6 @@
 # wavelet checker
 
-file_prefix = "tie_test1"
+file_prefix = "tie_g2_test"
 path = "Cpp/WaveQTL_HMT/test/dsQTL/output/"
 
 files_to_chk <- list.files(path)
