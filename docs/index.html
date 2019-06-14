@@ -484,7 +484,11 @@ div.tocify {
 <ul>
 <li>Goal here is to draw samples from the posterior distribution of <span class="math inline">\(\beta_{sl}\)</span>, and use the inverse wavelet matrix to convert estimate model coefficients in the data space.</li>
 <li>Due to the HMT priors, it’s no longer guaranteed that the posterior variance of <span class="math inline">\(\beta\)</span> at each scale-location is independent (or additive) as per the non-HMT case. Hence, we proceed to estimate the mean and variance quantities through simulation.</li>
-<li><strong>Work is coming soon</strong>.</li>
+<li>You can see the first iteration of that work <a href="sim1_waveqtl_hmt_gamma_phi.html">here</a>. This was run under the following conditions:
+<ul>
+<li>Using WaveQTL data (WaveQTL use/do not use vector, non-quantile transformed data)</li>
+<li>Coefficients from the same levels of the tree were tied together to estimate parameters</li>
+</ul></li>
 </ul>
 </div>
 <div id="simulation---hmt-code-verification" class="section level4">

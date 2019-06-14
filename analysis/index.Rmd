@@ -59,7 +59,9 @@ Some writings about the simulations and data analysis exercises we undertook aro
 #### Simulation - estimating coefficients in data space
 - Goal here is to draw samples from the posterior distribution of $\beta_{sl}$, and use the inverse wavelet matrix to convert estimate model coefficients in the data space.
 - Due to the HMT priors, it's no longer guaranteed that the posterior variance of $\beta$ at each scale-location is independent (or additive) as per the non-HMT case. Hence, we proceed to estimate the mean and variance quantities through simulation.
-- __Work is coming soon__.
+- You can see the first iteration of that work [here](sim1_waveqtl_hmt_gamma_phi.html). This was run under the following conditions:
+	- Using WaveQTL data (WaveQTL use/do not use vector, non-quantile transformed data)
+	- Coefficients from the same levels of the tree were tied together to estimate parameters
 
 
 #### Simulation - HMT code verification

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Brendan Law" />
+
+<meta name="date" content="2019-11-06" />
+
+<title>WaveQTL with HMT - Simulation 1 - Generate Gamma, Phi, Effect Size</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/flatly.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 60px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h2 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h3 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h4 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h5 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h6 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Brendan's Masters Project</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/blaw36/Masters_Project">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">WaveQTL with HMT - Simulation 1 - Generate Gamma, Phi, Effect Size</h1>
+<h4 class="author"><em>Brendan Law</em></h4>
+<h4 class="date"><em>11/06/2019</em></h4>
+
+</div>
+
+
+<div id="background" class="section level2">
+<h2>Background</h2>
+<p>The idea behind this notebook is to generate a sequence of <span class="math inline">\(\gamma_{s,l}\)</span>’s for each scale, <span class="math inline">\(s\)</span> and location, <span class="math inline">\(l\)</span>. This isn’t as straightforward as in the WaveQTL (no HMT) case as the <span class="math inline">\(\gamma_{s,l}\)</span>’s are no longer independent of each other (as they are related by the tree prior structure), hence:</p>
+<p><span class="math display">\[P(\gamma_{s,l} = m \mid \hat{\pi}, y_{s,l}, g)\]</span> is no longer a straightforward quantity to calculate, as the posterior distribution of <span class="math inline">\(\gamma_{s,l}\)</span> now depends on all data, <span class="math inline">\(\mathbf{y} = (y_{1,1},\dots,y_{S,L^S})\)</span>. Ie. we now have that:</p>
+<p><span class="math display">\[P(\gamma_{s,l} = m \mid \hat{\pi}, \mathbf{y}, g)\]</span></p>
+<p>Hence, the approach we take is to simulate instances of the entire gamma vector, <span class="math inline">\(\boldsymbol{\gamma} = (\gamma_{1,1},\dots,\gamma_{S,L^S}\)</span>.</p>
+<p>We know that:</p>
+<p><span class="math display">\[
+\gamma_{1,1} =
+\begin{cases}
+  1 &amp; \text{wp} &amp; P(\gamma_{1,1} = 1 \mid \hat{\pi}, \mathbf{y}, g) := A_{1,1}(1)\\
+  0 &amp; \text{wp} &amp; 1 - A_{1,1}(1)
+\end{cases}
+\]</span></p>
+<p>We use this to simulate a value for <span class="math inline">\(\gamma_{1,1}\)</span>, and then let this flow on sequentially to generate the remaining <span class="math inline">\(\gamma\)</span>’s. For scale-location <span class="math inline">\((2,1)\)</span>, for example:</p>
+<p><span class="math display">\[
+\gamma_{2,1} =
+\begin{cases}
+  1 &amp; \text{wp} &amp; P(\gamma_{2,1} = 1 \mid \gamma_{1,1} = m, \hat{\pi}, \mathbf{y}, g) := B_{(2,1),(1,1)}(1,m)\\
+  0 &amp; \text{wp} &amp; 1 - B_{(2,1),(1,1)}(1,m)
+\end{cases}
+\]</span> which depends on <span class="math inline">\(m\)</span>, the simulated state of <span class="math inline">\(\gamma_{1,1}\)</span>. In general:</p>
+<p><span class="math display">\[
+\gamma_{s,l} =
+\begin{cases}
+  1 &amp; \text{wp} &amp; P(\gamma_{s,l} = m \mid \gamma_{p(sl)} = n, \hat{\pi}, \mathbf{y}, g) := B_{sl,p(sl)}(m,n)\\
+  0 &amp; \text{wp} &amp; 1 - B_{sl,p(sl)}(m,n)
+\end{cases}
+\]</span></p>
+<p>Luckily, both quantites <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span> are output from our model. (<span class="math inline">\(B\)</span> can be calculated as our model outputs as joint and marginal distributions, so by dividing them we get the conditional quantity, <span class="math inline">\(B\)</span>): <span class="math display">\[
+P(\gamma_{s,l} = m \mid \gamma_{p(sl)} = n, \hat{\pi}, \mathbf{y}, g) = \frac{P(\gamma_{s,l} = m, \gamma_{p(sl)} = n \mid \hat{\pi}, \mathbf{y}, g)}{P(\gamma_{p(sl)} = n \mid \hat{\pi}, \mathbf{y}, g)}
+\]</span></p>
+<p>Here’s an example working based on tree-level tying:</p>
+<p>Now, let’s simulate a sequence of <span class="math inline">\(\gamma\)</span>’s:</p>
+<pre class="r"><code>gamma_seq &lt;- numeric()
+set.seed(10)
+rand_seq &lt;- runif(1023)
+gamma_seq[1] &lt;- ifelse(rand_seq[1] &lt; a_1[1], 1, 0)
+
+for(i in 2:1023){
+  indx &lt;- i
+  parent_indx &lt;- get_parent_indices(indx)
+  parent_gamma &lt;- gamma_seq[parent_indx]
+  
+  if(parent_gamma == 1){
+    numerator &lt;- b_11[indx]
+    denominator &lt;- a_1[parent_indx]
+  }else if(parent_gamma == 0){
+    numerator &lt;- b_10[indx]
+    denominator &lt;- 1 - a_1[parent_indx]
+  }
+  
+  post_prob &lt;- numerator/denominator
+  
+  gamma_seq[i] &lt;- ifelse(rand_seq[i] &lt; post_prob, 1, 0)
+  
+}</code></pre>
+<pre class="r"><code>### RUN INTERACTIVELY!
+
+# Interleaves vectors with two bookend 0s, and a 0 between each current element
+# (for spacing of elements like a tree in a plot)
+vector_centeriser &lt;- function(vect){
+  in_between_zeros &lt;- length(vect) - 1
+  
+  res_vect &lt;- c(0,vect[1],0)
+    for(i in 1:in_between_zeros){
+      res_vect &lt;- c(res_vect,vect[i + 1],0)
+    }  
+  return(res_vect)
+}
+
+# Kind of a start to visualising tree coefficients
+par(mfrow = c(10,1)
+    ,mar = c(2,2,2,2))
+plot(vector_centeriser(gamma_seq[1]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[2:3]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[4:7]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[8:15]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[16:31]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[32:63]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[64:127]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[128:255]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[256:511]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq[512:1023]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)</code></pre>
+<p>Now, we have our sequence of <span class="math inline">\(\gamma\)</span>’s, we can then simulate values for each <span class="math inline">\(\beta\)</span>. We have: <span class="math display">\[ 
+\beta_{s,l} =
+\begin{cases}
+  \text{sample from 3-param t-dist} &amp; \text{ if } \gamma_{s,l} = 1 \\
+  0 &amp; \text{ if } \gamma_{s,l} = 0
+\end{cases}
+\]</span> For some more details about simulating from a 3-parameter t-distribution, see the short page on that here. (INSERT LINK)</p>
+<p>From our HMT output, we are given: <span class="math display">\[
+\text{mean1}_{s,l} = a_{s,l} \\
+\text{var1}_{s,l} = \frac{b_{s,l}\nu_{s,l}}{\nu_{s,l} - 2} \\
+\nu_{s,l} = N = 70, \forall s,l \\
+\therefore b_{s,l} = \frac{\text{var1}_{s,l} * (N - 2)}{N}
+\]</span></p>
+<pre class="r"><code># Load mean, var outputs from HMT
+mean1 &lt;- as.matrix(read.table(paste0(data_path,dataset,&quot;.fph.mean1.txt&quot;)))[geno_select,]
+var1 &lt;- as.matrix(read.table(paste0(data_path,dataset,&quot;.fph.var1.txt&quot;)))[geno_select,]
+# Just take the 1023 numeric values (excl first one as it&#39;s the scaling coefficient), from cols 3:1025.
+mean1 &lt;- as.numeric(mean1[3:1025])
+var1 &lt;- as.numeric(var1[3:1025])
+
+## back out a, b (from t-dist) parameters:
+t_nu &lt;- 70
+t_a &lt;- mean1
+t_b &lt;- var1*(t_nu-2)/t_nu
+num_pheno &lt;- length(mean1)
+
+t_sample &lt;- stats::rt(n = num_pheno, df = t_nu)
+t_sample_3p &lt;- t_a+(sqrt(t_b)*t_sample)
+
+## Simulate beta, being either 3-param t-dist, or 0
+beta_seq &lt;- rep(0,num_pheno)
+gamma_1_indx &lt;- which(gamma_seq == 1) 
+beta_seq[gamma_1_indx] &lt;- t_sample_3p[gamma_1_indx]</code></pre>
+<p>Now we’ll use an inverse Haar wavelet transform to transform the <span class="math inline">\(\beta\)</span>’s back into data space values (<span class="math inline">\(\alpha\)</span>’s), and then calculate some sample statistics (mean, variance) from these.</p>
+<pre class="r"><code>Wmat_1024 = read.table(&quot;~/Cpp/WaveQTL_HMT/data/DWT/Wmat_1024&quot;,as.is = TRUE)
+# W2mat_1024 = Wmat_1024*Wmat_1024
+
+# currently only using rows 2-&gt;1024, as not sure what we&#39;re doing with scaling coefficient yet.
+# Still columns 1-&gt;1024, to generate effect sizes at each of the 1024 bases.
+
+### Do we need to take &#39;-ve&#39; or not?
+# beta_dataS = as.vector(-matrix(data=beta_seq, nr = 1, nc = 1024)%*%as.matrix(Wmat_1024))
+beta_dataS = as.vector(matrix(data=beta_seq, nr = 1, nc = 1023)%*%as.matrix(Wmat_1024)[2:1024,])
+plot(beta_dataS, main = &quot;Simulation 1&quot;, type = &quot;l&quot;)</code></pre>
+<p><img src="sim1_waveqtl_hmt_gamma_phi_files/figure-html/inverse_wlet-1.png" width="672" /> The above is an example of a data space vector. Now we replicate over a number of samples.</p>
+<pre class="r"><code>num_samples &lt;- 1000
+set.seed(10)
+beta_data_samples &lt;- matrix(nrow = num_samples,ncol = 1024)
+
+for(j in 1:num_samples){
+  # Generate gamma
+  gamma_seq &lt;- numeric()
+  
+  rand_seq &lt;- runif(1023)
+  gamma_seq[1] &lt;- ifelse(rand_seq[1] &lt; a_1[1], 1, 0)
+  
+  for(i in 2:1023){
+    indx &lt;- i
+    parent_indx &lt;- get_parent_indices(indx)
+    parent_gamma &lt;- gamma_seq[parent_indx]
+    
+    if(parent_gamma == 1){
+      numerator &lt;- b_11[indx]
+      denominator &lt;- a_1[parent_indx]
+    }else if(parent_gamma == 0){
+      numerator &lt;- b_10[indx]
+      denominator &lt;- 1 - a_1[parent_indx]
+    }
+    
+    post_prob &lt;- numerator/denominator
+    
+    gamma_seq[i] &lt;- ifelse(rand_seq[i] &lt; post_prob, 1, 0)
+  }
+  
+  # Generate beta
+  t_sample &lt;- stats::rt(n = num_pheno, df = t_nu)
+  t_sample_3p &lt;- t_a+(sqrt(t_b)*t_sample)
+  
+  ## Simulate beta, being either 3-param t-dist, or 0
+  beta_seq &lt;- rep(0,num_pheno)
+  gamma_1_indx &lt;- which(gamma_seq == 1) 
+  beta_seq[gamma_1_indx] &lt;- t_sample_3p[gamma_1_indx]
+  
+  # Transform into data space
+  beta_data_samples[j,] = as.vector(matrix(data=beta_seq, nr = 1, nc = 1023)%*%as.matrix(Wmat_1024)[2:1024,])
+}
+
+sample_mean &lt;- apply(beta_data_samples,MARGIN = 2,mean)
+sample_sd &lt;- apply(beta_data_samples,MARGIN = 2,sd)</code></pre>
+<p>Plots:</p>
+<pre class="r"><code>plot(sample_mean,main=&quot;sample mean&quot;,type=&quot;l&quot;)
+abline(h = 0, col = &quot;red&quot;)</code></pre>
+<p><img src="sim1_waveqtl_hmt_gamma_phi_files/figure-html/sample_plots-1.png" width="672" /></p>
+<pre class="r"><code>plot(sample_sd,main=&quot;sample sd&quot;,type=&quot;l&quot;)
+abline(h = 0, col = &quot;red&quot;)</code></pre>
+<p><img src="sim1_waveqtl_hmt_gamma_phi_files/figure-html/sample_plots-2.png" width="672" /></p>
+<p>Plots in WaveQTL style:</p>
+<pre class="r"><code>ymin_beta = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+ymax_beta = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+
+beta_l = sample_mean - 3*sample_sd
+beta_r = sample_mean + 3*sample_sd
+
+wh_l = which(beta_l &gt; 0)
+wh_r = which(beta_r &lt; 0)
+high_wh = sort(unique(union(wh_l, wh_r)))
+
+xval = 1:1024
+col_posi = xval[high_wh]
+
+# pdf(&quot;../test/dsQTL/effectSize.pdf&quot;, width = 8, height=3)
+par(mar = c(2,4,4,2))
+plot(1,1,type=&quot;n&quot;, xlab = &quot;position&quot;, ylab = &quot;Effect size&quot;,ylim=c(ymin_beta, ymax_beta),xlim=c(1, 1024),main =&quot;Posterior mean +/-3 posterior standard deviation&quot;, axes=FALSE)
+axis(2)
+if(length(col_posi) &gt; 0){
+for(j in 1:length(col_posi)){
+    polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col =&quot;pink&quot;, border = NA)
+}
+}
+
+abline(h = 0, col = &quot;red&quot;)
+points(xval, sample_mean, col = &quot;blue&quot;, type=&quot;l&quot;)
+points(xval, beta_l, col = &quot;skyblue&quot;, type=&quot;l&quot;)
+points(xval, beta_r, col = &quot;skyblue&quot;, type=&quot;l&quot;)
+box()</code></pre>
+<p><img src="sim1_waveqtl_hmt_gamma_phi_files/figure-html/sample_plots_waveqtl-1.png" width="672" /></p>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

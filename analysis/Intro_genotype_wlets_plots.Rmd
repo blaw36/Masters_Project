@@ -1,5 +1,5 @@
 ---
-title: "WaveQTL_samplePlots"
+title: "WaveQTL Sample Plots"
 author: "Brendan Law"
 date: "04/06/2019"
 output: html_document

@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
 ```
 
+## Note
+To relate this work to the WaveQTL supplementary material, define $a := \mu$ and $b := \sigma^2$.
 
 ## The three-parameter (generalised) student's t-distribution 
 

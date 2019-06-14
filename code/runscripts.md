@@ -8,6 +8,7 @@
 ### Tying
 Several tying techniques:
 
+### With quantile transform (for likelihood ratio tests)
 #### Group 1: Top (root) of tree on its own level
 
 1) Tree-level tying (uses default group file, which is based on tree levels)
@@ -45,4 +46,10 @@ Several tying techniques:
 7) Tree levels 1-5 tied together
 ```
 ../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/chr17.10160989.10162012.2kb.cis.geno -p WCs.txt -u use.txt -o g15_tie -f 1024 -hmt 1 > stdout.txt 2> stderr.txt 
+```
+
+### Without quantile transform (for effect size measurement)
+1) Tree-level tying (uses default group file, which is based on tree levels)
+```
+../../WaveQTL -gmode 1 -g ../../data/dsQTL/chr17.10160989.10162012.2kb.cis.geno -p WCs.no.QT.txt -u use.txt -o tree_tie_noQT -f 1024 -hmt 1 > stdout.txt 2> stderr.txt 
 ```
