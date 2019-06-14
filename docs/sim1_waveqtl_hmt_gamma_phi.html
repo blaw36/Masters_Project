@@ -444,18 +444,25 @@ div.tocify {
 \]</span></p>
 <p>Luckily, both quantites <span class="math inline">\(A\)</span> and <span class="math inline">\(B\)</span> are output from our model. (<span class="math inline">\(B\)</span> can be calculated as our model outputs as joint and marginal distributions, so by dividing them we get the conditional quantity, <span class="math inline">\(B\)</span>): <span class="math display">\[
 P(\gamma_{s,l} = m \mid \gamma_{p(sl)} = n, \hat{\pi}, \mathbf{y}, g) = \frac{P(\gamma_{s,l} = m, \gamma_{p(sl)} = n \mid \hat{\pi}, \mathbf{y}, g)}{P(\gamma_{p(sl)} = n \mid \hat{\pi}, \mathbf{y}, g)}
-\]</span></p>
+\]</span> <em>Note - Scaling coefficient:</em> The scaling coefficients (the coefficients at the very top, not actually part of the tree) are unaffected by the tree analysis (they do not affect/are not affected by the elements of the tree, as they are completely disconnected from the tree). Hence, for now, we will use the outputs from WaveQTL to simulate the mean and variance of the scaling coefficient. That is, we will use its corresponding <span class="math inline">\(\phi_{0,0} = P(\gamma_{0,0} = 1 \mid \hat{\pi}, y_{0,0}, g)\)</span> to simulate its state, then sample its <span class="math inline">\(\beta\)</span> value. We will use 3-parameter t-distribution mean and variance parameters from the original WaveQTL output also.</p>
 <p>Here’s an example working based on tree-level tying:</p>
 <p>Now, let’s simulate a sequence of <span class="math inline">\(\gamma\)</span>’s:</p>
 <pre class="r"><code>gamma_seq &lt;- numeric()
 set.seed(10)
-rand_seq &lt;- runif(1023)
-gamma_seq[1] &lt;- ifelse(rand_seq[1] &lt; a_1[1], 1, 0)
+rand_seq &lt;- runif(1024)
 
+# Scaling coefficient
+gamma_seq[1] &lt;- ifelse(rand_seq[1] &lt; waveqtl_phi, 1, 0)
+
+# Head of tree
+gamma_seq[2] &lt;- ifelse(rand_seq[2] &lt; a_1[1], 1, 0)
+
+# i is the index of tree, where i = 1 is the head of the tree
+# Using this notation because that&#39;s how &#39;get_parent_indices&#39; has been written
 for(i in 2:1023){
   indx &lt;- i
   parent_indx &lt;- get_parent_indices(indx)
-  parent_gamma &lt;- gamma_seq[parent_indx]
+  parent_gamma &lt;- gamma_seq[parent_indx + 1]
   
   if(parent_gamma == 1){
     numerator &lt;- b_11[indx]
@@ -467,7 +474,7 @@ for(i in 2:1023){
   
   post_prob &lt;- numerator/denominator
   
-  gamma_seq[i] &lt;- ifelse(rand_seq[i] &lt; post_prob, 1, 0)
+  gamma_seq[i+1] &lt;- ifelse(rand_seq[i+1] &lt; post_prob, 1, 0)
   
 }</code></pre>
 <pre class="r"><code>### RUN INTERACTIVELY!
@@ -478,25 +485,28 @@ vector_centeriser &lt;- function(vect){
   in_between_zeros &lt;- length(vect) - 1
   
   res_vect &lt;- c(0,vect[1],0)
+  if(in_between_zeros &gt; 0){
     for(i in 1:in_between_zeros){
       res_vect &lt;- c(res_vect,vect[i + 1],0)
     }  
+  }
   return(res_vect)
 }
 
-# Kind of a start to visualising tree coefficients
+# Kind of a start to visualising tree coefficients - without the scaling coeff (11 rows too large for plot)
+gamma_seq_plot &lt;- gamma_seq[-1]
 par(mfrow = c(10,1)
     ,mar = c(2,2,2,2))
-plot(vector_centeriser(gamma_seq[1]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[2:3]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[4:7]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[8:15]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[16:31]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[32:63]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[64:127]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[128:255]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[256:511]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[512:1023]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)</code></pre>
+plot(vector_centeriser(gamma_seq_plot[1]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[2:3]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[4:7]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[8:15]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[16:31]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[32:63]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[64:127]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[128:255]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[256:511]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[512:1023]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)</code></pre>
 <p>Now, we have our sequence of <span class="math inline">\(\gamma\)</span>’s, we can then simulate values for each <span class="math inline">\(\beta\)</span>. We have: <span class="math display">\[ 
 \beta_{s,l} =
 \begin{cases}
@@ -513,9 +523,14 @@ plot(vector_centeriser(gamma_seq[512:1023]),type = &quot;h&quot;,ylab = &quot;&q
 <pre class="r"><code># Load mean, var outputs from HMT
 mean1 &lt;- as.matrix(read.table(paste0(data_path,dataset,&quot;.fph.mean1.txt&quot;)))[geno_select,]
 var1 &lt;- as.matrix(read.table(paste0(data_path,dataset,&quot;.fph.var1.txt&quot;)))[geno_select,]
-# Just take the 1023 numeric values (excl first one as it&#39;s the scaling coefficient), from cols 3:1025.
-mean1 &lt;- as.numeric(mean1[3:1025])
-var1 &lt;- as.numeric(var1[3:1025])
+
+# Load mean, var outputs from WaveQTL
+mean1_waveqtl &lt;- as.matrix(read.table(paste0(waveqtl_data_path,waveqtl_dataset,&quot;.fph.mean1.txt&quot;)))[geno_select,2]
+var1_waveqtl &lt;- as.matrix(read.table(paste0(waveqtl_data_path,waveqtl_dataset,&quot;.fph.var1.txt&quot;)))[geno_select,2]
+
+# Append top coeff to the 1023 numeric values (excl first one as it&#39;s the scaling coefficient), from cols 3:1025 from HMT
+mean1 &lt;- c(as.numeric(mean1_waveqtl), as.numeric(mean1[3:1025]))
+var1 &lt;- c(as.numeric(var1_waveqtl), as.numeric(var1[3:1025]))
 
 ## back out a, b (from t-dist) parameters:
 t_nu &lt;- 70
@@ -532,32 +547,34 @@ gamma_1_indx &lt;- which(gamma_seq == 1)
 beta_seq[gamma_1_indx] &lt;- t_sample_3p[gamma_1_indx]</code></pre>
 <p>Now we’ll use an inverse Haar wavelet transform to transform the <span class="math inline">\(\beta\)</span>’s back into data space values (<span class="math inline">\(\alpha\)</span>’s), and then calculate some sample statistics (mean, variance) from these.</p>
 <pre class="r"><code>Wmat_1024 = read.table(&quot;~/Cpp/WaveQTL_HMT/data/DWT/Wmat_1024&quot;,as.is = TRUE)
-# W2mat_1024 = Wmat_1024*Wmat_1024
 
-# currently only using rows 2-&gt;1024, as not sure what we&#39;re doing with scaling coefficient yet.
-# Still columns 1-&gt;1024, to generate effect sizes at each of the 1024 bases.
-
-### Do we need to take &#39;-ve&#39; or not?
-# beta_dataS = as.vector(-matrix(data=beta_seq, nr = 1, nc = 1024)%*%as.matrix(Wmat_1024))
-beta_dataS = as.vector(matrix(data=beta_seq, nr = 1, nc = 1023)%*%as.matrix(Wmat_1024)[2:1024,])
-plot(beta_dataS, main = &quot;Simulation 1&quot;, type = &quot;l&quot;)</code></pre>
+### &#39;-ve&#39; is taken to represent biological definition of effects (akin to a base level)
+beta_dataS = as.vector(-matrix(data=beta_seq, nr = 1, nc = 1024)%*%as.matrix(Wmat_1024))
+plot(beta_dataS, main = &quot;Simulation 1&quot;, type = &quot;l&quot;)
+abline(h = 0, col = &quot;red&quot;)</code></pre>
 <p><img src="sim1_waveqtl_hmt_gamma_phi_files/figure-html/inverse_wlet-1.png" width="672" /> The above is an example of a data space vector. Now we replicate over a number of samples.</p>
 <pre class="r"><code>num_samples &lt;- 1000
 set.seed(10)
-beta_data_samples &lt;- matrix(nrow = num_samples,ncol = 1024)
+beta_data_samples &lt;- matrix(nrow = num_samples,ncol = num_pheno)
 
 for(j in 1:num_samples){
   # Generate gamma
   gamma_seq &lt;- numeric()
+  rand_seq &lt;- runif(num_pheno)
   
-  rand_seq &lt;- runif(1023)
-  gamma_seq[1] &lt;- ifelse(rand_seq[1] &lt; a_1[1], 1, 0)
+  # Scaling coefficient
+  gamma_seq[1] &lt;- ifelse(rand_seq[1] &lt; waveqtl_phi, 1, 0)
   
+  # Head of tree
+  gamma_seq[2] &lt;- ifelse(rand_seq[2] &lt; a_1[1], 1, 0)
+  
+  # i is the index of tree, where i = 1 is the head of the tree
+  # Using this notation because that&#39;s how &#39;get_parent_indices&#39; has been written
   for(i in 2:1023){
     indx &lt;- i
     parent_indx &lt;- get_parent_indices(indx)
-    parent_gamma &lt;- gamma_seq[parent_indx]
-    
+    parent_gamma &lt;- gamma_seq[parent_indx + 1]
+        
     if(parent_gamma == 1){
       numerator &lt;- b_11[indx]
       denominator &lt;- a_1[parent_indx]
@@ -568,7 +585,7 @@ for(j in 1:num_samples){
     
     post_prob &lt;- numerator/denominator
     
-    gamma_seq[i] &lt;- ifelse(rand_seq[i] &lt; post_prob, 1, 0)
+    gamma_seq[i+1] &lt;- ifelse(rand_seq[i+1] &lt; post_prob, 1, 0)
   }
   
   # Generate beta
@@ -581,7 +598,7 @@ for(j in 1:num_samples){
   beta_seq[gamma_1_indx] &lt;- t_sample_3p[gamma_1_indx]
   
   # Transform into data space
-  beta_data_samples[j,] = as.vector(matrix(data=beta_seq, nr = 1, nc = 1023)%*%as.matrix(Wmat_1024)[2:1024,])
+  beta_data_samples[j,] = as.vector(-matrix(data=beta_seq, nr = 1, nc = num_pheno)%*%as.matrix(Wmat_1024))
 }
 
 sample_mean &lt;- apply(beta_data_samples,MARGIN = 2,mean)

@@ -9,6 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/" # change this when you port it all over to the Masters Git repo
 dataset <- "tree_tie_noQT"
+waveqtl_data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/WaveQTL/"
+waveqtl_dataset <- "test.no.QT"
 geno_select <- 11 # the one used in the demo
 
 # Helper function to get parent indices of a given index
@@ -67,6 +69,7 @@ Luckily, both quantites $A$ and $B$ are output from our model. ($B$ can be calcu
 $$
 P(\gamma_{s,l} = m \mid \gamma_{p(sl)} = n, \hat{\pi}, \mathbf{y}, g) = \frac{P(\gamma_{s,l} = m, \gamma_{p(sl)} = n \mid \hat{\pi}, \mathbf{y}, g)}{P(\gamma_{p(sl)} = n \mid \hat{\pi}, \mathbf{y}, g)}
 $$
+_Note - Scaling coefficient:_ The scaling coefficients (the coefficients at the very top, not actually part of the tree) are unaffected by the tree analysis (they do not affect/are not affected by the elements of the tree, as they are completely disconnected from the tree). Hence, for now, we will use the outputs from WaveQTL to simulate the mean and variance of the scaling coefficient. That is, we will use its corresponding $\phi_{0,0} = P(\gamma_{0,0} = 1 \mid \hat{\pi}, y_{0,0}, g)$ to simulate its state, then sample its $\beta$ value. We will use 3-parameter t-distribution mean and variance parameters from the original WaveQTL output also.
 
 Here's an example working based on tree-level tying:
 
@@ -80,19 +83,29 @@ b_10 <- as.matrix(read.table(paste0(data_path,dataset,".fph.pp_joint_10.txt")))[
 a_1 <- exp(as.numeric(a_1[3:1025]))
 b_11 <- exp(as.numeric(b_11[3:1025]))
 b_10 <- exp(as.numeric(b_10[3:1025]))
+
+waveqtl_phi <- as.matrix(read.table(paste0(waveqtl_data_path,waveqtl_dataset,".fph.phi.txt")))[geno_select,]
+waveqtl_phi <- as.numeric(waveqtl_phi[2])
 ```
 
 Now, let's simulate a sequence of $\gamma$'s:
 ```{r sim_gamma_1}
 gamma_seq <- numeric()
 set.seed(10)
-rand_seq <- runif(1023)
-gamma_seq[1] <- ifelse(rand_seq[1] < a_1[1], 1, 0)
+rand_seq <- runif(1024)
 
+# Scaling coefficient
+gamma_seq[1] <- ifelse(rand_seq[1] < waveqtl_phi, 1, 0)
+
+# Head of tree
+gamma_seq[2] <- ifelse(rand_seq[2] < a_1[1], 1, 0)
+
+# i is the index of tree, where i = 1 is the head of the tree
+# Using this notation because that's how 'get_parent_indices' has been written
 for(i in 2:1023){
   indx <- i
   parent_indx <- get_parent_indices(indx)
-  parent_gamma <- gamma_seq[parent_indx]
+  parent_gamma <- gamma_seq[parent_indx + 1]
   
   if(parent_gamma == 1){
     numerator <- b_11[indx]
@@ -104,7 +117,7 @@ for(i in 2:1023){
   
   post_prob <- numerator/denominator
   
-  gamma_seq[i] <- ifelse(rand_seq[i] < post_prob, 1, 0)
+  gamma_seq[i+1] <- ifelse(rand_seq[i+1] < post_prob, 1, 0)
   
 }
 ```
@@ -118,25 +131,28 @@ vector_centeriser <- function(vect){
   in_between_zeros <- length(vect) - 1
   
   res_vect <- c(0,vect[1],0)
+  if(in_between_zeros > 0){
     for(i in 1:in_between_zeros){
       res_vect <- c(res_vect,vect[i + 1],0)
     }  
+  }
   return(res_vect)
 }
 
-# Kind of a start to visualising tree coefficients
+# Kind of a start to visualising tree coefficients - without the scaling coeff (11 rows too large for plot)
+gamma_seq_plot <- gamma_seq[-1]
 par(mfrow = c(10,1)
     ,mar = c(2,2,2,2))
-plot(vector_centeriser(gamma_seq[1]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[2:3]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[4:7]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[8:15]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[16:31]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[32:63]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[64:127]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[128:255]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[256:511]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq[512:1023]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[1]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[2:3]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[4:7]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[8:15]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[16:31]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[32:63]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[64:127]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[128:255]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[256:511]),type = "h",ylab = "",axes = F)#; axis(1)
+plot(vector_centeriser(gamma_seq_plot[512:1023]),type = "h",ylab = "",axes = F)#; axis(1)
 ```
 
 Now, we have our sequence of $\gamma$'s, we can then simulate values for each $\beta$. We have:
@@ -160,9 +176,14 @@ $$
 # Load mean, var outputs from HMT
 mean1 <- as.matrix(read.table(paste0(data_path,dataset,".fph.mean1.txt")))[geno_select,]
 var1 <- as.matrix(read.table(paste0(data_path,dataset,".fph.var1.txt")))[geno_select,]
-# Just take the 1023 numeric values (excl first one as it's the scaling coefficient), from cols 3:1025.
-mean1 <- as.numeric(mean1[3:1025])
-var1 <- as.numeric(var1[3:1025])
+
+# Load mean, var outputs from WaveQTL
+mean1_waveqtl <- as.matrix(read.table(paste0(waveqtl_data_path,waveqtl_dataset,".fph.mean1.txt")))[geno_select,2]
+var1_waveqtl <- as.matrix(read.table(paste0(waveqtl_data_path,waveqtl_dataset,".fph.var1.txt")))[geno_select,2]
+
+# Append top coeff to the 1023 numeric values (excl first one as it's the scaling coefficient), from cols 3:1025 from HMT
+mean1 <- c(as.numeric(mean1_waveqtl), as.numeric(mean1[3:1025]))
+var1 <- c(as.numeric(var1_waveqtl), as.numeric(var1[3:1025]))
 
 ## back out a, b (from t-dist) parameters:
 t_nu <- 70
@@ -182,35 +203,37 @@ beta_seq[gamma_1_indx] <- t_sample_3p[gamma_1_indx]
 Now we'll use an inverse Haar wavelet transform to transform the $\beta$'s back into data space values ($\alpha$'s), and then calculate some sample statistics (mean, variance) from these.
 ```{r inverse_wlet}
 Wmat_1024 = read.table("~/Cpp/WaveQTL_HMT/data/DWT/Wmat_1024",as.is = TRUE)
-# W2mat_1024 = Wmat_1024*Wmat_1024
 
-# currently only using rows 2->1024, as not sure what we're doing with scaling coefficient yet.
-# Still columns 1->1024, to generate effect sizes at each of the 1024 bases.
-
-### Do we need to take '-ve' or not?
-# beta_dataS = as.vector(-matrix(data=beta_seq, nr = 1, nc = 1024)%*%as.matrix(Wmat_1024))
-beta_dataS = as.vector(matrix(data=beta_seq, nr = 1, nc = 1023)%*%as.matrix(Wmat_1024)[2:1024,])
+### '-ve' is taken to represent biological definition of effects (akin to a base level)
+beta_dataS = as.vector(-matrix(data=beta_seq, nr = 1, nc = 1024)%*%as.matrix(Wmat_1024))
 plot(beta_dataS, main = "Simulation 1", type = "l")
+abline(h = 0, col = "red")
 ```
 The above is an example of a data space vector. Now we replicate over a number of samples.
 
 ```{r mean_var_sampling}
 num_samples <- 1000
 set.seed(10)
-beta_data_samples <- matrix(nrow = num_samples,ncol = 1024)
+beta_data_samples <- matrix(nrow = num_samples,ncol = num_pheno)
 
 for(j in 1:num_samples){
   # Generate gamma
   gamma_seq <- numeric()
+  rand_seq <- runif(num_pheno)
   
-  rand_seq <- runif(1023)
-  gamma_seq[1] <- ifelse(rand_seq[1] < a_1[1], 1, 0)
+  # Scaling coefficient
+  gamma_seq[1] <- ifelse(rand_seq[1] < waveqtl_phi, 1, 0)
   
+  # Head of tree
+  gamma_seq[2] <- ifelse(rand_seq[2] < a_1[1], 1, 0)
+  
+  # i is the index of tree, where i = 1 is the head of the tree
+  # Using this notation because that's how 'get_parent_indices' has been written
   for(i in 2:1023){
     indx <- i
     parent_indx <- get_parent_indices(indx)
-    parent_gamma <- gamma_seq[parent_indx]
-    
+    parent_gamma <- gamma_seq[parent_indx + 1]
+        
     if(parent_gamma == 1){
       numerator <- b_11[indx]
       denominator <- a_1[parent_indx]
@@ -221,7 +244,7 @@ for(j in 1:num_samples){
     
     post_prob <- numerator/denominator
     
-    gamma_seq[i] <- ifelse(rand_seq[i] < post_prob, 1, 0)
+    gamma_seq[i+1] <- ifelse(rand_seq[i+1] < post_prob, 1, 0)
   }
   
   # Generate beta
@@ -234,7 +257,7 @@ for(j in 1:num_samples){
   beta_seq[gamma_1_indx] <- t_sample_3p[gamma_1_indx]
   
   # Transform into data space
-  beta_data_samples[j,] = as.vector(matrix(data=beta_seq, nr = 1, nc = 1023)%*%as.matrix(Wmat_1024)[2:1024,])
+  beta_data_samples[j,] = as.vector(-matrix(data=beta_seq, nr = 1, nc = num_pheno)%*%as.matrix(Wmat_1024))
 }
 
 sample_mean <- apply(beta_data_samples,MARGIN = 2,mean)
