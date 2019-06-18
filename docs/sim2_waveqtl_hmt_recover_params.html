@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Brendan Law" />
+
+
+<title>WaveQTL with HMT - Simulation 2 - Algorithm check: recover parameters</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/flatly.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 60px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h2 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h3 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h4 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h5 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h6 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Brendan's Masters Project</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/blaw36/Masters_Project">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">WaveQTL with HMT - Simulation 2 - Algorithm check: recover parameters</h1>
+<h4 class="author"><em>Brendan Law</em></h4>
+<h4 class="date"><em>14/06/2019</em></h4>
+
+</div>
+
+
+<p>The mission here is to pick some parameters, use it to simulate WaveQTL data, run it through the algorithm, and see if we can recover the original parameters. This is to test the algorithm’s accuracy, and help identify any potential bugs should it fail to recover the original parameters. We consider two situations here: - Parameters with no noise - Parameters with noise</p>
+<p>The process is as follows: 1. Simulate data (many <span class="math inline">\(N \times B\)</span> matrices of N individuals, with B wavelet coefficients), using pre-set parameters + Specific <span class="math inline">\(\varepsilon_^{11}, \varepsilon_^{10}\)</span> vectors, of length B - 2 (no <span class="math inline">\(\varepsilon\)</span> for scaling coefficient or head of tree), for the prior transition probabilities between a parent and child state + Specific <span class="math inline">\(\pi = (\pi_{0,0},\pi_{1,1})\)</span> vector, of length 2, for prior marginal probability of the scaling coefficient (waveqtl style) and root node of the tree + <span class="math inline">\(\mu_{s,l}\)</span> set to either a constant (no noise) or drawn from a distribution (noise) + <span class="math inline">\(\beta_{s,l}\)</span> value (if not 0) set to either a constant (no noise) or drawn from a distribution (noise) + <span class="math inline">\(g^i \in \{0,1,2\}\)</span>, a specific coding of a SNP for each individual, drawn from a distribution + <span class="math inline">\(\epsilon_{s,l}^i\)</span> (the model’s noise parameter), to be drawn from <span class="math inline">\(N(0,\sigma_{sl,\beta}^2)\)</span> distribution. Hyperparameter <span class="math inline">\(\sigma_{sl,\beta}^2\)</span> should be determined, and possibly adjusted to vary the level of noise in the system with test with. + Note the settings by which these parameters were generated (all WCs useable, tied parameters if running WaveQTL with tying, etc.) 2. This represents a simulated <span class="math inline">\(\textbf{y} = (y_{0,0},\dots,y_{S,L^S})\)</span> vector of wavelet coefficients, ready for use in WaveQTL. Run this dataset through WaveQTL, with exactly the same settings as per parameter generation. 3. After enough simulations, calculate summary statistics (means and variances) of each of the parameters of interest (<span class="math inline">\(\varepsilon, \pi_{0,0}, \pi_{1,1}\)</span>), and see if a confidence range around these parameters contains the original, fixed parameter values.</p>
+<div id="sample-simulation" class="section level2">
+<h2>Sample simulation</h2>
+<div id="global-parameters" class="section level3">
+<h3>Global parameters</h3>
+<pre class="r"><code>n_ind = 70
+n_pheno = 1024
+tying_grp &lt;- c(1,2,3,5,9,17,33,65,129,257,513)
+param_pi_00 &lt;- 0.8
+param_pi_11 &lt;- 0.5
+
+# Round to nearest 100th, for simplicity
+num_tying_grps &lt;- length(tying_grp)
+
+# Epsilon elements are for elements 3 -&gt; 1024 (= 2 -&gt; 1023 of tree)
+# Generate 1024 elements as per the above tying_grp description,
+# then just cut out the first two levels of elements (as neither the
+# scaling coefficient or head of tree need epsilons)
+
+# Eps_11 (elements 2 -&gt; 1023 of tree)
+grped_eps_11 &lt;- round(runif(n=num_tying_grps)*100)/100
+param_eps_11 &lt;- numeric()
+for(i in 1:(num_tying_grps - 1)){
+  indx_start &lt;- tying_grp[i]
+  indx_end &lt;- tying_grp[i+1]
+  param_eps_11[indx_start:indx_end] &lt;- grped_eps_11[i]
+}
+param_eps_11[tying_grp[num_tying_grps]:n_pheno] &lt;- grped_eps_11[num_tying_grps]
+param_eps_11 &lt;- param_eps_11[-(1:2)]
+
+# Eps_10 (elements 2 -&gt; 1023 of tree)
+grped_eps_10 &lt;- round(runif(n=num_tying_grps)*100)/100
+param_eps_10 &lt;- numeric()
+for(i in 1:(num_tying_grps - 1)){
+  indx_start &lt;- tying_grp[i]
+  indx_end &lt;- tying_grp[i+1]
+  param_eps_10[indx_start:indx_end] &lt;- grped_eps_10[i]
+}
+param_eps_10[tying_grp[num_tying_grps]:n_pheno] &lt;- grped_eps_10[num_tying_grps]
+param_eps_10 &lt;- param_eps_10[-(1:2)]
+
+coeff_mu &lt;- 0
+coeff_beta &lt;- 2
+param_gi_prob &lt;- 0.4
+param_sigma_beta &lt;- 0.5</code></pre>
+</div>
+<div id="step-1-parameters" class="section level3">
+<h3>Step 1: Parameters</h3>
+<p>First, create our <span class="math inline">\(\gamma\)</span> sequence:</p>
+<pre class="r"><code>gamma_seq &lt;- numeric()
+rand_seq &lt;- runif(n_pheno)
+
+# Scaling coefficient
+gamma_seq[1] &lt;- ifelse(rand_seq[1] &lt; param_pi_00, 1, 0)
+
+# Head of tree
+gamma_seq[2] &lt;- ifelse(rand_seq[2] &lt; param_pi_11, 1, 0)
+
+# i is the index of tree, where i = 1 is the head of the tree
+# Using this notation because that&#39;s how &#39;get_parent_indices&#39; has been written
+for(i in 2:1023){
+  indx &lt;- i
+  parent_indx &lt;- get_parent_indices(indx)
+  parent_gamma &lt;- gamma_seq[parent_indx + 1]
+  
+  if(parent_gamma == 1){
+    sl_prob &lt;- param_eps_11[indx - 1]
+  }else if(parent_gamma == 0){
+    sl_prob &lt;- param_eps_10[indx - 1]
+  }
+  
+  gamma_seq[i+1] &lt;- ifelse(rand_seq[i+1] &lt; sl_prob, 1, 0)
+}</code></pre>
+<p>Then we can use this to generate our <span class="math inline">\(\beta,\mu,\epsilon_{s,l}^i\)</span></p>
+<pre class="r"><code>beta_seq &lt;- rep(0,n_pheno)
+beta_seq[which(gamma_seq == 1)] &lt;- coeff_beta
+
+mu_seq &lt;- rep(0,n_pheno)
+mu_seq[which(gamma_seq == 1)] &lt;- coeff_mu
+mu_mtx &lt;- matrix(rep(mu_seq,70),nrow = n_ind,ncol = n_pheno,byrow = T)
+
+eps_seq &lt;- rnorm(n_pheno*n_ind,mean = 0,sd = sqrt(param_sigma_beta))
+eps_mtx &lt;- matrix(eps_seq,nrow = n_ind,ncol = n_pheno,byrow = T)</code></pre>
+<p>And finally, use a binomial distirbution to generate a sequence of <span class="math inline">\(g\)</span>, and put this together to create the <span class="math inline">\(\beta\)</span> matrix:</p>
+<pre class="r"><code>g_seq &lt;- rbinom(n_ind,size = 2,prob = param_gi_prob)
+cat(c(&quot;sim2&quot;,&quot;A&quot;,&quot;A&quot;,g_seq), file = paste0(&quot;~/Cpp/WaveQTL_HMT/data/dsQTL/sim2.cis.geno&quot;))
+beta_mtx &lt;- g_seq %*% t(beta_seq)</code></pre>
+<p>And, the <span class="math inline">\(y\)</span> matrix:</p>
+<pre class="r"><code>y_mtx &lt;- mu_mtx + beta_mtx + eps_mtx
+write.table(y_mtx, file= paste0(&quot;~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_WCs.txt&quot;), row.names=FALSE, col.names = FALSE, quote=FALSE)
+cat(rep(1,1024), file = paste0(&quot;~/Cpp/WaveQTL_HMT/test/dsQTL/use_all.txt&quot;))</code></pre>
+<p>Now, run it through WaveQTL_HMT:</p>
+<p>Grab the params: # I DON’T ACTUALLY HAVE A WAY OF RECOVERING PI_0 ATM UNLESS I RUN IT THROUGH WAVEQTL (NO HMT) ALSO!</p>
+<p>Now we can run this many times, in a loop, and continue to collect resulting observations. See <em>insert script name</em> for the simulation script. Here are some results:</p>
+<pre class="r"><code># setwd(&quot;~/Cpp/WaveQTL_HMT/test/dsQTL/&quot;)
+results_pi &lt;- readRDS(&quot;~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_pi.RDS&quot;)
+results_eps_11 &lt;- readRDS(&quot;~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_eps_11.RDS&quot;)
+results_eps_10 &lt;- readRDS(file = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_eps_10.RDS&quot;)</code></pre>
+<p>Analysis:</p>
+<pre class="r"><code>pi_mean &lt;- mean(unlist(results_pi))
+pi_sd &lt;- sd(unlist(results_pi))
+pi_range &lt;- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; param_pi_11</code></pre>
+<pre><code>## [1] -0.8564856  2.0545963</code></pre>
+<pre><code>## [1] 0.5</code></pre>
+<pre class="r"><code>results_eps_11_mtx &lt;- matrix(unlist(results_eps_11)
+                             ,nrow = 100, ncol = 1022, byrow = T)
+results_eps_10_mtx &lt;- matrix(unlist(results_eps_10)
+                             ,nrow = 100, ncol = 1022, byrow = T)
+
+eps_11_mean &lt;- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd &lt;- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb &lt;- eps_11_mean - 3*eps_11_sd
+eps_11_ub &lt;- eps_11_mean + 3*eps_11_sd
+eps_11_within_range &lt;- between(param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)</code></pre>
+<pre><code>## eps_11_within_range
+## FALSE  TRUE 
+##   976    46</code></pre>
+<pre class="r"><code>eps_10_mean &lt;- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd &lt;- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb &lt;- eps_10_mean - 3*eps_10_sd
+eps_10_ub &lt;- eps_10_mean + 3*eps_10_sd
+eps_10_within_range &lt;- between(param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)</code></pre>
+<pre><code>## eps_10_within_range
+## FALSE  TRUE 
+##   448   574</code></pre>
+<p>Some more informative plots:</p>
+<pre class="r"><code># Epsilon 11
+y_axis_bounds &lt;- c(min(min(eps_11_lb),min(param_eps_11)),max(max(eps_11_ub),max(param_eps_11)))*1.1
+
+xval = 1:1024
+which_in_bound = xval[between(param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = &quot;n&quot;, xlab = &quot;Wavelet scale-loc&quot;, ylab = &quot;Probability&quot;, main = &quot;Epsilon 11&quot;, xaxt = &quot;n&quot;
+     ,xlim = c(0,1024)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) &gt; 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col =&quot;pink&quot;, border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(param_eps_11,type = &quot;l&quot;)
+points(eps_11_mean,col = &quot;red&quot;, type = &quot;l&quot;)
+points(eps_11_ub,col = &quot;blue&quot;, type = &quot;l&quot;, lty = 2)
+points(eps_11_lb,col = &quot;blue&quot;, type = &quot;l&quot;, lty = 2)</code></pre>
+<p><img src="sim2_waveqtl_hmt_recover_params_files/figure-html/plots-1.png" width="672" /></p>
+<pre class="r"><code># Epsilon 10
+y_axis_bounds &lt;- c(min(min(eps_10_lb),min(param_eps_10)),max(max(eps_10_ub),max(param_eps_10)))*1.1
+
+xval = 1:1024
+which_in_bound = xval[between(param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = &quot;n&quot;, xlab = &quot;Wavelet scale-loc&quot;, ylab = &quot;Probability&quot;, main = &quot;Epsilon 10&quot;, xaxt = &quot;n&quot;
+     ,xlim = c(0,1024)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) &gt; 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col =&quot;pink&quot;, border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(param_eps_10,type = &quot;l&quot;)
+points(eps_10_mean,col = &quot;red&quot;, type = &quot;l&quot;)
+points(eps_10_ub,col = &quot;blue&quot;, type = &quot;l&quot;, lty = 2)
+points(eps_10_lb,col = &quot;blue&quot;, type = &quot;l&quot;, lty = 2)</code></pre>
+<p><img src="sim2_waveqtl_hmt_recover_params_files/figure-html/plots-2.png" width="672" /></p>
+</div>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

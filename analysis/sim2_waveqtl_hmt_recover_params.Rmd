@@ -1,0 +1,243 @@
+---
+title: "WaveQTL with HMT - Simulation 2 - Algorithm check: recover parameters"
+author: "Brendan Law"
+date: "14/06/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/" # change this when you port it all over to the Masters Git repo
+dataset <- "tree_tie_noQT"
+waveqtl_data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/WaveQTL/"
+waveqtl_dataset <- "test.no.QT"
+geno_select <- 11 # the one used in the demo
+set.seed(20)
+
+# Helper function to get parent indices of a given index
+# From "../code/WaveQTL/waveqtl_hmt_test_calc_sumlog.R"
+get_parent_indices <- function(indx, tree_root_indx = 1){
+  return_indices <- indx
+  return_indices <- (return_indices - tree_root_indx + 1) %/% 2
+
+  # root of tree doesn't return any index
+  return_indices[which(indx == tree_root_indx)] <- NA_integer_
+  return(return_indices)
+}
+```
+
+The mission here is to pick some parameters, use it to simulate WaveQTL data, run it through the algorithm, and see if we can recover the original parameters. This is to test the algorithm's accuracy, and help identify any potential bugs should it fail to recover the original parameters. We consider two situations here:
+- Parameters with no noise
+- Parameters with noise
+
+The process is as follows:
+1. Simulate data (many $N \times B$ matrices of N individuals, with B wavelet coefficients), using pre-set parameters
+  + Specific $\varepsilon_^{11}, \varepsilon_^{10}$ vectors, of length B - 2 (no $\varepsilon$ for scaling coefficient or head of tree), for the prior transition probabilities between a parent and child state
+  + Specific $\pi = (\pi_{0,0},\pi_{1,1})$ vector, of length 2, for prior marginal probability of the scaling coefficient (waveqtl style) and root node of the tree
+  + $\mu_{s,l}$ set to either a constant (no noise) or drawn from a distribution (noise)
+  + $\beta_{s,l}$ value (if not 0) set to either a constant (no noise) or drawn from a distribution (noise)
+  + $g^i \in \{0,1,2\}$, a specific coding of a SNP for each individual, drawn from a distribution
+  + $\epsilon_{s,l}^i$ (the model's noise parameter), to be drawn from $N(0,\sigma_{sl,\beta}^2)$ distribution. Hyperparameter $\sigma_{sl,\beta}^2$ should be determined, and possibly adjusted to vary the level of noise in the system with test with.
+  + Note the settings by which these parameters were generated (all WCs useable, tied parameters if running WaveQTL with tying, etc.)
+2. This represents a simulated $\textbf{y} = (y_{0,0},\dots,y_{S,L^S})$ vector of wavelet coefficients, ready for use in WaveQTL. Run this dataset through WaveQTL, with exactly the same settings as per parameter generation.
+3. After enough simulations, calculate summary statistics (means and variances) of each of the parameters of interest ($\varepsilon, \pi_{0,0}, \pi_{1,1}$), and see if a confidence range around these parameters contains the original, fixed parameter values.
+
+## Sample simulation
+### Global parameters
+```{r glob}
+n_ind = 70
+n_pheno = 1024
+tying_grp <- c(1,2,3,5,9,17,33,65,129,257,513)
+param_pi_00 <- 0.8
+param_pi_11 <- 0.5
+
+# Round to nearest 100th, for simplicity
+num_tying_grps <- length(tying_grp)
+
+# Epsilon elements are for elements 3 -> 1024 (= 2 -> 1023 of tree)
+# Generate 1024 elements as per the above tying_grp description,
+# then just cut out the first two levels of elements (as neither the
+# scaling coefficient or head of tree need epsilons)
+
+# Eps_11 (elements 2 -> 1023 of tree)
+grped_eps_11 <- round(runif(n=num_tying_grps)*100)/100
+param_eps_11 <- numeric()
+for(i in 1:(num_tying_grps - 1)){
+  indx_start <- tying_grp[i]
+  indx_end <- tying_grp[i+1]
+  param_eps_11[indx_start:indx_end] <- grped_eps_11[i]
+}
+param_eps_11[tying_grp[num_tying_grps]:n_pheno] <- grped_eps_11[num_tying_grps]
+param_eps_11 <- param_eps_11[-(1:2)]
+
+# Eps_10 (elements 2 -> 1023 of tree)
+grped_eps_10 <- round(runif(n=num_tying_grps)*100)/100
+param_eps_10 <- numeric()
+for(i in 1:(num_tying_grps - 1)){
+  indx_start <- tying_grp[i]
+  indx_end <- tying_grp[i+1]
+  param_eps_10[indx_start:indx_end] <- grped_eps_10[i]
+}
+param_eps_10[tying_grp[num_tying_grps]:n_pheno] <- grped_eps_10[num_tying_grps]
+param_eps_10 <- param_eps_10[-(1:2)]
+
+coeff_mu <- 0
+coeff_beta <- 2
+param_gi_prob <- 0.4
+param_sigma_beta <- 0.5
+```
+
+### Step 1: Parameters
+First, create our $\gamma$ sequence:
+```{r sim_gamma_1}
+gamma_seq <- numeric()
+rand_seq <- runif(n_pheno)
+
+# Scaling coefficient
+gamma_seq[1] <- ifelse(rand_seq[1] < param_pi_00, 1, 0)
+
+# Head of tree
+gamma_seq[2] <- ifelse(rand_seq[2] < param_pi_11, 1, 0)
+
+# i is the index of tree, where i = 1 is the head of the tree
+# Using this notation because that's how 'get_parent_indices' has been written
+for(i in 2:1023){
+  indx <- i
+  parent_indx <- get_parent_indices(indx)
+  parent_gamma <- gamma_seq[parent_indx + 1]
+  
+  if(parent_gamma == 1){
+    sl_prob <- param_eps_11[indx - 1]
+  }else if(parent_gamma == 0){
+    sl_prob <- param_eps_10[indx - 1]
+  }
+  
+  gamma_seq[i+1] <- ifelse(rand_seq[i+1] < sl_prob, 1, 0)
+}
+```
+
+Then we can use this to generate our $\beta,\mu,\epsilon_{s,l}^i$
+```{r generate_beta_mu_eps}
+beta_seq <- rep(0,n_pheno)
+beta_seq[which(gamma_seq == 1)] <- coeff_beta
+
+mu_seq <- rep(0,n_pheno)
+mu_seq[which(gamma_seq == 1)] <- coeff_mu
+mu_mtx <- matrix(rep(mu_seq,70),nrow = n_ind,ncol = n_pheno,byrow = T)
+
+eps_seq <- rnorm(n_pheno*n_ind,mean = 0,sd = sqrt(param_sigma_beta))
+eps_mtx <- matrix(eps_seq,nrow = n_ind,ncol = n_pheno,byrow = T)
+```
+
+And finally, use a binomial distirbution to generate a sequence of $g$, and put this together to create the $\beta$ matrix:
+```{r generate_g}
+g_seq <- rbinom(n_ind,size = 2,prob = param_gi_prob)
+cat(c("sim2","A","A",g_seq), file = paste0("~/Cpp/WaveQTL_HMT/data/dsQTL/sim2.cis.geno"))
+beta_mtx <- g_seq %*% t(beta_seq)
+```
+
+And, the $y$ matrix:
+```{r generate_y}
+y_mtx <- mu_mtx + beta_mtx + eps_mtx
+write.table(y_mtx, file= paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_WCs.txt"), row.names=FALSE, col.names = FALSE, quote=FALSE)
+cat(rep(1,1024), file = paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/use_all.txt"))
+```
+
+Now, run it through WaveQTL_HMT:
+```{r sys_for_waveqtl_hmt, include = FALSE}
+# setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+# system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim2.cis.geno -p sim2_WCs.txt -u use_all.txt -o sim2_noQT -f 1024 -hmt 1")
+# setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
+```
+
+Grab the params:
+# I DON'T ACTUALLY HAVE A WAY OF RECOVERING PI_0 ATM UNLESS I RUN IT THROUGH WAVEQTL (NO HMT) ALSO!
+```{r read_waveqtl_hmt, include = FALSE}
+# file_prefix <- "sim2_noQT"
+# pi_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.pi.txt"))[2]))
+# eps_11_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.eps_11.txt"))[3:1024]))
+# eps_10_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.eps_10.txt"))[3:1024]))
+```
+
+Now we can run this many times, in a loop, and continue to collect resulting observations. See _insert script name_ for the simulation script. Here are some results:
+```{r results1}
+# setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+results_pi <- readRDS("~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_pi.RDS")
+results_eps_11 <- readRDS("~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_eps_11.RDS")
+results_eps_10 <- readRDS(file = "~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_eps_10.RDS")
+```
+
+Analysis:
+```{r analysis}
+pi_mean <- mean(unlist(results_pi))
+pi_sd <- sd(unlist(results_pi))
+pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; param_pi_11
+
+results_eps_11_mtx <- matrix(unlist(results_eps_11)
+                             ,nrow = 100, ncol = 1022, byrow = T)
+results_eps_10_mtx <- matrix(unlist(results_eps_10)
+                             ,nrow = 100, ncol = 1022, byrow = T)
+
+eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb <- eps_11_mean - 3*eps_11_sd
+eps_11_ub <- eps_11_mean + 3*eps_11_sd
+eps_11_within_range <- between(param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)
+
+eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb <- eps_10_mean - 3*eps_10_sd
+eps_10_ub <- eps_10_mean + 3*eps_10_sd
+eps_10_within_range <- between(param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)
+```
+
+Some more informative plots:
+```{r plots}
+# Epsilon 11
+y_axis_bounds <- c(min(min(eps_11_lb),min(param_eps_11)),max(max(eps_11_ub),max(param_eps_11)))*1.1
+
+xval = 1:1024
+which_in_bound = xval[between(param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
+     ,xlim = c(0,1024)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(param_eps_11,type = "l")
+points(eps_11_mean,col = "red", type = "l")
+points(eps_11_ub,col = "blue", type = "l", lty = 2)
+points(eps_11_lb,col = "blue", type = "l", lty = 2)
+
+# Epsilon 10
+y_axis_bounds <- c(min(min(eps_10_lb),min(param_eps_10)),max(max(eps_10_ub),max(param_eps_10)))*1.1
+
+xval = 1:1024
+which_in_bound = xval[between(param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
+     ,xlim = c(0,1024)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(param_eps_10,type = "l")
+points(eps_10_mean,col = "red", type = "l")
+points(eps_10_ub,col = "blue", type = "l", lty = 2)
+points(eps_10_lb,col = "blue", type = "l", lty = 2)
+```
