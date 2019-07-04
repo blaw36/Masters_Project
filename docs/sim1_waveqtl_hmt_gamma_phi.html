@@ -448,14 +448,17 @@ P(\gamma_{s,l} = m \mid \gamma_{p(sl)} = n, \hat{\pi}, \mathbf{y}, g) = \frac{P(
 <p>Here’s an example working based on tree-level tying:</p>
 <p>Now, let’s simulate a sequence of <span class="math inline">\(\gamma\)</span>’s:</p>
 <pre class="r"><code>gamma_seq &lt;- numeric()
+post_prob_seq &lt;- numeric()
 set.seed(10)
 rand_seq &lt;- runif(1024)
 
 # Scaling coefficient
 gamma_seq[1] &lt;- ifelse(rand_seq[1] &lt; waveqtl_phi, 1, 0)
+post_prob_seq[1] &lt;- waveqtl_phi
 
 # Head of tree
 gamma_seq[2] &lt;- ifelse(rand_seq[2] &lt; a_1[1], 1, 0)
+post_prob_seq[2] &lt;- a_1[1]
 
 # i is the index of tree, where i = 1 is the head of the tree
 # Using this notation because that&#39;s how &#39;get_parent_indices&#39; has been written
@@ -473,47 +476,66 @@ for(i in 2:1023){
   }
   
   post_prob &lt;- numerator/denominator
+  post_prob_seq[i+1] &lt;- post_prob
   
   gamma_seq[i+1] &lt;- ifelse(rand_seq[i+1] &lt; post_prob, 1, 0)
   
 }</code></pre>
-<pre class="r"><code>### RUN INTERACTIVELY!
-
-# Interleaves vectors with two bookend 0s, and a 0 between each current element
-# (for spacing of elements like a tree in a plot)
-vector_centeriser &lt;- function(vect){
-  in_between_zeros &lt;- length(vect) - 1
-  
-  res_vect &lt;- c(0,vect[1],0)
-  if(in_between_zeros &gt; 0){
-    for(i in 1:in_between_zeros){
-      res_vect &lt;- c(res_vect,vect[i + 1],0)
-    }  
-  }
-  return(res_vect)
-}
-
-# Kind of a start to visualising tree coefficients - without the scaling coeff (11 rows too large for plot)
-gamma_seq_plot &lt;- gamma_seq[-1]
-par(mfrow = c(10,1)
-    ,mar = c(2,2,2,2))
-plot(vector_centeriser(gamma_seq_plot[1]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[2:3]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[4:7]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[8:15]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[16:31]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[32:63]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[64:127]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[128:255]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[256:511]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[512:1023]),type = &quot;h&quot;,ylab = &quot;&quot;,axes = F)#; axis(1)</code></pre>
+<pre class="r"><code># Visualise tree coefficients
+p_gamma_1 &lt;- tree_plot(gamma_seq,yaxis_lims = c(0,1),&quot;gammas&quot;)</code></pre>
+<p><img src="sim1_waveqtl_hmt_gamma_phi_files/figure-html/plot_attempt1-1.png" width="672" /></p>
+<pre class="r"><code># Visuualise posterior probabilities
+p_posterior_1 &lt;- tree_plot(post_prob_seq,yaxis_lims = c(0,1),&quot;posterior probabilities&quot;)</code></pre>
+<p><img src="sim1_waveqtl_hmt_gamma_phi_files/figure-html/plot_attempt1-2.png" width="672" /></p>
+<p>A brief check on the proportions of 0/1s of gammas at each level vs average posterior probabilities at each level…</p>
+<pre class="r"><code>cat(paste0(&quot;Level 1...\n&quot;))</code></pre>
+<pre><code>## Level 1...</code></pre>
+<pre class="r"><code>  cat(paste0(&quot;Prop of 1s: &quot;,sum(gamma_seq[1])/length(gamma_seq[1]),&quot;...\n&quot;))</code></pre>
+<pre><code>## Prop of 1s: 1...</code></pre>
+<pre class="r"><code>  cat(paste0(&quot;Mean of posterior: &quot;,mean(post_prob_seq[1]),&quot;...\n&quot;))</code></pre>
+<pre><code>## Mean of posterior: 1...</code></pre>
+<pre class="r"><code>for(i in 0:9){
+  cat(paste0(&quot;Level &quot;,(i+2),&quot;...\n&quot;))
+  cat(paste0(&quot;Prop of 1s: &quot;,sum(gamma_seq[((2^i)+1):(2^(i+1))])/length(gamma_seq[((2^i)+1):(2^(i+1))]),&quot;...\n&quot;))
+  cat(paste0(&quot;Mean of posterior: &quot;,mean(post_prob_seq[((2^i)+1):(2^(i+1))]),&quot;...\n&quot;))
+}</code></pre>
+<pre><code>## Level 2...
+## Prop of 1s: 1...
+## Mean of posterior: 0.998091822889242...
+## Level 3...
+## Prop of 1s: 1...
+## Mean of posterior: 1...
+## Level 4...
+## Prop of 1s: 1...
+## Mean of posterior: 1...
+## Level 5...
+## Prop of 1s: 1...
+## Mean of posterior: 1...
+## Level 6...
+## Prop of 1s: 1...
+## Mean of posterior: 0.99999125004375...
+## Level 7...
+## Prop of 1s: 1...
+## Mean of posterior: 0.994734141610242...
+## Level 8...
+## Prop of 1s: 0.3125...
+## Mean of posterior: 0.321949032580762...
+## Level 9...
+## Prop of 1s: 0.4453125...
+## Mean of posterior: 0.499998828432151...
+## Level 10...
+## Prop of 1s: 0.50390625...
+## Mean of posterior: 0.500002026380092...
+## Level 11...
+## Prop of 1s: 0.484375...
+## Mean of posterior: 0.500002191582145...</code></pre>
 <p>Now, we have our sequence of <span class="math inline">\(\gamma\)</span>’s, we can then simulate values for each <span class="math inline">\(\beta\)</span>. We have: <span class="math display">\[ 
 \beta_{s,l} =
 \begin{cases}
   \text{sample from 3-param t-dist} &amp; \text{ if } \gamma_{s,l} = 1 \\
   0 &amp; \text{ if } \gamma_{s,l} = 0
 \end{cases}
-\]</span> For some more details about simulating from a 3-parameter t-distribution, see the short page on that here. (INSERT LINK)</p>
+\]</span> For some more details about simulating from a 3-parameter t-distribution, see the short page on that <a href="tdist_3_param.html">here</a>.</p>
 <p>From our HMT output, we are given: <span class="math display">\[
 \text{mean1}_{s,l} = a_{s,l} \\
 \text{var1}_{s,l} = \frac{b_{s,l}\nu_{s,l}}{\nu_{s,l} - 2} \\

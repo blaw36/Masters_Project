@@ -413,7 +413,7 @@ div.tocify {
 
 
 <p>The mission here is to pick some parameters, use it to simulate WaveQTL data, run it through the algorithm, and see if we can recover the original parameters. This is to test the algorithm’s accuracy, and help identify any potential bugs should it fail to recover the original parameters. We consider two situations here: - Parameters with no noise - Parameters with noise</p>
-<p>The process is as follows: 1. Simulate data (many <span class="math inline">\(N \times B\)</span> matrices of N individuals, with B wavelet coefficients), using pre-set parameters + Specific <span class="math inline">\(\varepsilon_^{11}, \varepsilon_^{10}\)</span> vectors, of length B - 2 (no <span class="math inline">\(\varepsilon\)</span> for scaling coefficient or head of tree), for the prior transition probabilities between a parent and child state + Specific <span class="math inline">\(\pi = (\pi_{0,0},\pi_{1,1})\)</span> vector, of length 2, for prior marginal probability of the scaling coefficient (waveqtl style) and root node of the tree + <span class="math inline">\(\mu_{s,l}\)</span> set to either a constant (no noise) or drawn from a distribution (noise) + <span class="math inline">\(\beta_{s,l}\)</span> value (if not 0) set to either a constant (no noise) or drawn from a distribution (noise) + <span class="math inline">\(g^i \in \{0,1,2\}\)</span>, a specific coding of a SNP for each individual, drawn from a distribution + <span class="math inline">\(\epsilon_{s,l}^i\)</span> (the model’s noise parameter), to be drawn from <span class="math inline">\(N(0,\sigma_{sl,\beta}^2)\)</span> distribution. Hyperparameter <span class="math inline">\(\sigma_{sl,\beta}^2\)</span> should be determined, and possibly adjusted to vary the level of noise in the system with test with. + Note the settings by which these parameters were generated (all WCs useable, tied parameters if running WaveQTL with tying, etc.) 2. This represents a simulated <span class="math inline">\(\textbf{y} = (y_{0,0},\dots,y_{S,L^S})\)</span> vector of wavelet coefficients, ready for use in WaveQTL. Run this dataset through WaveQTL, with exactly the same settings as per parameter generation. 3. After enough simulations, calculate summary statistics (means and variances) of each of the parameters of interest (<span class="math inline">\(\varepsilon, \pi_{0,0}, \pi_{1,1}\)</span>), and see if a confidence range around these parameters contains the original, fixed parameter values.</p>
+<p>The process is as follows: 1. Simulate data (many <span class="math inline">\(N \times B\)</span> matrices of N individuals, with B wavelet coefficients), using pre-set parameters + Specific <span class="math inline">\(\varepsilon_{11}, \varepsilon_^_{10}\)</span> vectors, of length B - 2 (no <span class="math inline">\(\varepsilon\)</span> for scaling coefficient or head of tree), for the prior transition probabilities between a parent and child state + Specific <span class="math inline">\(\pi = (\pi_{0,0},\pi_{1,1})\)</span> vector, of length 2, for prior marginal probability of the scaling coefficient (waveqtl style) and root node of the tree + <span class="math inline">\(\mu_{s,l}\)</span> set to either a constant (no noise) or drawn from a distribution (noise) + <span class="math inline">\(\beta_{s,l}\)</span> value (if not 0) set to either a constant (no noise) or drawn from a distribution (noise) + <span class="math inline">\(g^i \in \{0,1,2\}\)</span>, a specific coding of a SNP for each individual, drawn from a distribution + <span class="math inline">\(\epsilon_{s,l}^i\)</span> (the model’s noise parameter), to be drawn from <span class="math inline">\(N(0,\sigma_{sl,\beta}^2)\)</span> distribution. Hyperparameter <span class="math inline">\(\sigma_{sl,\beta}^2\)</span> should be determined, and possibly adjusted to vary the level of noise in the system with test with. + Note the settings by which these parameters were generated (all WCs useable, tied parameters if running WaveQTL with tying, etc.) 2. This represents a simulated <span class="math inline">\(\textbf{y} = (y_{0,0},\dots,y_{S,L^S})\)</span> vector of wavelet coefficients, ready for use in WaveQTL. Run this dataset through WaveQTL, with exactly the same settings as per parameter generation. 3. After enough simulations, calculate summary statistics (means and variances) of each of the parameters of interest (<span class="math inline">\(\varepsilon, \pi_{0,0}, \pi_{1,1}\)</span>), and see if a confidence range around these parameters contains the original, fixed parameter values.</p>
 <div id="sample-simulation" class="section level2">
 <h2>Sample simulation</h2>
 <div id="global-parameters" class="section level3">
@@ -421,8 +421,11 @@ div.tocify {
 <pre class="r"><code>n_ind = 70
 n_pheno = 1024
 tying_grp &lt;- c(1,2,3,5,9,17,33,65,129,257,513)
-param_pi_00 &lt;- 0.8
-param_pi_11 &lt;- 0.5
+# Set some strong signals at top of tree
+# (ie a param_pi_11 of 1 means there is a very strong chance
+# of difference between the two halves of data)
+param_pi_00 &lt;- 0 # 0.8
+param_pi_11 &lt;- 1 # 0.5
 
 # Round to nearest 100th, for simplicity
 num_tying_grps &lt;- length(tying_grp)
@@ -432,8 +435,24 @@ num_tying_grps &lt;- length(tying_grp)
 # then just cut out the first two levels of elements (as neither the
 # scaling coefficient or head of tree need epsilons)
 
+# Current attempt:
+  # - Fairly strong signals prevail
+  # - Fairly weak signals remain weak
+            # g_{p(sl)}
+#             1 | 0   |
+# g_{sl} 1| 0.9 | 0.1 |
+#        0| 0.1 | 0.9 |
+# But at last level, very little signal, so most go to 0:
+          # g_{p(sl)}
+#           1 | 0 |
+# g_{sl} 1| 0 | 0 |
+#        0| 1 | 1 |
+
+
 # Eps_11 (elements 2 -&gt; 1023 of tree)
-grped_eps_11 &lt;- round(runif(n=num_tying_grps)*100)/100
+# # Random numbers
+# grped_eps_11 &lt;- round(runif(n=num_tying_grps)*100)/100
+grped_eps_11 &lt;- c(rep(0.9,(num_tying_grps-1)),0)
 param_eps_11 &lt;- numeric()
 for(i in 1:(num_tying_grps - 1)){
   indx_start &lt;- tying_grp[i]
@@ -444,7 +463,9 @@ param_eps_11[tying_grp[num_tying_grps]:n_pheno] &lt;- grped_eps_11[num_tying_grp
 param_eps_11 &lt;- param_eps_11[-(1:2)]
 
 # Eps_10 (elements 2 -&gt; 1023 of tree)
-grped_eps_10 &lt;- round(runif(n=num_tying_grps)*100)/100
+# # Random numbers
+# grped_eps_10 &lt;- round(runif(n=num_tying_grps)*100)/100
+grped_eps_10 &lt;- c(rep(0.1,(num_tying_grps-1)),0)
 param_eps_10 &lt;- numeric()
 for(i in 1:(num_tying_grps - 1)){
   indx_start &lt;- tying_grp[i]
@@ -485,7 +506,9 @@ for(i in 2:1023){
   }
   
   gamma_seq[i+1] &lt;- ifelse(rand_seq[i+1] &lt; sl_prob, 1, 0)
-}</code></pre>
+}
+plot_gamma_sim &lt;- tree_plot(gamma_seq,plot_title = &quot;sim_gamma_seq&quot;)</code></pre>
+<p><img src="sim2_waveqtl_hmt_recover_params_files/figure-html/sim_gamma_1-1.png" width="672" /></p>
 <p>Then we can use this to generate our <span class="math inline">\(\beta,\mu,\epsilon_{s,l}^i\)</span></p>
 <pre class="r"><code>beta_seq &lt;- rep(0,n_pheno)
 beta_seq[which(gamma_seq == 1)] &lt;- coeff_beta
@@ -495,7 +518,14 @@ mu_seq[which(gamma_seq == 1)] &lt;- coeff_mu
 mu_mtx &lt;- matrix(rep(mu_seq,70),nrow = n_ind,ncol = n_pheno,byrow = T)
 
 eps_seq &lt;- rnorm(n_pheno*n_ind,mean = 0,sd = sqrt(param_sigma_beta))
-eps_mtx &lt;- matrix(eps_seq,nrow = n_ind,ncol = n_pheno,byrow = T)</code></pre>
+eps_mtx &lt;- matrix(eps_seq,nrow = n_ind,ncol = n_pheno,byrow = T)
+
+plot_beta_sim &lt;- tree_plot(beta_seq,plot_title = &quot;sim_beta_seq&quot;)</code></pre>
+<p><img src="sim2_waveqtl_hmt_recover_params_files/figure-html/generate_beta_mu_eps-1.png" width="672" /></p>
+<pre class="r"><code>plot_mu_sim &lt;- tree_plot(mu_seq,plot_title = &quot;sim_mu_seq&quot;)</code></pre>
+<p><img src="sim2_waveqtl_hmt_recover_params_files/figure-html/generate_beta_mu_eps-2.png" width="672" /></p>
+<pre class="r"><code>graphics.off()
+hist(eps_seq)</code></pre>
 <p>And finally, use a binomial distirbution to generate a sequence of <span class="math inline">\(g\)</span>, and put this together to create the <span class="math inline">\(\beta\)</span> matrix:</p>
 <pre class="r"><code>g_seq &lt;- rbinom(n_ind,size = 2,prob = param_gi_prob)
 cat(c(&quot;sim2&quot;,&quot;A&quot;,&quot;A&quot;,g_seq), file = paste0(&quot;~/Cpp/WaveQTL_HMT/data/dsQTL/sim2.cis.geno&quot;))
@@ -504,49 +534,197 @@ beta_mtx &lt;- g_seq %*% t(beta_seq)</code></pre>
 <pre class="r"><code>y_mtx &lt;- mu_mtx + beta_mtx + eps_mtx
 write.table(y_mtx, file= paste0(&quot;~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_WCs.txt&quot;), row.names=FALSE, col.names = FALSE, quote=FALSE)
 cat(rep(1,1024), file = paste0(&quot;~/Cpp/WaveQTL_HMT/test/dsQTL/use_all.txt&quot;))</code></pre>
-<p>Now, run it through WaveQTL_HMT:</p>
-<p>Grab the params: # I DON’T ACTUALLY HAVE A WAY OF RECOVERING PI_0 ATM UNLESS I RUN IT THROUGH WAVEQTL (NO HMT) ALSO!</p>
-<p>Now we can run this many times, in a loop, and continue to collect resulting observations. See <em>insert script name</em> for the simulation script. Here are some results:</p>
-<pre class="r"><code># setwd(&quot;~/Cpp/WaveQTL_HMT/test/dsQTL/&quot;)
-results_pi &lt;- readRDS(&quot;~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_pi.RDS&quot;)
-results_eps_11 &lt;- readRDS(&quot;~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_eps_11.RDS&quot;)
-results_eps_10 &lt;- readRDS(file = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_eps_10.RDS&quot;)</code></pre>
+<p>Here are some diagnostics regarding average beta’s and average y’s at each scale-location:</p>
+<pre class="r"><code>beta_avg &lt;- apply(beta_mtx,MARGIN = 2,FUN = mean)
+y_avg &lt;- apply(y_mtx,MARGIN = 2,FUN = mean)
+plot_beta_avg &lt;- tree_plot(beta_avg,yaxis_lims = c(min(beta_avg),max(beta_avg)),plot_title = &quot;avg_beta_sl&quot;)</code></pre>
+<p><img src="sim2_waveqtl_hmt_recover_params_files/figure-html/beta_y_diag_plots-1.png" width="672" /></p>
+<pre class="r"><code>plot_y_avg &lt;- tree_plot(y_avg,yaxis_lims = c(min(y_mtx),max(y_mtx)),plot_title = &quot;avg_y_sl&quot;)</code></pre>
+<p><img src="sim2_waveqtl_hmt_recover_params_files/figure-html/beta_y_diag_plots-2.png" width="672" /></p>
+<pre class="r"><code># By covariate:
+y_mtx_w_group &lt;- cbind(y_mtx,g_seq)
+y_mtx_means_g0 &lt;- apply(y_mtx[g_seq == 0,],2,mean)
+y_mtx_means_g1 &lt;- apply(y_mtx[g_seq == 1,],2,mean)
+y_mtx_means_g2 &lt;- apply(y_mtx[g_seq == 2,],2,mean)
+plot_y_avg_g0 &lt;- tree_plot(y_mtx_means_g0,yaxis_lims = c(min(y_mtx),max(y_mtx)),plot_title = &quot;avg_y_sl_g0&quot;)</code></pre>
+<p><img src="sim2_waveqtl_hmt_recover_params_files/figure-html/beta_y_diag_plots-3.png" width="672" /></p>
+<pre class="r"><code>plot_y_avg_g1 &lt;- tree_plot(y_mtx_means_g1,yaxis_lims = c(min(y_mtx),max(y_mtx)),plot_title = &quot;avg_y_sl_g1&quot;)</code></pre>
+<p><img src="sim2_waveqtl_hmt_recover_params_files/figure-html/beta_y_diag_plots-4.png" width="672" /></p>
+<pre class="r"><code>plot_y_avg_g2 &lt;- tree_plot(y_mtx_means_g2,yaxis_lims = c(min(y_mtx),max(y_mtx)),plot_title = &quot;avg_y_sl_g2&quot;)</code></pre>
+<p><img src="sim2_waveqtl_hmt_recover_params_files/figure-html/beta_y_diag_plots-5.png" width="672" /></p>
+<p>Now, run it through WaveQTL_HMT, then grab the parameters. (<em>Not run</em>) Note that: # I DON’T ACTUALLY HAVE A WAY OF RECOVERING PI_0 ATM UNLESS I RUN IT THROUGH WAVEQTL (NO HMT) ALSO!</p>
+<p>The above was just an illustration of how a simulation method. Here, we clear the environment, and we can re-run the process many times many times, in a loop, and continue to collect resulting observations. See “code/sim2_script.R” for the functionalised simulation script. Here are some results:</p>
+<pre class="r"><code># Clear environment and do some fresh simulations
+rm(list = ls());gc();cat(&quot;\014&quot;);</code></pre>
+<pre><code>##           used (Mb) gc trigger (Mb) max used (Mb)
+## Ncells  559907 30.0    1235698   66  1235698 66.0
+## Vcells 1099438  8.4    8388608   64  4338009 33.1</code></pre>
+<p></p>
+<pre class="r"><code>source(&quot;../code/sim2_script.R&quot;)
+
+p_n_ind = 70
+p_n_pheno = 1024
+p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.9,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.1,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.5
+p_num_sims = 100
+p_seed = 20</code></pre>
+<pre class="r"><code>results_list &lt;- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)</code></pre>
+<pre><code>## running iteration 1...
+## running iteration 2...
+## running iteration 3...
+## running iteration 4...
+## running iteration 5...
+## running iteration 6...
+## running iteration 7...
+## running iteration 8...
+## running iteration 9...
+## running iteration 10...
+## running iteration 11...
+## running iteration 12...
+## running iteration 13...
+## running iteration 14...
+## running iteration 15...
+## running iteration 16...
+## running iteration 17...
+## running iteration 18...
+## running iteration 19...
+## running iteration 20...
+## running iteration 21...
+## running iteration 22...
+## running iteration 23...
+## running iteration 24...
+## running iteration 25...
+## running iteration 26...
+## running iteration 27...
+## running iteration 28...
+## running iteration 29...
+## running iteration 30...
+## running iteration 31...
+## running iteration 32...
+## running iteration 33...
+## running iteration 34...
+## running iteration 35...
+## running iteration 36...
+## running iteration 37...
+## running iteration 38...
+## running iteration 39...
+## running iteration 40...
+## running iteration 41...
+## running iteration 42...
+## running iteration 43...
+## running iteration 44...
+## running iteration 45...
+## running iteration 46...
+## running iteration 47...
+## running iteration 48...
+## running iteration 49...
+## running iteration 50...
+## running iteration 51...
+## running iteration 52...
+## running iteration 53...
+## running iteration 54...
+## running iteration 55...
+## running iteration 56...
+## running iteration 57...
+## running iteration 58...
+## running iteration 59...
+## running iteration 60...
+## running iteration 61...
+## running iteration 62...
+## running iteration 63...
+## running iteration 64...
+## running iteration 65...
+## running iteration 66...
+## running iteration 67...
+## running iteration 68...
+## running iteration 69...
+## running iteration 70...
+## running iteration 71...
+## running iteration 72...
+## running iteration 73...
+## running iteration 74...
+## running iteration 75...
+## running iteration 76...
+## running iteration 77...
+## running iteration 78...
+## running iteration 79...
+## running iteration 80...
+## running iteration 81...
+## running iteration 82...
+## running iteration 83...
+## running iteration 84...
+## running iteration 85...
+## running iteration 86...
+## running iteration 87...
+## running iteration 88...
+## running iteration 89...
+## running iteration 90...
+## running iteration 91...
+## running iteration 92...
+## running iteration 93...
+## running iteration 94...
+## running iteration 95...
+## running iteration 96...
+## running iteration 97...
+## running iteration 98...
+## running iteration 99...
+## running iteration 100...</code></pre>
 <p>Analysis:</p>
-<pre class="r"><code>pi_mean &lt;- mean(unlist(results_pi))
-pi_sd &lt;- sd(unlist(results_pi))
+<pre class="r"><code>pi_mean &lt;- mean(unlist(results_list$results_pi))
+pi_sd &lt;- sd(unlist(results_list$results_pi))
 pi_range &lt;- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
-pi_range; param_pi_11</code></pre>
-<pre><code>## [1] -0.8564856  2.0545963</code></pre>
-<pre><code>## [1] 0.5</code></pre>
-<pre class="r"><code>results_eps_11_mtx &lt;- matrix(unlist(results_eps_11)
+pi_range; p_param_pi_11</code></pre>
+<pre><code>## [1] 1 1</code></pre>
+<pre><code>## [1] 1</code></pre>
+<pre class="r"><code>results_eps_11_mtx &lt;- matrix(unlist(results_list$results_eps_11)
                              ,nrow = 100, ncol = 1022, byrow = T)
-results_eps_10_mtx &lt;- matrix(unlist(results_eps_10)
+results_eps_10_mtx &lt;- matrix(unlist(results_list$results_eps_10)
                              ,nrow = 100, ncol = 1022, byrow = T)
 
 eps_11_mean &lt;- apply(results_eps_11_mtx,MARGIN = 2,mean)
 eps_11_sd &lt;- apply(results_eps_11_mtx,MARGIN = 2,sd)
 eps_11_lb &lt;- eps_11_mean - 3*eps_11_sd
 eps_11_ub &lt;- eps_11_mean + 3*eps_11_sd
-eps_11_within_range &lt;- between(param_eps_11,eps_11_lb,eps_11_ub)
+eps_11_within_range &lt;- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
 table(eps_11_within_range)</code></pre>
 <pre><code>## eps_11_within_range
 ## FALSE  TRUE 
-##   976    46</code></pre>
+##   480   542</code></pre>
 <pre class="r"><code>eps_10_mean &lt;- apply(results_eps_10_mtx,MARGIN = 2,mean)
 eps_10_sd &lt;- apply(results_eps_10_mtx,MARGIN = 2,sd)
 eps_10_lb &lt;- eps_10_mean - 3*eps_10_sd
 eps_10_ub &lt;- eps_10_mean + 3*eps_10_sd
-eps_10_within_range &lt;- between(param_eps_10,eps_10_lb,eps_10_ub)
+eps_10_within_range &lt;- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
 table(eps_10_within_range)</code></pre>
 <pre><code>## eps_10_within_range
 ## FALSE  TRUE 
-##   448   574</code></pre>
+##     2  1020</code></pre>
 <p>Some more informative plots:</p>
 <pre class="r"><code># Epsilon 11
-y_axis_bounds &lt;- c(min(min(eps_11_lb),min(param_eps_11)),max(max(eps_11_ub),max(param_eps_11)))*1.1
+y_axis_bounds &lt;- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
 
 xval = 1:1024
-which_in_bound = xval[between(param_eps_11,eps_11_lb,eps_11_ub)]
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
 
 plot(1,1, type = &quot;n&quot;, xlab = &quot;Wavelet scale-loc&quot;, ylab = &quot;Probability&quot;, main = &quot;Epsilon 11&quot;, xaxt = &quot;n&quot;
      ,xlim = c(0,1024)
@@ -559,16 +737,16 @@ if(length(which_in_bound) &gt; 0){
 }
 
 axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(param_eps_11,type = &quot;l&quot;)
+points(results_list$param_eps_11,type = &quot;l&quot;)
 points(eps_11_mean,col = &quot;red&quot;, type = &quot;l&quot;)
 points(eps_11_ub,col = &quot;blue&quot;, type = &quot;l&quot;, lty = 2)
 points(eps_11_lb,col = &quot;blue&quot;, type = &quot;l&quot;, lty = 2)</code></pre>
 <p><img src="sim2_waveqtl_hmt_recover_params_files/figure-html/plots-1.png" width="672" /></p>
 <pre class="r"><code># Epsilon 10
-y_axis_bounds &lt;- c(min(min(eps_10_lb),min(param_eps_10)),max(max(eps_10_ub),max(param_eps_10)))*1.1
+y_axis_bounds &lt;- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
 
 xval = 1:1024
-which_in_bound = xval[between(param_eps_10,eps_10_lb,eps_10_ub)]
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
 
 plot(1,1, type = &quot;n&quot;, xlab = &quot;Wavelet scale-loc&quot;, ylab = &quot;Probability&quot;, main = &quot;Epsilon 10&quot;, xaxt = &quot;n&quot;
      ,xlim = c(0,1024)
@@ -581,7 +759,7 @@ if(length(which_in_bound) &gt; 0){
 }
 
 axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(param_eps_10,type = &quot;l&quot;)
+points(results_list$param_eps_10,type = &quot;l&quot;)
 points(eps_10_mean,col = &quot;red&quot;, type = &quot;l&quot;)
 points(eps_10_ub,col = &quot;blue&quot;, type = &quot;l&quot;, lty = 2)
 points(eps_10_lb,col = &quot;blue&quot;, type = &quot;l&quot;, lty = 2)</code></pre>

@@ -23,6 +23,34 @@ get_parent_indices <- function(indx, tree_root_indx = 1){
   return_indices[which(indx == tree_root_indx)] <- NA_integer_
   return(return_indices)
 }
+
+tree_plot <- function(data, yaxis_lims = c(0,1),plot_title){
+  
+  # Interleaves vectors with two bookend 0s, and a 0 between each current element
+  # (for spacing of elements like a tree in a plot)
+  vector_centeriser <- function(vect){
+    in_between_zeros <- length(vect) - 1
+    
+    res_vect <- c(0,vect[1],0)
+    if(in_between_zeros > 0){
+      for(i in 1:in_between_zeros){
+        res_vect <- c(res_vect,vect[i + 1],0)
+      }  
+    }
+    return(res_vect)
+  }
+  
+  num_lvls <- floor(log2(length(data))) + 1
+  par(mfrow = c(num_lvls,1),mar = c(1,1,1,1))
+  plot(vector_centeriser(data[1]),type = "h",ylab = "",axes = F,ylim=yaxis_lims,main=plot_title) # scaling coeff
+  plot(vector_centeriser(data[2]),type = "h",ylab = "",axes = F,ylim=yaxis_lims) # head of tree 
+  for(i in 1:(num_lvls-2)){
+    plot(vector_centeriser(data[((2^i)+1):(2^(i+1))]),type = "h",ylab = "",axes = F,ylim=yaxis_lims)
+  }
+  p <- recordPlot()
+  return(p)
+}
+
 ```
 
 ## Background
@@ -91,14 +119,17 @@ waveqtl_phi <- as.numeric(waveqtl_phi[2])
 Now, let's simulate a sequence of $\gamma$'s:
 ```{r sim_gamma_1}
 gamma_seq <- numeric()
+post_prob_seq <- numeric()
 set.seed(10)
 rand_seq <- runif(1024)
 
 # Scaling coefficient
 gamma_seq[1] <- ifelse(rand_seq[1] < waveqtl_phi, 1, 0)
+post_prob_seq[1] <- waveqtl_phi
 
 # Head of tree
 gamma_seq[2] <- ifelse(rand_seq[2] < a_1[1], 1, 0)
+post_prob_seq[2] <- a_1[1]
 
 # i is the index of tree, where i = 1 is the head of the tree
 # Using this notation because that's how 'get_parent_indices' has been written
@@ -116,43 +147,30 @@ for(i in 2:1023){
   }
   
   post_prob <- numerator/denominator
+  post_prob_seq[i+1] <- post_prob
   
   gamma_seq[i+1] <- ifelse(rand_seq[i+1] < post_prob, 1, 0)
   
 }
 ```
 
-```{r plot_attempt1, eval = F}
-### RUN INTERACTIVELY!
+```{r plot_attempt1}
+# Visualise tree coefficients
+p_gamma_1 <- tree_plot(gamma_seq,yaxis_lims = c(0,1),"gammas")
+# Visuualise posterior probabilities
+p_posterior_1 <- tree_plot(post_prob_seq,yaxis_lims = c(0,1),"posterior probabilities")
+```
 
-# Interleaves vectors with two bookend 0s, and a 0 between each current element
-# (for spacing of elements like a tree in a plot)
-vector_centeriser <- function(vect){
-  in_between_zeros <- length(vect) - 1
-  
-  res_vect <- c(0,vect[1],0)
-  if(in_between_zeros > 0){
-    for(i in 1:in_between_zeros){
-      res_vect <- c(res_vect,vect[i + 1],0)
-    }  
-  }
-  return(res_vect)
+A brief check on the proportions of 0/1s of gammas at each level vs average posterior probabilities at each level...
+```{r brief_01_check}
+cat(paste0("Level 1...\n"))
+  cat(paste0("Prop of 1s: ",sum(gamma_seq[1])/length(gamma_seq[1]),"...\n"))
+  cat(paste0("Mean of posterior: ",mean(post_prob_seq[1]),"...\n"))
+for(i in 0:9){
+  cat(paste0("Level ",(i+2),"...\n"))
+  cat(paste0("Prop of 1s: ",sum(gamma_seq[((2^i)+1):(2^(i+1))])/length(gamma_seq[((2^i)+1):(2^(i+1))]),"...\n"))
+  cat(paste0("Mean of posterior: ",mean(post_prob_seq[((2^i)+1):(2^(i+1))]),"...\n"))
 }
-
-# Kind of a start to visualising tree coefficients - without the scaling coeff (11 rows too large for plot)
-gamma_seq_plot <- gamma_seq[-1]
-par(mfrow = c(10,1)
-    ,mar = c(2,2,2,2))
-plot(vector_centeriser(gamma_seq_plot[1]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[2:3]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[4:7]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[8:15]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[16:31]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[32:63]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[64:127]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[128:255]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[256:511]),type = "h",ylab = "",axes = F)#; axis(1)
-plot(vector_centeriser(gamma_seq_plot[512:1023]),type = "h",ylab = "",axes = F)#; axis(1)
 ```
 
 Now, we have our sequence of $\gamma$'s, we can then simulate values for each $\beta$. We have:
@@ -163,7 +181,7 @@ $$
   0 & \text{ if } \gamma_{s,l} = 0
 \end{cases}
 $$
-For some more details about simulating from a 3-parameter t-distribution, see the short page on that here. (INSERT LINK)
+For some more details about simulating from a 3-parameter t-distribution, see the short page on that [here](tdist_3_param.html).
 
 From our HMT output, we are given:
 $$

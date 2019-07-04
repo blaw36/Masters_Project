@@ -4,8 +4,10 @@ run_sim2 <- function(
   n_ind = 70
   ,n_pheno = 1024
   ,tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
-  ,param_pi_00 = 1
-  ,param_pi_11 = 0
+  ,param_pi_00 = 0
+  ,param_pi_11 = 1
+  ,grped_eps_11
+  ,grped_eps_10
   ,coeff_mu = 0
   ,coeff_beta = 2
   ,param_gi_prob = 0.4
@@ -41,7 +43,7 @@ run_sim2 <- function(
   # scaling coefficient or head of tree need epsilons)
 
   # Eps_11 (elements 2 -> 1023 of tree)
-  grped_eps_11 <- round(runif(n=num_tying_grps)*100)/100
+  # grped_eps_11 <- round(runif(n=num_tying_grps)*100)/100
   param_eps_11 <- numeric()
   for(i in 1:(num_tying_grps - 1)){
     indx_start <- tying_grp[i]
@@ -52,7 +54,7 @@ run_sim2 <- function(
   param_eps_11 <- param_eps_11[-(1:2)]
 
   # Eps_10 (elements 2 -> 1023 of tree)
-  grped_eps_10 <- round(runif(n=num_tying_grps)*100)/100
+  # grped_eps_10 <- round(runif(n=num_tying_grps)*100)/100
   param_eps_10 <- numeric()
   for(i in 1:(num_tying_grps - 1)){
     indx_start <- tying_grp[i]

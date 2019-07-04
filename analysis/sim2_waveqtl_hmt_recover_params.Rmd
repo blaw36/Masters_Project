@@ -25,6 +25,33 @@ get_parent_indices <- function(indx, tree_root_indx = 1){
   return_indices[which(indx == tree_root_indx)] <- NA_integer_
   return(return_indices)
 }
+
+tree_plot <- function(data, yaxis_lims = c(0,1),plot_title){
+  
+  # Interleaves vectors with two bookend 0s, and a 0 between each current element
+  # (for spacing of elements like a tree in a plot)
+  vector_centeriser <- function(vect){
+    in_between_zeros <- length(vect) - 1
+    
+    res_vect <- c(0,vect[1],0)
+    if(in_between_zeros > 0){
+      for(i in 1:in_between_zeros){
+        res_vect <- c(res_vect,vect[i + 1],0)
+      }  
+    }
+    return(res_vect)
+  }
+  
+  num_lvls <- floor(log2(length(data))) + 1
+  par(mfrow = c(num_lvls,1),mar = c(1,1,1,1))
+  plot(vector_centeriser(data[1]),type = "h",ylab = "",axes = F,ylim=yaxis_lims,main=plot_title) # scaling coeff
+  plot(vector_centeriser(data[2]),type = "h",ylab = "",axes = F,ylim=yaxis_lims) # head of tree 
+  for(i in 1:(num_lvls-2)){
+    plot(vector_centeriser(data[((2^i)+1):(2^(i+1))]),type = "h",ylab = "",axes = F,ylim=yaxis_lims)
+  }
+  p <- recordPlot()
+  return(p)
+}
 ```
 
 The mission here is to pick some parameters, use it to simulate WaveQTL data, run it through the algorithm, and see if we can recover the original parameters. This is to test the algorithm's accuracy, and help identify any potential bugs should it fail to recover the original parameters. We consider two situations here:
@@ -33,7 +60,7 @@ The mission here is to pick some parameters, use it to simulate WaveQTL data, ru
 
 The process is as follows:
 1. Simulate data (many $N \times B$ matrices of N individuals, with B wavelet coefficients), using pre-set parameters
-  + Specific $\varepsilon_^{11}, \varepsilon_^{10}$ vectors, of length B - 2 (no $\varepsilon$ for scaling coefficient or head of tree), for the prior transition probabilities between a parent and child state
+  + Specific $\varepsilon_{11}, \varepsilon_^_{10}$ vectors, of length B - 2 (no $\varepsilon$ for scaling coefficient or head of tree), for the prior transition probabilities between a parent and child state
   + Specific $\pi = (\pi_{0,0},\pi_{1,1})$ vector, of length 2, for prior marginal probability of the scaling coefficient (waveqtl style) and root node of the tree
   + $\mu_{s,l}$ set to either a constant (no noise) or drawn from a distribution (noise)
   + $\beta_{s,l}$ value (if not 0) set to either a constant (no noise) or drawn from a distribution (noise)
@@ -49,8 +76,11 @@ The process is as follows:
 n_ind = 70
 n_pheno = 1024
 tying_grp <- c(1,2,3,5,9,17,33,65,129,257,513)
-param_pi_00 <- 0.8
-param_pi_11 <- 0.5
+# Set some strong signals at top of tree
+# (ie a param_pi_11 of 1 means there is a very strong chance
+# of difference between the two halves of data)
+param_pi_00 <- 0 # 0.8
+param_pi_11 <- 1 # 0.5
 
 # Round to nearest 100th, for simplicity
 num_tying_grps <- length(tying_grp)
@@ -60,8 +90,24 @@ num_tying_grps <- length(tying_grp)
 # then just cut out the first two levels of elements (as neither the
 # scaling coefficient or head of tree need epsilons)
 
+# Current attempt:
+  # - Fairly strong signals prevail
+  # - Fairly weak signals remain weak
+            # g_{p(sl)}
+#             1 | 0   |
+# g_{sl} 1| 0.9 | 0.1 |
+#        0| 0.1 | 0.9 |
+# But at last level, very little signal, so most go to 0:
+          # g_{p(sl)}
+#           1 | 0 |
+# g_{sl} 1| 0 | 0 |
+#        0| 1 | 1 |
+
+
 # Eps_11 (elements 2 -> 1023 of tree)
-grped_eps_11 <- round(runif(n=num_tying_grps)*100)/100
+# # Random numbers
+# grped_eps_11 <- round(runif(n=num_tying_grps)*100)/100
+grped_eps_11 <- c(rep(0.9,(num_tying_grps-1)),0)
 param_eps_11 <- numeric()
 for(i in 1:(num_tying_grps - 1)){
   indx_start <- tying_grp[i]
@@ -72,7 +118,9 @@ param_eps_11[tying_grp[num_tying_grps]:n_pheno] <- grped_eps_11[num_tying_grps]
 param_eps_11 <- param_eps_11[-(1:2)]
 
 # Eps_10 (elements 2 -> 1023 of tree)
-grped_eps_10 <- round(runif(n=num_tying_grps)*100)/100
+# # Random numbers
+# grped_eps_10 <- round(runif(n=num_tying_grps)*100)/100
+grped_eps_10 <- c(rep(0.1,(num_tying_grps-1)),0)
 param_eps_10 <- numeric()
 for(i in 1:(num_tying_grps - 1)){
   indx_start <- tying_grp[i]
@@ -115,6 +163,7 @@ for(i in 2:1023){
   
   gamma_seq[i+1] <- ifelse(rand_seq[i+1] < sl_prob, 1, 0)
 }
+plot_gamma_sim <- tree_plot(gamma_seq,plot_title = "sim_gamma_seq")
 ```
 
 Then we can use this to generate our $\beta,\mu,\epsilon_{s,l}^i$
@@ -128,6 +177,11 @@ mu_mtx <- matrix(rep(mu_seq,70),nrow = n_ind,ncol = n_pheno,byrow = T)
 
 eps_seq <- rnorm(n_pheno*n_ind,mean = 0,sd = sqrt(param_sigma_beta))
 eps_mtx <- matrix(eps_seq,nrow = n_ind,ncol = n_pheno,byrow = T)
+
+plot_beta_sim <- tree_plot(beta_seq,plot_title = "sim_beta_seq")
+plot_mu_sim <- tree_plot(mu_seq,plot_title = "sim_mu_seq")
+graphics.off()
+hist(eps_seq)
 ```
 
 And finally, use a binomial distirbution to generate a sequence of $g$, and put this together to create the $\beta$ matrix:
@@ -144,6 +198,23 @@ write.table(y_mtx, file= paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_WCs.txt"), ro
 cat(rep(1,1024), file = paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/use_all.txt"))
 ```
 
+Here are some diagnostics regarding average beta's and average y's at each scale-location:
+```{r beta_y_diag_plots}
+beta_avg <- apply(beta_mtx,MARGIN = 2,FUN = mean)
+y_avg <- apply(y_mtx,MARGIN = 2,FUN = mean)
+plot_beta_avg <- tree_plot(beta_avg,yaxis_lims = c(min(beta_avg),max(beta_avg)),plot_title = "avg_beta_sl")
+plot_y_avg <- tree_plot(y_avg,yaxis_lims = c(min(y_mtx),max(y_mtx)),plot_title = "avg_y_sl")
+
+# By covariate:
+y_mtx_w_group <- cbind(y_mtx,g_seq)
+y_mtx_means_g0 <- apply(y_mtx[g_seq == 0,],2,mean)
+y_mtx_means_g1 <- apply(y_mtx[g_seq == 1,],2,mean)
+y_mtx_means_g2 <- apply(y_mtx[g_seq == 2,],2,mean)
+plot_y_avg_g0 <- tree_plot(y_mtx_means_g0,yaxis_lims = c(min(y_mtx),max(y_mtx)),plot_title = "avg_y_sl_g0")
+plot_y_avg_g1 <- tree_plot(y_mtx_means_g1,yaxis_lims = c(min(y_mtx),max(y_mtx)),plot_title = "avg_y_sl_g1")
+plot_y_avg_g2 <- tree_plot(y_mtx_means_g2,yaxis_lims = c(min(y_mtx),max(y_mtx)),plot_title = "avg_y_sl_g2")
+```
+
 Now, run it through WaveQTL_HMT, then grab the parameters. (_Not run_)
 Note that:
 # I DON'T ACTUALLY HAVE A WAY OF RECOVERING PI_0 ATM UNLESS I RUN IT THROUGH WAVEQTL (NO HMT) ALSO!
@@ -158,28 +229,43 @@ Note that:
 # eps_10_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.eps_10.txt"))[3:1024]))
 ```
 
-Now we can run this many times, in a loop, and continue to collect resulting observations. See "code/sim2_script.R" for the simulation script. Here are some results:
-```{r results1}
-# setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
-# results_pi <- readRDS("~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_pi.RDS")
-# results_eps_11 <- readRDS("~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_eps_11.RDS")
-# results_eps_10 <- readRDS(file = "~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_eps_10.RDS")
+The above was just an illustration of how a simulation method. Here, we clear the environment, and we can re-run the process many times many times, in a loop, and continue to collect resulting observations. See "code/sim2_script.R" for the functionalised simulation script. Here are some results:
+```{r clear_env_glob_params}
 # Clear environment and do some fresh simulations
 rm(list = ls());gc();cat("\014");
-source("code/sim2_script.R")
-# results_list <- run_sim2()
+source("../code/sim2_script.R")
+
+p_n_ind = 70
+p_n_pheno = 1024
+p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.9,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.1,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.5
+p_num_sims = 100
+p_seed = 20
+
+```
+
+```{r run_sims}
 results_list <- run_sim2(
-  n_ind = 70
-  ,n_pheno = 1024
-  ,tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
-  ,param_pi_00 = 1
-  ,param_pi_11 = 0
-  ,coeff_mu = 0
-  ,coeff_beta = 2
-  ,param_gi_prob = 0.4
-  ,param_sigma_beta = 0.5
-  ,num_sims = 100
-  ,seed = 20)
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
 ```
 
 Analysis:
@@ -187,7 +273,7 @@ Analysis:
 pi_mean <- mean(unlist(results_list$results_pi))
 pi_sd <- sd(unlist(results_list$results_pi))
 pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
-pi_range; param_pi_11
+pi_range; p_param_pi_11
 
 results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
                              ,nrow = 100, ncol = 1022, byrow = T)
