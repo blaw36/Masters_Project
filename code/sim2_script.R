@@ -6,8 +6,8 @@ run_sim2 <- function(
   ,tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
   ,param_pi_00 = 0
   ,param_pi_11 = 1
-  ,grped_eps_11
-  ,grped_eps_10
+  ,grped_eps_11 = c(rep(0.9,10),0)
+  ,grped_eps_10 = c(rep(0.1,10),0)
   ,coeff_mu = 0
   ,coeff_beta = 2
   ,param_gi_prob = 0.4
@@ -116,7 +116,6 @@ run_sim2 <- function(
     ### Step 3: Run through HMT ----
     command <- paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim2.cis.geno -p sim2_WCs.txt -u use_all.txt -o sim2_noQT -f ",n_pheno," -hmt 1")
     system(command,show.output.on.console = F)
-    # system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim2.cis.geno -p sim2_WCs.txt -u use_all.txt -o sim2_noQT -f 1024 -hmt 1",show.output.on.console = F)
 
     # I DON'T ACTUALLY HAVE A WAY OF RECOVERING PI_0 ATM UNLESS I RUN IT THROUGH WAVEQTL (NO HMT) ALSO!
     ### Step 4: Get HMT results ----
@@ -128,6 +127,9 @@ run_sim2 <- function(
     results_pi[[its]] <- pi_file
     results_eps_11[[its]] <- eps_11_file
     results_eps_10[[its]] <- eps_10_file
+    results_gamma_seq[[its]] <- gamma_seq
+    results_beta_seq[[its]] <- beta_seq
+    results_y_mtx[[its]] <- y_mtx
 
   }
 
@@ -135,6 +137,9 @@ run_sim2 <- function(
   return(list(results_pi = results_pi
               ,results_eps_11 = results_eps_11
               ,results_eps_10 = results_eps_10
+              ,results_gamma_seq = results_gamma_seq
+              ,results_beta_seq = results_beta_seq
+              ,results_y_mtx = results_y_mtx
               ,param_eps_11 = param_eps_11
               ,param_eps_10 = param_eps_10))
 

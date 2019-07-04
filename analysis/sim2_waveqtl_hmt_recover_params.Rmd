@@ -55,18 +55,20 @@ tree_plot <- function(data, yaxis_lims = c(0,1),plot_title){
 ```
 
 The mission here is to pick some parameters, use it to simulate WaveQTL data, run it through the algorithm, and see if we can recover the original parameters. This is to test the algorithm's accuracy, and help identify any potential bugs should it fail to recover the original parameters. We consider two situations here:
+
 - Parameters with no noise
 - Parameters with noise
 
 The process is as follows:
+
 1. Simulate data (many $N \times B$ matrices of N individuals, with B wavelet coefficients), using pre-set parameters
-  + Specific $\varepsilon_{11}, \varepsilon_^_{10}$ vectors, of length B - 2 (no $\varepsilon$ for scaling coefficient or head of tree), for the prior transition probabilities between a parent and child state
-  + Specific $\pi = (\pi_{0,0},\pi_{1,1})$ vector, of length 2, for prior marginal probability of the scaling coefficient (waveqtl style) and root node of the tree
-  + $\mu_{s,l}$ set to either a constant (no noise) or drawn from a distribution (noise)
-  + $\beta_{s,l}$ value (if not 0) set to either a constant (no noise) or drawn from a distribution (noise)
-  + $g^i \in \{0,1,2\}$, a specific coding of a SNP for each individual, drawn from a distribution
-  + $\epsilon_{s,l}^i$ (the model's noise parameter), to be drawn from $N(0,\sigma_{sl,\beta}^2)$ distribution. Hyperparameter $\sigma_{sl,\beta}^2$ should be determined, and possibly adjusted to vary the level of noise in the system with test with.
-  + Note the settings by which these parameters were generated (all WCs useable, tied parameters if running WaveQTL with tying, etc.)
+  - Specific $\varepsilon_{11}, \varepsilon_{10}$ vectors, of length B - 2 (no $\varepsilon$ for scaling coefficient or head of tree), for the prior transition probabilities between a parent and child state
+  - Specific $\pi = (\pi_{0,0},\pi_{1,1})$ vector, of length 2, for prior marginal probability of the scaling coefficient (waveqtl style) and root node of the tree
+  - $\mu_{s,l}$ set to either a constant (no noise) or drawn from a distribution (noise)
+  - $\beta_{s,l}$ value (if not 0) set to either a constant (no noise) or drawn from a distribution (noise)
+  - $g^i \in \{0,1,2\}$, a specific coding of a SNP for each individual, drawn from a distribution
+  - $\epsilon_{s,l}^i$ (the model's noise parameter), to be drawn from $N(0,\sigma_{sl,\beta}^2)$ distribution. Hyperparameter $\sigma_{sl,\beta}^2$ should be determined, and possibly adjusted to vary the level of noise in the system with test with.
+  - Note the settings by which these parameters were generated (all WCs useable, tied parameters if running WaveQTL with tying, etc.)
 2. This represents a simulated $\textbf{y} = (y_{0,0},\dots,y_{S,L^S})$ vector of wavelet coefficients, ready for use in WaveQTL. Run this dataset through WaveQTL, with exactly the same settings as per parameter generation.
 3. After enough simulations, calculate summary statistics (means and variances) of each of the parameters of interest ($\varepsilon, \pi_{0,0}, \pi_{1,1}$), and see if a confidence range around these parameters contains the original, fixed parameter values.
 

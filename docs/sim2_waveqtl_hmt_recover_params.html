@@ -412,8 +412,28 @@ div.tocify {
 </div>
 
 
-<p>The mission here is to pick some parameters, use it to simulate WaveQTL data, run it through the algorithm, and see if we can recover the original parameters. This is to test the algorithm’s accuracy, and help identify any potential bugs should it fail to recover the original parameters. We consider two situations here: - Parameters with no noise - Parameters with noise</p>
-<p>The process is as follows: 1. Simulate data (many <span class="math inline">\(N \times B\)</span> matrices of N individuals, with B wavelet coefficients), using pre-set parameters + Specific <span class="math inline">\(\varepsilon_{11}, \varepsilon_^_{10}\)</span> vectors, of length B - 2 (no <span class="math inline">\(\varepsilon\)</span> for scaling coefficient or head of tree), for the prior transition probabilities between a parent and child state + Specific <span class="math inline">\(\pi = (\pi_{0,0},\pi_{1,1})\)</span> vector, of length 2, for prior marginal probability of the scaling coefficient (waveqtl style) and root node of the tree + <span class="math inline">\(\mu_{s,l}\)</span> set to either a constant (no noise) or drawn from a distribution (noise) + <span class="math inline">\(\beta_{s,l}\)</span> value (if not 0) set to either a constant (no noise) or drawn from a distribution (noise) + <span class="math inline">\(g^i \in \{0,1,2\}\)</span>, a specific coding of a SNP for each individual, drawn from a distribution + <span class="math inline">\(\epsilon_{s,l}^i\)</span> (the model’s noise parameter), to be drawn from <span class="math inline">\(N(0,\sigma_{sl,\beta}^2)\)</span> distribution. Hyperparameter <span class="math inline">\(\sigma_{sl,\beta}^2\)</span> should be determined, and possibly adjusted to vary the level of noise in the system with test with. + Note the settings by which these parameters were generated (all WCs useable, tied parameters if running WaveQTL with tying, etc.) 2. This represents a simulated <span class="math inline">\(\textbf{y} = (y_{0,0},\dots,y_{S,L^S})\)</span> vector of wavelet coefficients, ready for use in WaveQTL. Run this dataset through WaveQTL, with exactly the same settings as per parameter generation. 3. After enough simulations, calculate summary statistics (means and variances) of each of the parameters of interest (<span class="math inline">\(\varepsilon, \pi_{0,0}, \pi_{1,1}\)</span>), and see if a confidence range around these parameters contains the original, fixed parameter values.</p>
+<p>The mission here is to pick some parameters, use it to simulate WaveQTL data, run it through the algorithm, and see if we can recover the original parameters. This is to test the algorithm’s accuracy, and help identify any potential bugs should it fail to recover the original parameters. We consider two situations here:</p>
+<ul>
+<li>Parameters with no noise</li>
+<li>Parameters with noise</li>
+</ul>
+<p>The process is as follows:</p>
+<ol style="list-style-type: decimal">
+<li>Simulate data (many <span class="math inline">\(N \times B\)</span> matrices of N individuals, with B wavelet coefficients), using pre-set parameters</li>
+</ol>
+<ul>
+<li>Specific <span class="math inline">\(\varepsilon_{11}, \varepsilon_{10}\)</span> vectors, of length B - 2 (no <span class="math inline">\(\varepsilon\)</span> for scaling coefficient or head of tree), for the prior transition probabilities between a parent and child state</li>
+<li>Specific <span class="math inline">\(\pi = (\pi_{0,0},\pi_{1,1})\)</span> vector, of length 2, for prior marginal probability of the scaling coefficient (waveqtl style) and root node of the tree</li>
+<li><span class="math inline">\(\mu_{s,l}\)</span> set to either a constant (no noise) or drawn from a distribution (noise)</li>
+<li><span class="math inline">\(\beta_{s,l}\)</span> value (if not 0) set to either a constant (no noise) or drawn from a distribution (noise)</li>
+<li><span class="math inline">\(g^i \in \{0,1,2\}\)</span>, a specific coding of a SNP for each individual, drawn from a distribution</li>
+<li><span class="math inline">\(\epsilon_{s,l}^i\)</span> (the model’s noise parameter), to be drawn from <span class="math inline">\(N(0,\sigma_{sl,\beta}^2)\)</span> distribution. Hyperparameter <span class="math inline">\(\sigma_{sl,\beta}^2\)</span> should be determined, and possibly adjusted to vary the level of noise in the system with test with.</li>
+<li>Note the settings by which these parameters were generated (all WCs useable, tied parameters if running WaveQTL with tying, etc.)</li>
+</ul>
+<ol start="2" style="list-style-type: decimal">
+<li>This represents a simulated <span class="math inline">\(\textbf{y} = (y_{0,0},\dots,y_{S,L^S})\)</span> vector of wavelet coefficients, ready for use in WaveQTL. Run this dataset through WaveQTL, with exactly the same settings as per parameter generation.</li>
+<li>After enough simulations, calculate summary statistics (means and variances) of each of the parameters of interest (<span class="math inline">\(\varepsilon, \pi_{0,0}, \pi_{1,1}\)</span>), and see if a confidence range around these parameters contains the original, fixed parameter values.</li>
+</ol>
 <div id="sample-simulation" class="section level2">
 <h2>Sample simulation</h2>
 <div id="global-parameters" class="section level3">
@@ -558,7 +578,7 @@ plot_y_avg_g0 &lt;- tree_plot(y_mtx_means_g0,yaxis_lims = c(min(y_mtx),max(y_mtx
 rm(list = ls());gc();cat(&quot;\014&quot;);</code></pre>
 <pre><code>##           used (Mb) gc trigger (Mb) max used (Mb)
 ## Ncells  559907 30.0    1235698   66  1235698 66.0
-## Vcells 1099438  8.4    8388608   64  4338009 33.1</code></pre>
+## Vcells 1099443  8.4    8388608   64  4338014 33.1</code></pre>
 <p></p>
 <pre class="r"><code>source(&quot;../code/sim2_script.R&quot;)
 
