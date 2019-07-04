@@ -144,64 +144,78 @@ write.table(y_mtx, file= paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_WCs.txt"), ro
 cat(rep(1,1024), file = paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/use_all.txt"))
 ```
 
-Now, run it through WaveQTL_HMT:
+Now, run it through WaveQTL_HMT, then grab the parameters. (_Not run_)
+Note that:
+# I DON'T ACTUALLY HAVE A WAY OF RECOVERING PI_0 ATM UNLESS I RUN IT THROUGH WAVEQTL (NO HMT) ALSO!
 ```{r sys_for_waveqtl_hmt, include = FALSE}
 # setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
 # system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim2.cis.geno -p sim2_WCs.txt -u use_all.txt -o sim2_noQT -f 1024 -hmt 1")
 # setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
-```
 
-Grab the params:
-# I DON'T ACTUALLY HAVE A WAY OF RECOVERING PI_0 ATM UNLESS I RUN IT THROUGH WAVEQTL (NO HMT) ALSO!
-```{r read_waveqtl_hmt, include = FALSE}
 # file_prefix <- "sim2_noQT"
 # pi_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.pi.txt"))[2]))
 # eps_11_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.eps_11.txt"))[3:1024]))
 # eps_10_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.eps_10.txt"))[3:1024]))
 ```
 
-Now we can run this many times, in a loop, and continue to collect resulting observations. See _insert script name_ for the simulation script. Here are some results:
+Now we can run this many times, in a loop, and continue to collect resulting observations. See "code/sim2_script.R" for the simulation script. Here are some results:
 ```{r results1}
 # setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
-results_pi <- readRDS("~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_pi.RDS")
-results_eps_11 <- readRDS("~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_eps_11.RDS")
-results_eps_10 <- readRDS(file = "~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_eps_10.RDS")
+# results_pi <- readRDS("~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_pi.RDS")
+# results_eps_11 <- readRDS("~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_eps_11.RDS")
+# results_eps_10 <- readRDS(file = "~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_eps_10.RDS")
+# Clear environment and do some fresh simulations
+rm(list = ls());gc();cat("\014");
+source("code/sim2_script.R")
+# results_list <- run_sim2()
+results_list <- run_sim2(
+  n_ind = 70
+  ,n_pheno = 1024
+  ,tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+  ,param_pi_00 = 1
+  ,param_pi_11 = 0
+  ,coeff_mu = 0
+  ,coeff_beta = 2
+  ,param_gi_prob = 0.4
+  ,param_sigma_beta = 0.5
+  ,num_sims = 100
+  ,seed = 20)
 ```
 
 Analysis:
 ```{r analysis}
-pi_mean <- mean(unlist(results_pi))
-pi_sd <- sd(unlist(results_pi))
+pi_mean <- mean(unlist(results_list$results_pi))
+pi_sd <- sd(unlist(results_list$results_pi))
 pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
 pi_range; param_pi_11
 
-results_eps_11_mtx <- matrix(unlist(results_eps_11)
+results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
                              ,nrow = 100, ncol = 1022, byrow = T)
-results_eps_10_mtx <- matrix(unlist(results_eps_10)
+results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
                              ,nrow = 100, ncol = 1022, byrow = T)
 
 eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
 eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
 eps_11_lb <- eps_11_mean - 3*eps_11_sd
 eps_11_ub <- eps_11_mean + 3*eps_11_sd
-eps_11_within_range <- between(param_eps_11,eps_11_lb,eps_11_ub)
+eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
 table(eps_11_within_range)
 
 eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
 eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
 eps_10_lb <- eps_10_mean - 3*eps_10_sd
 eps_10_ub <- eps_10_mean + 3*eps_10_sd
-eps_10_within_range <- between(param_eps_10,eps_10_lb,eps_10_ub)
+eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
 table(eps_10_within_range)
 ```
 
 Some more informative plots:
 ```{r plots}
 # Epsilon 11
-y_axis_bounds <- c(min(min(eps_11_lb),min(param_eps_11)),max(max(eps_11_ub),max(param_eps_11)))*1.1
+y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
 
 xval = 1:1024
-which_in_bound = xval[between(param_eps_11,eps_11_lb,eps_11_ub)]
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
 
 plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
      ,xlim = c(0,1024)
@@ -214,16 +228,16 @@ if(length(which_in_bound) > 0){
 }
 
 axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(param_eps_11,type = "l")
+points(results_list$param_eps_11,type = "l")
 points(eps_11_mean,col = "red", type = "l")
 points(eps_11_ub,col = "blue", type = "l", lty = 2)
 points(eps_11_lb,col = "blue", type = "l", lty = 2)
 
 # Epsilon 10
-y_axis_bounds <- c(min(min(eps_10_lb),min(param_eps_10)),max(max(eps_10_ub),max(param_eps_10)))*1.1
+y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
 
 xval = 1:1024
-which_in_bound = xval[between(param_eps_10,eps_10_lb,eps_10_ub)]
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
 
 plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
      ,xlim = c(0,1024)
@@ -236,7 +250,7 @@ if(length(which_in_bound) > 0){
 }
 
 axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(param_eps_10,type = "l")
+points(results_list$param_eps_10,type = "l")
 points(eps_10_mean,col = "red", type = "l")
 points(eps_10_ub,col = "blue", type = "l", lty = 2)
 points(eps_10_lb,col = "blue", type = "l", lty = 2)

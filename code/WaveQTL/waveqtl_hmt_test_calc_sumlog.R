@@ -43,8 +43,8 @@ groups = floor(log2((1:length(logBFs))))+1
 # starting group indicators,
 # tying_groups = NULL # for no tying
 # tying_groups = c(1,2,4,8,16,32,64,128,256,512)
-tying_groups = c(1,2)
 
+tying_groups = c(1,2)
 # tying_groups = c(1,2,4)
 # Note this should be c(1,2,3,5) in the c++ code to account for
 # scaling coefficient @ 1 always being in its own group.
@@ -377,7 +377,8 @@ while(n < iterations_max && abs(diff) > conv_tol){
   if(!sumlog_use){
     # Tying pi
     # Pi only has 1 coefficient - the first tying group
-    pi <- pp_i[tying_start[1]:tying_end[1], mean(`1`)]
+    # pi <- pp_i[tying_start[1]:tying_end[1], mean(`1`)]
+    pi <- pp_i[1, mean(`1`)]
 
     # Tying epsilon
     for(i in 1:num_tying_grps){
@@ -396,26 +397,29 @@ while(n < iterations_max && abs(diff) > conv_tol){
     indices_to_sum <- tying_start[1]:tying_end[1]
 
     num_pheno_grp_1 <- length(indices_to_sum)
-    if(num_pheno_grp_1 == 1){
-      pi <- pp_i[indices_to_sum, (`1`)]
-      pi_1_minus <- pp_i[indices_to_sum, (`0`)]
-    }else{
-      pi_1_values <- pp_i[indices_to_sum, (`1`)]
-      pi_0_values <- pp_i[indices_to_sum, (`0`)]
+    # if(num_pheno_grp_1 == 1){
+    #   pi <- pp_i[indices_to_sum, (`1`)]
+    #   pi_1_minus <- pp_i[indices_to_sum, (`0`)]
+    # }else{
+    #   pi_1_values <- pp_i[indices_to_sum, (`1`)]
+    #   pi_0_values <- pp_i[indices_to_sum, (`0`)]
+    #
+    #   pi <- pi_1_values[1]
+    #   for(i in 1:(num_pheno_grp_1 - 1)){
+    #     pi <- sumlog_waveQTL_gen(pi,pi_1_values[i+1])
+    #   }
+    #   pi <- pi - log(num_pheno_grp_1)
+    #
+    #   pi_1_minus <- pi_0_values[1]
+    #   for(i in 1:(num_pheno_grp_1 - 1)){
+    #     pi_1_minus <- sumlog_waveQTL_gen(pi_1_minus,pi_0_values[i+1])
+    #   }
+    #   pi_1_minus <- pi_1_minus - log(num_pheno_grp_1)
+    #
+    # }
+    pi <- pp_i[1, (`1`)]
+    pi_1_minus <- pp_i[1, (`0`)]
 
-      pi <- pi_1_values[1]
-      for(i in 1:(num_pheno_grp_1 - 1)){
-        pi <- sumlog_waveQTL_gen(pi,pi_1_values[i+1])
-      }
-      pi <- pi - log(num_pheno_grp_1)
-
-      pi_1_minus <- pi_0_values[1]
-      for(i in 1:(num_pheno_grp_1 - 1)){
-        pi_1_minus <- sumlog_waveQTL_gen(pi_1_minus,pi_0_values[i+1])
-      }
-      pi_1_minus <- pi_1_minus - log(num_pheno_grp_1)
-
-    }
 
     # Tying epsilon - need to exclude tree-root: undefined parameter for that element
     for(i in 1:num_tying_grps){
