@@ -66,7 +66,8 @@ Some writings about the simulations and data analysis exercises we undertook aro
 
 #### Simulation - HMT code verification
 - Goal here is to simulate wavelet data, using pre-determined parameters (pi, the probability at the head of the tree, and epsilon, the transition probabilities), pass it through the HMT code, and recover the original parameters, therefore verifying the correctness of the HMT code.
-- V1 [here](sim2_waveqtl_hmt_recover_params.html)
+- V1 method [here](sim2_waveqtl_hmt_recover_params.html)
+- V1 results [here](sim2-0-0_waveqtl_hmt_recover_params.html)
 
 ***
 
