@@ -20,7 +20,7 @@ set.seed(20)
 get_parent_indices <- function(indx, tree_root_indx = 1){
   return_indices <- indx
   return_indices <- (return_indices - tree_root_indx + 1) %/% 2
-
+  
   # root of tree doesn't return any index
   return_indices[which(indx == tree_root_indx)] <- NA_integer_
   return(return_indices)
@@ -62,13 +62,13 @@ The mission here is to pick some parameters, use it to simulate WaveQTL data, ru
 The process is as follows:
 
 1. Simulate data (many $N \times B$ matrices of N individuals, with B wavelet coefficients), using pre-set parameters
-  - Specific $\varepsilon_{11}, \varepsilon_{10}$ vectors, of length B - 2 (no $\varepsilon$ for scaling coefficient or head of tree), for the prior transition probabilities between a parent and child state
-  - Specific $\pi = (\pi_{0,0},\pi_{1,1})$ vector, of length 2, for prior marginal probability of the scaling coefficient (waveqtl style) and root node of the tree
-  - $\mu_{s,l}$ set to either a constant (no noise) or drawn from a distribution (noise)
-  - $\beta_{s,l}$ value (if not 0) set to either a constant (no noise) or drawn from a distribution (noise)
-  - $g^i \in \{0,1,2\}$, a specific coding of a SNP for each individual, drawn from a distribution
-  - $\epsilon_{s,l}^i$ (the model's noise parameter), to be drawn from $N(0,\sigma_{sl,\beta}^2)$ distribution. Hyperparameter $\sigma_{sl,\beta}^2$ should be determined, and possibly adjusted to vary the level of noise in the system with test with.
-  - Note the settings by which these parameters were generated (all WCs useable, tied parameters if running WaveQTL with tying, etc.)
+- Specific $\varepsilon_{11}, \varepsilon_{10}$ vectors, of length B - 2 (no $\varepsilon$ for scaling coefficient or head of tree), for the prior transition probabilities between a parent and child state
+- Specific $\pi = (\pi_{0,0},\pi_{1,1})$ vector, of length 2, for prior marginal probability of the scaling coefficient (waveqtl style) and root node of the tree
+- $\mu_{s,l}$ set to either a constant (no noise) or drawn from a distribution (noise)
+- $\beta_{s,l}$ value (if not 0) set to either a constant (no noise) or drawn from a distribution (noise)
+- $g^i \in \{0,1,2\}$, a specific coding of a SNP for each individual, drawn from a distribution
+- $\epsilon_{s,l}^i$ (the model's noise parameter), to be drawn from $N(0,\sigma_{sl,\beta}^2)$ distribution. Hyperparameter $\sigma_{sl,\beta}^2$ should be determined, and possibly adjusted to vary the level of noise in the system with test with.
+- Note the settings by which these parameters were generated (all WCs useable, tied parameters if running WaveQTL with tying, etc.)
 2. This represents a simulated $\textbf{y} = (y_{0,0},\dots,y_{S,L^S})$ vector of wavelet coefficients, ready for use in WaveQTL. Run this dataset through WaveQTL, with exactly the same settings as per parameter generation.
 3. After enough simulations, calculate summary statistics (means and variances) of each of the parameters of interest ($\varepsilon, \pi_{0,0}, \pi_{1,1}$), and see if a confidence range around these parameters contains the original, fixed parameter values.
 
@@ -93,14 +93,14 @@ num_tying_grps <- length(tying_grp)
 # scaling coefficient or head of tree need epsilons)
 
 # Current attempt:
-  # - Fairly strong signals prevail
-  # - Fairly weak signals remain weak
-            # g_{p(sl)}
+# - Fairly strong signals prevail
+# - Fairly weak signals remain weak
+# g_{p(sl)}
 #             1 | 0   |
 # g_{sl} 1| 0.9 | 0.1 |
 #        0| 0.1 | 0.9 |
 # But at last level, very little signal, so most go to 0:
-          # g_{p(sl)}
+# g_{p(sl)}
 #           1 | 0 |
 # g_{sl} 1| 0 | 0 |
 #        0| 1 | 1 |
@@ -133,7 +133,7 @@ param_eps_10[tying_grp[num_tying_grps]:n_pheno] <- grped_eps_10[num_tying_grps]
 param_eps_10 <- param_eps_10[-(1:2)]
 
 coeff_mu <- 0
-coeff_beta <- 2
+coeff_beta <- 10
 param_gi_prob <- 0.4
 param_sigma_beta <- 0.5
 ```
@@ -221,125 +221,18 @@ Now, run it through WaveQTL_HMT, then grab the parameters. (_Not run_)
 Note that:
 # I DON'T ACTUALLY HAVE A WAY OF RECOVERING PI_0 ATM UNLESS I RUN IT THROUGH WAVEQTL (NO HMT) ALSO!
 ```{r sys_for_waveqtl_hmt, include = FALSE}
-# setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
-# system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim2.cis.geno -p sim2_WCs.txt -u use_all.txt -o sim2_noQT -f 1024 -hmt 1")
-# setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
+setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+system(
+  paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim2.cis.geno -p sim2_WCs.txt -u use_all.txt -o sim2_noQT -f ",n_pheno," -hmt 1")
+)
 
-# file_prefix <- "sim2_noQT"
-# pi_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.pi.txt"))[2]))
-# eps_11_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.eps_11.txt"))[3:1024]))
-# eps_10_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.eps_10.txt"))[3:1024]))
+file_prefix <- "sim2_noQT"
+pi_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.pi.txt"))[2]))
+eps_11_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.eps_11.txt"))[3:1025]))
+eps_10_file <- exp(as.numeric(read.table(paste0("output/",file_prefix,".fph.eps_10.txt"))[3:1025]))
+tree_plot(c(0,eps_11_file),plot_title = "eps_11")
+tree_plot(c(0,eps_10_file),plot_title = "eps_10")
+setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
 ```
 
-The above was just an illustration of how a simulation method. Here, we clear the environment, and we can re-run the process many times many times, in a loop, and continue to collect resulting observations. See "code/sim2_script.R" for the functionalised simulation script. Here are some results:
-```{r clear_env_glob_params}
-# Clear environment and do some fresh simulations
-rm(list = ls());gc();cat("\014");
-source("../code/sim2_script.R")
-
-p_n_ind = 70
-p_n_pheno = 1024
-p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
-p_param_pi_00 = 0
-p_param_pi_11 = 1
-p_grped_eps_11 = c(rep(0.9,(length(p_tying_grp)-1)),0)
-p_grped_eps_10 = c(rep(0.1,(length(p_tying_grp)-1)),0)
-p_coeff_mu = 0
-p_coeff_beta = 2
-p_param_gi_prob = 0.4
-p_param_sigma_beta = 0.5
-p_num_sims = 100
-p_seed = 20
-
-```
-
-```{r run_sims}
-results_list <- run_sim2(
-  n_ind = p_n_ind
-  ,n_pheno = p_n_pheno
-  ,tying_grp = p_tying_grp
-  ,param_pi_00 = p_param_pi_00
-  ,param_pi_11 = p_param_pi_11
-  ,grped_eps_11 = p_grped_eps_11
-  ,grped_eps_10 = p_grped_eps_10
-  ,coeff_mu = p_coeff_mu
-  ,coeff_beta = p_coeff_beta
-  ,param_gi_prob = p_param_gi_prob
-  ,param_sigma_beta = p_param_sigma_beta
-  ,num_sims = p_num_sims
-  ,seed = p_seed)
-```
-
-Analysis:
-```{r analysis}
-pi_mean <- mean(unlist(results_list$results_pi))
-pi_sd <- sd(unlist(results_list$results_pi))
-pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
-pi_range; p_param_pi_11
-
-results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
-                             ,nrow = 100, ncol = 1022, byrow = T)
-results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
-                             ,nrow = 100, ncol = 1022, byrow = T)
-
-eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
-eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
-eps_11_lb <- eps_11_mean - 3*eps_11_sd
-eps_11_ub <- eps_11_mean + 3*eps_11_sd
-eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
-table(eps_11_within_range)
-
-eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
-eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
-eps_10_lb <- eps_10_mean - 3*eps_10_sd
-eps_10_ub <- eps_10_mean + 3*eps_10_sd
-eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
-table(eps_10_within_range)
-```
-
-Some more informative plots:
-```{r plots}
-# Epsilon 11
-y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
-
-xval = 1:1024
-which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
-
-plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
-     ,xlim = c(0,1024)
-     ,ylim = y_axis_bounds)
-if(length(which_in_bound) > 0){
-  for(j in 1:length(which_in_bound)){
-    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
-            , col ="pink", border = NA)
-  }
-}
-
-axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(results_list$param_eps_11,type = "l")
-points(eps_11_mean,col = "red", type = "l")
-points(eps_11_ub,col = "blue", type = "l", lty = 2)
-points(eps_11_lb,col = "blue", type = "l", lty = 2)
-
-# Epsilon 10
-y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
-
-xval = 1:1024
-which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
-
-plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
-     ,xlim = c(0,1024)
-     ,ylim = y_axis_bounds)
-if(length(which_in_bound) > 0){
-  for(j in 1:length(which_in_bound)){
-    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
-            , col ="pink", border = NA)
-  }
-}
-
-axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(results_list$param_eps_10,type = "l")
-points(eps_10_mean,col = "red", type = "l")
-points(eps_10_ub,col = "blue", type = "l", lty = 2)
-points(eps_10_lb,col = "blue", type = "l", lty = 2)
-```
+The above was just an illustration of how a simulation method. Here, we clear the environment, and we can re-run the process many times many times, in a loop, and continue to collect resulting observations. See (INSERT MARKDOWN DOCO HERE) for my many attempts to do a useful simulation.
