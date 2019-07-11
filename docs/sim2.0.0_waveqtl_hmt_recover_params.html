@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Brendan Law" />
+
+<meta name="date" content="2019-11-07" />
+
+<title>WaveQTL with HMT - Simulation 2.0.0 - Algorithm check: recover parameters - attempt 1</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/flatly.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 60px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h2 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h3 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h4 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h5 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h6 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Brendan's Masters Project</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/blaw36/Masters_Project">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">WaveQTL with HMT - Simulation 2.0.0 - Algorithm check: recover parameters - attempt 1</h1>
+<h4 class="author"><em>Brendan Law</em></h4>
+<h4 class="date"><em>11/07/2019</em></h4>
+
+</div>
+
+
+<p>Cutting the details now, and just doing another simulation. Documenting it all here. See “code/sim2_script.R” for the functionalised simulation script. Here are some results:</p>
+<pre class="r"><code># Clear environment and do some fresh simulations
+rm(list = ls());gc();cat(&quot;\014&quot;);</code></pre>
+<pre><code>##          used (Mb) gc trigger (Mb) max used (Mb)
+## Ncells 509181 27.2    1151170 61.5   607265 32.5
+## Vcells 987145  7.6    8388608 64.0  1596445 12.2</code></pre>
+<p></p>
+<pre class="r"><code># For when running this script in batch, you can use this to override some global parameters
+# batch_num_sims = NULL
+batch_num_sims = 100</code></pre>
+<div id="attempt-1" class="section level2">
+<h2>Attempt 1</h2>
+<p>Fairly plain vanilla:</p>
+<ul>
+<li>Tree level tying only</li>
+<li>All 1024 bases</li>
+<li>Probabilities as set below (0, 1 at scaling and root for overarching signal), 0.9 for 11, 0,1 for 10, hence signals propagate well, but then die off quickly?</li>
+</ul>
+<pre class="r"><code># Clear environment and do some fresh simulations
+# rm(list = ls());gc();cat(&quot;\014&quot;);
+library(data.table)
+source(&quot;../code/sim2_script.R&quot;)
+
+p_n_ind = 70
+p_n_pheno = 1024
+p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.9,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.1,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.5
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}</code></pre>
+<p>Analysis:</p>
+<pre class="r"><code>pi_mean &lt;- mean(unlist(results_list$results_pi))
+pi_sd &lt;- sd(unlist(results_list$results_pi))
+pi_range &lt;- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; p_param_pi_11</code></pre>
+<pre><code>## [1] 1 1</code></pre>
+<pre><code>## [1] 1</code></pre>
+<pre class="r"><code>results_eps_11_mtx &lt;- matrix(unlist(results_list$results_eps_11)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+results_eps_10_mtx &lt;- matrix(unlist(results_list$results_eps_10)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+
+eps_11_mean &lt;- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd &lt;- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb &lt;- eps_11_mean - 3*eps_11_sd
+eps_11_ub &lt;- eps_11_mean + 3*eps_11_sd
+eps_11_within_range &lt;- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)</code></pre>
+<pre><code>## eps_11_within_range
+## FALSE  TRUE 
+##   480   542</code></pre>
+<pre class="r"><code>eps_10_mean &lt;- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd &lt;- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb &lt;- eps_10_mean - 3*eps_10_sd
+eps_10_ub &lt;- eps_10_mean + 3*eps_10_sd
+eps_10_within_range &lt;- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)</code></pre>
+<pre><code>## eps_10_within_range
+## FALSE  TRUE 
+##     2  1020</code></pre>
+<p>Some more informative plots:</p>
+<pre class="r"><code># Epsilon 11
+y_axis_bounds &lt;- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = &quot;n&quot;, xlab = &quot;Wavelet scale-loc&quot;, ylab = &quot;Probability&quot;, main = &quot;Epsilon 11&quot;, xaxt = &quot;n&quot;
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) &gt; 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col =&quot;pink&quot;, border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_11,type = &quot;l&quot;)
+points(eps_11_mean,col = &quot;red&quot;, type = &quot;l&quot;)
+points(eps_11_ub,col = &quot;blue&quot;, type = &quot;l&quot;, lty = 2)
+points(eps_11_lb,col = &quot;blue&quot;, type = &quot;l&quot;, lty = 2)</code></pre>
+<p><img src="sim2.0.0_waveqtl_hmt_recover_params_files/figure-html/plots-1.png" width="672" /></p>
+<pre class="r"><code># Epsilon 10
+y_axis_bounds &lt;- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = &quot;n&quot;, xlab = &quot;Wavelet scale-loc&quot;, ylab = &quot;Probability&quot;, main = &quot;Epsilon 10&quot;, xaxt = &quot;n&quot;
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) &gt; 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col =&quot;pink&quot;, border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_10,type = &quot;l&quot;)
+points(eps_10_mean,col = &quot;red&quot;, type = &quot;l&quot;)
+points(eps_10_ub,col = &quot;blue&quot;, type = &quot;l&quot;, lty = 2)
+points(eps_10_lb,col = &quot;blue&quot;, type = &quot;l&quot;, lty = 2)</code></pre>
+<p><img src="sim2.0.0_waveqtl_hmt_recover_params_files/figure-html/plots-2.png" width="672" /></p>
+<p>Now I’d like to know some more information. Specifically, we would like to know more about:</p>
+<ul>
+<li>Variation in gammas, betas, ys, between simulations</li>
+<li>What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)</li>
+<li>Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be</li>
+</ul>
+<p>Firstly, variation in gammas, betas, y’s between simulations. Here’s an example of the 20th, and 80th obs’ y_mtx, beta_mtx, gamma_sequence:</p>
+<pre class="r"><code>g_20 &lt;- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = &quot;gamma_20&quot;)</code></pre>
+<p><img src="sim2.0.0_waveqtl_hmt_recover_params_files/figure-html/gamma_beta_y_vars-1.png" width="672" /></p>
+<pre class="r"><code>beta_20 &lt;- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = &quot;beta_20&quot;)</code></pre>
+<p><img src="sim2.0.0_waveqtl_hmt_recover_params_files/figure-html/gamma_beta_y_vars-2.png" width="672" /></p>
+<pre class="r"><code>y_avg_20 &lt;- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
+y_avg_20_plot &lt;- tree_plot(y_avg_20
+                           ,yaxis_lims = c(min(y_avg_20)
+                                           ,max(y_avg_20)), plot_title = &quot;y_20&quot;)</code></pre>
+<p><img src="sim2.0.0_waveqtl_hmt_recover_params_files/figure-html/gamma_beta_y_vars-3.png" width="672" /></p>
+<pre class="r"><code>y_summary_20 &lt;- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = &quot;n&quot;, xlab = &quot;Individual #&quot;, ylab = &quot;WC-value&quot;, main = &quot;Summary stats of simulated WCs for simulation 20&quot;
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[20]])
+               ,max(results_list$results_y_mtx[[20]])))
+lines(y_summary_20[1,], col = &quot;red&quot;)
+lines(y_summary_20[3,], col = &quot;black&quot;)
+lines(y_summary_20[6,], col = &quot;blue&quot;)
+legend(&quot;topright&quot;,legend = c(&quot;Max&quot;,&quot;Median&quot;,&quot;Min&quot;),col = c(&quot;blue&quot;,&quot;black&quot;,&quot;red&quot;)
+       ,lty = 1,cex = 0.8, bty = &quot;n&quot;)
+
+
+g_80 &lt;- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = &quot;gamma_80&quot;)
+beta_80 &lt;- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = &quot;beta_80&quot;)
+y_avg_80 &lt;- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
+y_avg_80_plot &lt;- tree_plot(y_avg_80
+                           ,yaxis_lims = c(min(y_avg_80)
+                                           ,max(y_avg_80)), plot_title = &quot;y_80&quot;)
+y_summary_80 &lt;- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = &quot;n&quot;, xlab = &quot;Individual #&quot;, ylab = &quot;WC-value&quot;, main = &quot;Summary stats of simulated WCs for simulation 80&quot;
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[80]])
+               ,max(results_list$results_y_mtx[[80]])))
+lines(y_summary_80[1,], col = &quot;red&quot;)
+lines(y_summary_80[3,], col = &quot;black&quot;)
+lines(y_summary_80[6,], col = &quot;blue&quot;)
+legend(&quot;topright&quot;,legend = c(&quot;Max&quot;,&quot;Median&quot;,&quot;Min&quot;),col = c(&quot;blue&quot;,&quot;black&quot;,&quot;red&quot;)
+       ,lty = 1,cex = 0.8, bty = &quot;n&quot;)</code></pre>
+<p>From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.</p>
+<p>Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).</p>
+<pre class="r"><code># Epsilon parameters
+# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
+eps_11_s20 &lt;- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
+eps_10_s20 &lt;- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
+eps_11_s80 &lt;- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
+eps_10_s80 &lt;- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
+
+print(&quot;Simulation 20...&quot;)</code></pre>
+<pre><code>## [1] &quot;Simulation 20...&quot;</code></pre>
+<pre class="r"><code>print(&quot;Eps_11&quot;)</code></pre>
+<pre><code>## [1] &quot;Eps_11&quot;</code></pre>
+<pre class="r"><code>round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]</code></pre>
+<pre><code>## [1] 1.00 1.00 1.00 1.00 1.00 1.00 1.00 1.00 0.01</code></pre>
+<pre><code>## [1] 0.9 0.9 0.9 0.9 0.9 0.9 0.9 0.9 0.0</code></pre>
+<pre class="r"><code>print(&quot;Eps_10&quot;)</code></pre>
+<pre><code>## [1] &quot;Eps_10&quot;</code></pre>
+<pre class="r"><code>round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]</code></pre>
+<pre><code>## [1] 1.00 1.00 0.62 0.00 0.00 0.86 0.13 0.06 0.00</code></pre>
+<pre><code>## [1] 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.0</code></pre>
+<pre class="r"><code>print(&quot;Simulation 80...&quot;)</code></pre>
+<pre><code>## [1] &quot;Simulation 80...&quot;</code></pre>
+<pre class="r"><code>print(&quot;Eps_11&quot;)</code></pre>
+<pre><code>## [1] &quot;Eps_11&quot;</code></pre>
+<pre class="r"><code>round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]</code></pre>
+<pre><code>## [1] 1 1 1 1 1 1 1 1 0</code></pre>
+<pre><code>## [1] 0.9 0.9 0.9 0.9 0.9 0.9 0.9 0.9 0.0</code></pre>
+<pre class="r"><code>print(&quot;Eps_10&quot;)</code></pre>
+<pre><code>## [1] &quot;Eps_10&quot;</code></pre>
+<pre class="r"><code>round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]</code></pre>
+<pre><code>## [1] 1.00 1.00 1.00 1.00 1.00 0.71 0.00 0.01 0.00</code></pre>
+<pre><code>## [1] 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.0</code></pre>
+<p>We can see here that <em>we have a little issue</em>. The first row of each are the parameters, at each tying level, retrieved by our algorithm. The second line are the initialised parameters we set out for the model to find. We can see that, especially for Eps_11, our algorithm has not done well in retrieving the required parameters. In particular, Eps_11 is a fairly constant ‘1’ for all levels except the last (as expected), corresponding to the extremely high confidence (narrow band) corresponding to the simulated estimate of ‘1’ for Eps_11 in the middle tree levels, as we saw in the Epsilon_11 plot above. Eps_10 suffers from a similar fate, especially at the first few tying levels.</p>
+<p>And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.</p>
+<pre class="r"><code>get_gamma_transition_props &lt;- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent &lt;- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt &lt;- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c(&quot;Parent&quot;,&quot;Child&quot;))
+  gamma_and_parent_dt[,&quot;Transition&quot; := paste0(Child,Parent)]
+  gamma_and_parent_dt[,&quot;TreeLvl&quot; := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt &lt;- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats &lt;- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = &quot;N&quot;
+    ,fill = 0
+  )
+  
+  transitions_not_there &lt;- setdiff(c(&quot;11&quot;,&quot;01&quot;,&quot;10&quot;,&quot;00&quot;),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) &gt; 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,&quot;Total&quot; := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+print(&quot;Simulation 20...&quot;)</code></pre>
+<pre><code>## [1] &quot;Simulation 20...&quot;</code></pre>
+<pre class="r"><code># Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s20 &lt;- results_list$results_gamma_seq[[20]][-1]
+gamma_transitions_s20 &lt;- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s20[,c(&quot;sim_eps_11&quot;,&quot;sim_eps_10&quot;) :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s20[,c(&quot;param_eps_11&quot;,&quot;param_eps_10&quot;) :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s20</code></pre>
+<pre><code>##    TreeLvl  00  01 10  11 Total sim_eps_11 sim_eps_10 param_eps_11
+## 1:       2   0   0  0   2     2  1.0000000        NaN          0.9
+## 2:       3   0   0  0   4     4  1.0000000        NaN          0.9
+## 3:       4   0   1  0   7     8  0.8750000        NaN          0.9
+## 4:       5   2   0  0  14    16  1.0000000 0.00000000          0.9
+## 5:       6   4   4  0  24    32  0.8571429 0.00000000          0.9
+## 6:       7  15   7  1  41    64  0.8541667 0.06250000          0.9
+## 7:       8  39  10  5  74   128  0.8809524 0.11363636          0.9
+## 8:       9  90  15  8 143   256  0.9050633 0.08163265          0.9
+## 9:      10 210 302  0   0   512  0.0000000 0.00000000          0.0
+##    param_eps_10
+## 1:          0.1
+## 2:          0.1
+## 3:          0.1
+## 4:          0.1
+## 5:          0.1
+## 6:          0.1
+## 7:          0.1
+## 8:          0.1
+## 9:          0.0</code></pre>
+<pre class="r"><code>print(&quot;Simulation 80...&quot;)</code></pre>
+<pre><code>## [1] &quot;Simulation 80...&quot;</code></pre>
+<pre class="r"><code># Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s80 &lt;- results_list$results_gamma_seq[[80]][-1]
+gamma_transitions_s80 &lt;- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s80[,c(&quot;sim_eps_11&quot;,&quot;sim_eps_10&quot;) :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s80[,c(&quot;param_eps_11&quot;,&quot;param_eps_10&quot;) :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s80</code></pre>
+<pre><code>##    TreeLvl  00  01 10  11 Total sim_eps_11 sim_eps_10 param_eps_11
+## 1:       2   0   0  0   2     2  1.0000000        NaN          0.9
+## 2:       3   0   0  0   4     4  1.0000000        NaN          0.9
+## 3:       4   0   0  0   8     8  1.0000000        NaN          0.9
+## 4:       5   0   0  0  16    16  1.0000000        NaN          0.9
+## 5:       6   0   4  0  28    32  0.8750000        NaN          0.9
+## 6:       7   8   4  0  52    64  0.9285714 0.00000000          0.9
+## 7:       8  23  12  1  92   128  0.8846154 0.04166667          0.9
+## 8:       9  63  19  7 167   256  0.8978495 0.10000000          0.9
+## 9:      10 164 348  0   0   512  0.0000000 0.00000000          0.0
+##    param_eps_10
+## 1:          0.1
+## 2:          0.1
+## 3:          0.1
+## 4:          0.1
+## 5:          0.1
+## 6:          0.1
+## 7:          0.1
+## 8:          0.1
+## 9:          0.0</code></pre>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

@@ -1,5 +1,41 @@
 # rm(list = ls());gc();cat("\014");
 
+get_parent_indices <- function(indx, tree_root_indx = 1){
+  return_indices <- indx
+  return_indices <- (return_indices - tree_root_indx + 1) %/% 2
+
+  # root of tree doesn't return any index
+  return_indices[which(indx == tree_root_indx)] <- NA_integer_
+  return(return_indices)
+}
+
+tree_plot <- function(data, yaxis_lims = c(0,1),plot_title){
+
+  # Interleaves vectors with two bookend 0s, and a 0 between each current element
+  # (for spacing of elements like a tree in a plot)
+  vector_centeriser <- function(vect){
+    in_between_zeros <- length(vect) - 1
+
+    res_vect <- c(0,vect[1],0)
+    if(in_between_zeros > 0){
+      for(i in 1:in_between_zeros){
+        res_vect <- c(res_vect,vect[i + 1],0)
+      }
+    }
+    return(res_vect)
+  }
+
+  num_lvls <- floor(log2(length(data))) + 1
+  par(mfrow = c(num_lvls,1),mar = c(1,1,1,1))
+  plot(vector_centeriser(data[1]),type = "h",ylab = "",axes = F,ylim=yaxis_lims,main=plot_title) # scaling coeff
+  plot(vector_centeriser(data[2]),type = "h",ylab = "",axes = F,ylim=yaxis_lims) # head of tree
+  for(i in 1:(num_lvls-2)){
+    plot(vector_centeriser(data[((2^i)+1):(2^(i+1))]),type = "h",ylab = "",axes = F,ylim=yaxis_lims)
+  }
+  p <- recordPlot()
+  return(p)
+}
+
 run_sim2 <- function(
   n_ind = 70
   ,n_pheno = 1024
@@ -13,7 +49,8 @@ run_sim2 <- function(
   ,param_gi_prob = 0.4
   ,param_sigma_beta = 0.5
   ,num_sims = 100
-  ,seed = 20){
+  ,seed = 20
+  ,showOutput = F){
 
   set.seed(seed)
   setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
@@ -29,13 +66,14 @@ run_sim2 <- function(
     return(return_indices)
   }
 
-  # Round to nearest 100th, for simplicity
   num_tying_grps <- length(tying_grp)
-
 
   results_pi <- list()
   results_eps_11 <- list()
   results_eps_10 <- list()
+  results_gamma_seq <- list()
+  results_beta_seq <- list()
+  results_y_mtx <- list()
 
   # Epsilon elements are for elements 3 -> 1024 (= 2 -> 1023 of tree)
   # Generate 1024 elements as per the above tying_grp description,
@@ -101,7 +139,7 @@ run_sim2 <- function(
     mu_seq[which(gamma_seq == 1)] <- coeff_mu
     mu_mtx <- matrix(rep(mu_seq,70),nrow = n_ind,ncol = n_pheno,byrow = T)
 
-    eps_seq <- rnorm(n_pheno*n_ind,mean = 0,sd = sqrt(param_sigma_beta))
+    eps_seq <- rnorm(n_pheno*n_ind,mean = 0,sd = param_sigma_beta)
     eps_mtx <- matrix(eps_seq,nrow = n_ind,ncol = n_pheno,byrow = T)
 
     g_seq <- rbinom(n_ind,size = 2,prob = param_gi_prob)
@@ -111,11 +149,15 @@ run_sim2 <- function(
     y_mtx <- mu_mtx + beta_mtx + eps_mtx
     write.table(y_mtx, file= paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/sim2_WCs.txt"), row.names=FALSE, col.names = FALSE, quote=FALSE)
     cat(rep(1,n_pheno), file = paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/use_all.txt"))
-
+    cat(tying_grp, file = paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/sim_grouping.txt"))
 
     ### Step 3: Run through HMT ----
-    command <- paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim2.cis.geno -p sim2_WCs.txt -u use_all.txt -o sim2_noQT -f ",n_pheno," -hmt 1")
-    system(command,show.output.on.console = F)
+    # command <- paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim2.cis.geno -p sim2_WCs.txt -u use_all.txt -o sim2_noQT -f ",n_pheno," -hmt 1")
+    command <- paste0("../../WaveQTL -gmode 1"
+                      ," -group sim_grouping.txt "
+                      ,"-g ../../data/dsQTL/sim2.cis.geno -p sim2_WCs.txt -u use_all.txt -o sim2_noQT -f ",n_pheno," -hmt 1")
+    system(command,show.output.on.console = showOutput)
+    # system(command)
 
     # I DON'T ACTUALLY HAVE A WAY OF RECOVERING PI_0 ATM UNLESS I RUN IT THROUGH WAVEQTL (NO HMT) ALSO!
     ### Step 4: Get HMT results ----
