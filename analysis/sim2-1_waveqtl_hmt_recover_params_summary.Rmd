@@ -1,0 +1,52 @@
+---
+title: "WaveQTL with HMT - Simulation 2.1 - Wrap-up of the algorithm correctness simulations"
+author: "Brendan Law"
+date: "22/07/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Clear environment and do some fresh simulations
+rm(list = ls());gc();cat("\014");
+knitr::opts_chunk$set(echo = TRUE)
+source("../code/WaveQTL/waveqtl_hmt_test_calc_sumlog_func.R")
+source("../code/sim2_script.R")
+library(data.table)
+
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+```
+## Overview
+
+The goal here is to finally put a line under the simulation 2 process (and what a long process it was!), and to document a few things we learned along the away regarding:
+
+- When the simulation did/didn't work
+- Why it did/didn't work
+- What plan on putting in the thesis
+- Extra justifications (related to Bayes Factors) for why things went awry,

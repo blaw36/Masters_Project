@@ -1,0 +1,19 @@
+All data which was saved here has been moved out (of this folder, and of my dropbox, to):
+~\Documents\Cpp\WaveQTL_HMT\data\Simul2_Data
+
+"results_attempt2.RDS"
+"results_attempt3.RDS"
+"results_attempt4.RDS"
+"results_attempt5.RDS"
+"results_attempt6.RDS"
+"results_attempt7.RDS"
+"results_attempt8.RDS"
+"results_attempt9.RDS"
+"results_attempt10.RDS"
+"results_attempt11.RDS"
+"results_attempt12.RDS"
+"results_attempt13.RDS"
+"results_attempt14.RDS"
+"results_attempt15.RDS"
+"results_attempt16.RDS"
+"results_attempt17.RDS"

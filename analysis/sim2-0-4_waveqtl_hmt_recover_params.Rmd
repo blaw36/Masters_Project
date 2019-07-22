@@ -1,12 +1,11 @@
 ---
-title: "WaveQTL with HMT - Simulation 2.0.1 - Algorithm check: recover parameters - attempts 2 to 9"
+title: "WaveQTL with HMT - Simulation 2.0.4 - Controlled experiments"
 author: "Brendan Law"
-date: "11/07/2019"
+date: "12/07/2019"
 output: html_document
 ---
 
-For now we're going for a smaller scale simulation, for time purposes (1024 -> 128 bases).
-See "code/sim2_script.R" for the functionalised simulation script. Here are some results:
+Some small scale, controlled experiments.
 
 ```{r}
 # Clear environment and do some fresh simulations
@@ -14,306 +13,21 @@ rm(list = ls());gc();cat("\014");
 source("../code/sim2_script.R")
 library(data.table)
 # For when running this script in batch, you can use this to override some global parameters
-batch_num_sims = 1000 # NULL
+batch_num_sims = 200 # NULL
 # Run sims, or load cached data?
-run_sims = F # T
+run_sims = FALSE
 # Save (and possibly overwrite) data?
-overwrite = F # T
+overwrite = FALSE
 ```
 
-## Attempt 2
-Main differences to attempt 1:
-
-- Scale down to 128 bases (smaller size)
+## Base case
 
 ```{r}
-attempt_no=2
+attempt_no=10
 
 p_n_ind = 70
 p_n_pheno = 128
-p_tying_grp = c(1,2,3,5,9,17,33,65)
-p_param_pi_00 = 0
-p_param_pi_11 = 1
-p_grped_eps_11 = c(rep(0.9,(length(p_tying_grp)-1)),0)
-p_grped_eps_10 = c(rep(0.1,(length(p_tying_grp)-1)),0)
-p_coeff_mu = 0
-p_coeff_beta = 2
-p_param_gi_prob = 0.4
-p_param_sigma_beta = 0.5
-p_num_sims = 100
-p_seed = 20
-
-if(!is.null(batch_num_sims)){
-  p_num_sims = batch_num_sims
-}
-
-```
-
-```{r, include = FALSE}
-if(run_sims){
-  results_list <- run_sim2(
-  n_ind = p_n_ind
-  ,n_pheno = p_n_pheno
-  ,tying_grp = p_tying_grp
-  ,param_pi_00 = p_param_pi_00
-  ,param_pi_11 = p_param_pi_11
-  ,grped_eps_11 = p_grped_eps_11
-  ,grped_eps_10 = p_grped_eps_10
-  ,coeff_mu = p_coeff_mu
-  ,coeff_beta = p_coeff_beta
-  ,param_gi_prob = p_param_gi_prob
-  ,param_sigma_beta = p_param_sigma_beta
-  ,num_sims = p_num_sims
-  ,seed = p_seed)
-}else{
-  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
-}
-```
-
-Analysis:
-```{r}
-pi_mean <- mean(unlist(results_list$results_pi))
-pi_sd <- sd(unlist(results_list$results_pi))
-pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
-pi_range; p_param_pi_11
-
-results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
-                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
-results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
-                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
-
-eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
-eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
-eps_11_lb <- eps_11_mean - 3*eps_11_sd
-eps_11_ub <- eps_11_mean + 3*eps_11_sd
-eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
-table(eps_11_within_range)
-
-eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
-eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
-eps_10_lb <- eps_10_mean - 3*eps_10_sd
-eps_10_ub <- eps_10_mean + 3*eps_10_sd
-eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
-table(eps_10_within_range)
-```
-
-Some more informative plots:
-```{r}
-# Epsilon 11
-y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
-
-xval = 1:p_n_pheno
-which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
-
-plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
-     ,xlim = c(0,p_n_pheno)
-     ,ylim = y_axis_bounds)
-if(length(which_in_bound) > 0){
-  for(j in 1:length(which_in_bound)){
-    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
-            , col ="pink", border = NA)
-  }
-}
-
-axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(results_list$param_eps_11,type = "l")
-points(eps_11_mean,col = "red", type = "l")
-points(eps_11_ub,col = "blue", type = "l", lty = 2)
-points(eps_11_lb,col = "blue", type = "l", lty = 2)
-
-# Epsilon 10
-y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
-
-xval = 1:p_n_pheno
-which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
-
-plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
-     ,xlim = c(0,p_n_pheno)
-     ,ylim = y_axis_bounds)
-if(length(which_in_bound) > 0){
-  for(j in 1:length(which_in_bound)){
-    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
-            , col ="pink", border = NA)
-  }
-}
-
-axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(results_list$param_eps_10,type = "l")
-points(eps_10_mean,col = "red", type = "l")
-points(eps_10_ub,col = "blue", type = "l", lty = 2)
-points(eps_10_lb,col = "blue", type = "l", lty = 2)
-```
-
-Now I'd like to know some more information. Specifically, we would like to know more about:
-
-- Variation in gammas, betas, ys, between simulations
-- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
-- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
-
-Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
-```{r}
-g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
-beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
-y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
-y_avg_20_plot <- tree_plot(y_avg_20
-                           ,yaxis_lims = c(min(y_avg_20)
-                                           ,max(y_avg_20)), plot_title = "y_20")
-y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
-graphics.off()
-plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
-     ,xlim = c(0,p_n_ind)
-     ,ylim = c(min(results_list$results_y_mtx[[20]])
-               ,max(results_list$results_y_mtx[[20]])))
-lines(y_summary_20[1,], col = "red")
-lines(y_summary_20[3,], col = "black")
-lines(y_summary_20[6,], col = "blue")
-legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
-       ,lty = 1,cex = 0.8, bty = "n")
-
-
-g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
-beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
-y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
-y_avg_80_plot <- tree_plot(y_avg_80
-                           ,yaxis_lims = c(min(y_avg_80)
-                                           ,max(y_avg_80)), plot_title = "y_80")
-y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
-graphics.off()
-plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
-     ,xlim = c(0,p_n_ind)
-     ,ylim = c(min(results_list$results_y_mtx[[80]])
-               ,max(results_list$results_y_mtx[[80]])))
-lines(y_summary_80[1,], col = "red")
-lines(y_summary_80[3,], col = "black")
-lines(y_summary_80[6,], col = "blue")
-legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
-       ,lty = 1,cex = 0.8, bty = "n")
-
-```
-
-From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
-
-Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
-```{r}
-# Epsilon parameters
-# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
-eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
-eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
-eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
-eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
-
-print("Simulation 20...")
-print("Eps_11")
-round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
-print("Eps_10")
-round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
-print("Simulation 80...")
-print("Eps_11")
-round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
-print("Eps_10")
-round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
-```
-We can see here that _we have a little issue_. The first row of each are the parameters, at each tying level, retrieved by our algorithm. The second line are the initialised parameters we set out for the model to find. We can see that, especially for Eps_11, our algorithm has not done well in retrieving the required parameters. In particular, Eps_11 is a fairly constant '1' for all levels except the last (as expected), corresponding to the extremely high confidence (narrow band) corresponding to the simulated estimate of '1' for Eps_11 in the middle tree levels, as we saw in the Epsilon_11 plot above. Eps_10 suffers from a similar fate, definitely a lot worse for simulation 80.
-
-And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
-```{r}
-get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
-  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
-                             , nrow = 2, ncol = (n_pheno-1)
-                             , byrow = T)
-  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
-  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
-  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
-  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
-  
-  # Exclude the root
-  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
-  gamma_and_parent_stats <- dcast.data.table(
-    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
-    ,formula = TreeLvl ~ Transition
-    ,value.var = "N"
-    ,fill = 0
-  )
-  
-  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
-  if(length(transitions_not_there) > 0){
-    for(col in transitions_not_there){
-      gamma_and_parent_stats[,(col) := 0]
-    }
-  }
-  
-  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
-  return(gamma_and_parent_stats[])
-}
-
-print("Simulation 20...")
-# Set up a two row matrix - parents on top row, children on bottom row.
-gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
-gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
-# Add simulated data
-gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
-                        .(`11`/(`11`+`01`)
-                          ,`10`/(`10`+`00`))]
-gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
-                        .(p_grped_eps_11[-(1:2)]
-                          ,p_grped_eps_10[-(1:2)])]
-gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
-                        .(round(eps_11_s20[-(1:2)],2)
-                          ,round(eps_10_s20[-(1:2)],2))]
-gamma_transitions_s20
-
-print("Simulation 80...")
-# Set up a two row matrix - parents on top row, children on bottom row.
-gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
-gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
-# Add simulated data
-gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
-                        .(`11`/(`11`+`01`)
-                          ,`10`/(`10`+`00`))]
-gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
-                        .(p_grped_eps_11[-(1:2)]
-                          ,p_grped_eps_10[-(1:2)])]
-gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
-                        .(round(eps_11_s80[-(1:2)],2)
-                          ,round(eps_10_s80[-(1:2)],2))]
-gamma_transitions_s80
-```
-
-Save data for future use.
-```{r, include = FALSE}
-if(run_sims & overwrite){
-  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
-}
-```
-
-__Observations from attempt 2:__
-
-- No tying of higher levels (very few obs) means large variation in simulated epsilons
-- Lots of variation in eps_10, as not many 10 (0 parent -> 1 child) transitions observed. This is due to eps_10 = 0.1 dictating a low probability of this happening.
-- Suspect that the high values of eps_10 at the top levels of the tree come from a combination of:
-  - Tree starts with a 1 at the top
-  - 1's propagate with a high probability
-  - Very few 0's at the top, and therefore, even rarer to find a 0 -> 1 (very low probability)
-  - Initial value of eps_10 = 0.5 currently for the algorithm (default)
-- However, initial value's effect can be doubted:
-  - Look at simulation 20, above, for example:
-    - Level 4, only 0.5 simulated eps11, but algo calculated 1
-    - Level 6, 0.13 simulated but algo (somehow) calculated 0.9
-  - Look at simulation 80, above, for example:
-    - No sampled eps_10, but lots of 1s were parameterised
-- Gammas, betas, y's seemingly being simulated as desired.
-
-## Attempt 3
-Main differences to attempt 2:
-
-- Tie some of the top groups together (3 -> 16)
-
-```{r}
-attempt_no=3
-
-p_n_ind = 70
-p_n_pheno = 128
-p_tying_grp = c(1,2,3,17,33,65)
+p_tying_grp = c(1,2,3,65)
 p_param_pi_00 = 0
 p_param_pi_11 = 1
 p_grped_eps_11 = c(rep(0.9,(length(p_tying_grp)-1)),0)
@@ -566,1098 +280,15 @@ if(run_sims & overwrite){
   saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
 }
 ```
-__Observations from attempt 3:__
 
-- More tying has definitely smoothed out the variances at the higher tree levels.
-- That's about it.
-
-## Attempt 4
-Main differences to attempt 3:
-
-- Change some of the probabilities. Instead of 0.9, 0.1, let's go for weaker signals: 0.1, 0.1 (very localised, die off very quickly).
+## 0.7/0.3
 
 ```{r}
-attempt_no=4
+attempt_no=10
 
 p_n_ind = 70
 p_n_pheno = 128
-p_tying_grp = c(1,2,3,17,33,65)
-p_param_pi_00 = 0
-p_param_pi_11 = 1
-p_grped_eps_11 = c(rep(0.1,(length(p_tying_grp)-1)),0)
-p_grped_eps_10 = c(rep(0.1,(length(p_tying_grp)-1)),0)
-p_coeff_mu = 0
-p_coeff_beta = 2
-p_param_gi_prob = 0.4
-p_param_sigma_beta = 0.5
-p_num_sims = 100
-p_seed = 20
-
-if(!is.null(batch_num_sims)){
-  p_num_sims = batch_num_sims
-}
-
-```
-
-```{r, include = FALSE}
-if(run_sims){
-  results_list <- run_sim2(
-  n_ind = p_n_ind
-  ,n_pheno = p_n_pheno
-  ,tying_grp = p_tying_grp
-  ,param_pi_00 = p_param_pi_00
-  ,param_pi_11 = p_param_pi_11
-  ,grped_eps_11 = p_grped_eps_11
-  ,grped_eps_10 = p_grped_eps_10
-  ,coeff_mu = p_coeff_mu
-  ,coeff_beta = p_coeff_beta
-  ,param_gi_prob = p_param_gi_prob
-  ,param_sigma_beta = p_param_sigma_beta
-  ,num_sims = p_num_sims
-  ,seed = p_seed)
-}else{
-  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
-}
-```
-
-Analysis:
-```{r}
-pi_mean <- mean(unlist(results_list$results_pi))
-pi_sd <- sd(unlist(results_list$results_pi))
-pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
-pi_range; p_param_pi_11
-
-results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
-                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
-results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
-                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
-
-eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
-eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
-eps_11_lb <- eps_11_mean - 3*eps_11_sd
-eps_11_ub <- eps_11_mean + 3*eps_11_sd
-eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
-table(eps_11_within_range)
-
-eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
-eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
-eps_10_lb <- eps_10_mean - 3*eps_10_sd
-eps_10_ub <- eps_10_mean + 3*eps_10_sd
-eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
-table(eps_10_within_range)
-```
-
-Some more informative plots:
-```{r}
-# Epsilon 11
-y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
-
-xval = 1:p_n_pheno
-which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
-
-plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
-     ,xlim = c(0,p_n_pheno)
-     ,ylim = y_axis_bounds)
-if(length(which_in_bound) > 0){
-  for(j in 1:length(which_in_bound)){
-    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
-            , col ="pink", border = NA)
-  }
-}
-
-axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(results_list$param_eps_11,type = "l")
-points(eps_11_mean,col = "red", type = "l")
-points(eps_11_ub,col = "blue", type = "l", lty = 2)
-points(eps_11_lb,col = "blue", type = "l", lty = 2)
-
-# Epsilon 10
-y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
-
-xval = 1:p_n_pheno
-which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
-
-plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
-     ,xlim = c(0,p_n_pheno)
-     ,ylim = y_axis_bounds)
-if(length(which_in_bound) > 0){
-  for(j in 1:length(which_in_bound)){
-    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
-            , col ="pink", border = NA)
-  }
-}
-
-axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(results_list$param_eps_10,type = "l")
-points(eps_10_mean,col = "red", type = "l")
-points(eps_10_ub,col = "blue", type = "l", lty = 2)
-points(eps_10_lb,col = "blue", type = "l", lty = 2)
-```
-
-Now I'd like to know some more information. Specifically, we would like to know more about:
-
-- Variation in gammas, betas, ys, between simulations
-- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
-- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
-
-Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
-```{r}
-g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
-beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
-y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
-y_avg_20_plot <- tree_plot(y_avg_20
-                           ,yaxis_lims = c(min(y_avg_20)
-                                           ,max(y_avg_20)), plot_title = "y_20")
-y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
-graphics.off()
-plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
-     ,xlim = c(0,p_n_ind)
-     ,ylim = c(min(results_list$results_y_mtx[[20]])
-               ,max(results_list$results_y_mtx[[20]])))
-lines(y_summary_20[1,], col = "red")
-lines(y_summary_20[3,], col = "black")
-lines(y_summary_20[6,], col = "blue")
-legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
-       ,lty = 1,cex = 0.8, bty = "n")
-
-
-g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
-beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
-y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
-y_avg_80_plot <- tree_plot(y_avg_80
-                           ,yaxis_lims = c(min(y_avg_80)
-                                           ,max(y_avg_80)), plot_title = "y_80")
-y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
-graphics.off()
-plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
-     ,xlim = c(0,p_n_ind)
-     ,ylim = c(min(results_list$results_y_mtx[[80]])
-               ,max(results_list$results_y_mtx[[80]])))
-lines(y_summary_80[1,], col = "red")
-lines(y_summary_80[3,], col = "black")
-lines(y_summary_80[6,], col = "blue")
-legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
-       ,lty = 1,cex = 0.8, bty = "n")
-
-```
-
-From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
-
-Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
-```{r}
-# Epsilon parameters
-# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
-eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
-eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
-eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
-eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
-
-print("Simulation 20...")
-print("Eps_11")
-round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
-print("Eps_10")
-round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
-print("Simulation 80...")
-print("Eps_11")
-round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
-print("Eps_10")
-round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
-```
-
-And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
-```{r}
-get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
-  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
-                             , nrow = 2, ncol = (n_pheno-1)
-                             , byrow = T)
-  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
-  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
-  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
-  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
-  
-  # Exclude the root
-  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
-  gamma_and_parent_stats <- dcast.data.table(
-    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
-    ,formula = TreeLvl ~ Transition
-    ,value.var = "N"
-    ,fill = 0
-  )
-  
-  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
-  if(length(transitions_not_there) > 0){
-    for(col in transitions_not_there){
-      gamma_and_parent_stats[,(col) := 0]
-    }
-  }
-  
-  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
-  return(gamma_and_parent_stats[])
-}
-
-print("Simulation 20...")
-# Set up a two row matrix - parents on top row, children on bottom row.
-gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
-gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
-# Add simulated data
-gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
-                        .(`11`/(`11`+`01`)
-                          ,`10`/(`10`+`00`))]
-gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
-                        .(p_grped_eps_11[-(1:2)]
-                          ,p_grped_eps_10[-(1:2)])]
-gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
-                        .(round(eps_11_s20[-(1:2)],2)
-                          ,round(eps_10_s20[-(1:2)],2))]
-gamma_transitions_s20
-
-print("Simulation 80...")
-# Set up a two row matrix - parents on top row, children on bottom row.
-gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
-gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
-# Add simulated data
-gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
-                        .(`11`/(`11`+`01`)
-                          ,`10`/(`10`+`00`))]
-gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
-                        .(p_grped_eps_11[-(1:2)]
-                          ,p_grped_eps_10[-(1:2)])]
-gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
-                        .(round(eps_11_s80[-(1:2)],2)
-                          ,round(eps_10_s80[-(1:2)],2))]
-gamma_transitions_s80
-```
-
-Save data for future use.
-```{r, include = FALSE}
-if(run_sims & overwrite){
-  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
-}
-```
-__Observations from attempt 4:__
-
-- We start with tree root of 1. 11 and 10 of 0.1 means that our 1s disappear very quickly:
-  - All transitions with 1s are very uncommon, most of the transitions are 00s
-  - Makes it hard for our algorithm to parameterise 10 or 11 with much certainty, as very few samples to go off
-- Our epsilon estimates and ranges cover a wide range (lots of variability), and we can see the mean values are a lot lower than the 1s we saw before corresponding to the 0.9 probability. But not as responsive as we'd like - only goes down to an average of around 0.5
-
-## Attempt 5
-Main differences to attempt 3 (yes, we reverted back to attempt 3):
-
-- Less y_sl noise
-
-```{r}
-attempt_no=5
-
-p_n_ind = 70
-p_n_pheno = 128
-p_tying_grp = c(1,2,3,17,33,65)
-p_param_pi_00 = 0
-p_param_pi_11 = 1
-p_grped_eps_11 = c(rep(0.9,(length(p_tying_grp)-1)),0)
-p_grped_eps_10 = c(rep(0.1,(length(p_tying_grp)-1)),0)
-p_coeff_mu = 0
-p_coeff_beta = 2
-p_param_gi_prob = 0.4
-p_param_sigma_beta = 0.2
-p_num_sims = 100
-p_seed = 20
-
-if(!is.null(batch_num_sims)){
-  p_num_sims = batch_num_sims
-}
-
-```
-
-```{r, include = FALSE}
-if(run_sims){
-  results_list <- run_sim2(
-  n_ind = p_n_ind
-  ,n_pheno = p_n_pheno
-  ,tying_grp = p_tying_grp
-  ,param_pi_00 = p_param_pi_00
-  ,param_pi_11 = p_param_pi_11
-  ,grped_eps_11 = p_grped_eps_11
-  ,grped_eps_10 = p_grped_eps_10
-  ,coeff_mu = p_coeff_mu
-  ,coeff_beta = p_coeff_beta
-  ,param_gi_prob = p_param_gi_prob
-  ,param_sigma_beta = p_param_sigma_beta
-  ,num_sims = p_num_sims
-  ,seed = p_seed)
-}else{
-  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
-}
-```
-
-Analysis:
-```{r}
-pi_mean <- mean(unlist(results_list$results_pi))
-pi_sd <- sd(unlist(results_list$results_pi))
-pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
-pi_range; p_param_pi_11
-
-results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
-                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
-results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
-                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
-
-eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
-eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
-eps_11_lb <- eps_11_mean - 3*eps_11_sd
-eps_11_ub <- eps_11_mean + 3*eps_11_sd
-eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
-table(eps_11_within_range)
-
-eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
-eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
-eps_10_lb <- eps_10_mean - 3*eps_10_sd
-eps_10_ub <- eps_10_mean + 3*eps_10_sd
-eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
-table(eps_10_within_range)
-```
-
-Some more informative plots:
-```{r}
-# Epsilon 11
-y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
-
-xval = 1:p_n_pheno
-which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
-
-plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
-     ,xlim = c(0,p_n_pheno)
-     ,ylim = y_axis_bounds)
-if(length(which_in_bound) > 0){
-  for(j in 1:length(which_in_bound)){
-    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
-            , col ="pink", border = NA)
-  }
-}
-
-axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(results_list$param_eps_11,type = "l")
-points(eps_11_mean,col = "red", type = "l")
-points(eps_11_ub,col = "blue", type = "l", lty = 2)
-points(eps_11_lb,col = "blue", type = "l", lty = 2)
-
-# Epsilon 10
-y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
-
-xval = 1:p_n_pheno
-which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
-
-plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
-     ,xlim = c(0,p_n_pheno)
-     ,ylim = y_axis_bounds)
-if(length(which_in_bound) > 0){
-  for(j in 1:length(which_in_bound)){
-    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
-            , col ="pink", border = NA)
-  }
-}
-
-axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(results_list$param_eps_10,type = "l")
-points(eps_10_mean,col = "red", type = "l")
-points(eps_10_ub,col = "blue", type = "l", lty = 2)
-points(eps_10_lb,col = "blue", type = "l", lty = 2)
-```
-
-Now I'd like to know some more information. Specifically, we would like to know more about:
-
-- Variation in gammas, betas, ys, between simulations
-- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
-- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
-
-Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
-```{r}
-g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
-beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
-y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
-y_avg_20_plot <- tree_plot(y_avg_20
-                           ,yaxis_lims = c(min(y_avg_20)
-                                           ,max(y_avg_20)), plot_title = "y_20")
-y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
-graphics.off()
-plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
-     ,xlim = c(0,p_n_ind)
-     ,ylim = c(min(results_list$results_y_mtx[[20]])
-               ,max(results_list$results_y_mtx[[20]])))
-lines(y_summary_20[1,], col = "red")
-lines(y_summary_20[3,], col = "black")
-lines(y_summary_20[6,], col = "blue")
-legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
-       ,lty = 1,cex = 0.8, bty = "n")
-
-
-g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
-beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
-y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
-y_avg_80_plot <- tree_plot(y_avg_80
-                           ,yaxis_lims = c(min(y_avg_80)
-                                           ,max(y_avg_80)), plot_title = "y_80")
-y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
-graphics.off()
-plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
-     ,xlim = c(0,p_n_ind)
-     ,ylim = c(min(results_list$results_y_mtx[[80]])
-               ,max(results_list$results_y_mtx[[80]])))
-lines(y_summary_80[1,], col = "red")
-lines(y_summary_80[3,], col = "black")
-lines(y_summary_80[6,], col = "blue")
-legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
-       ,lty = 1,cex = 0.8, bty = "n")
-
-```
-
-From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
-
-Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
-```{r}
-# Epsilon parameters
-# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
-eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
-eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
-eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
-eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
-
-print("Simulation 20...")
-print("Eps_11")
-round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
-print("Eps_10")
-round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
-print("Simulation 80...")
-print("Eps_11")
-round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
-print("Eps_10")
-round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
-```
-
-And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
-```{r}
-get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
-  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
-                             , nrow = 2, ncol = (n_pheno-1)
-                             , byrow = T)
-  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
-  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
-  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
-  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
-  
-  # Exclude the root
-  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
-  gamma_and_parent_stats <- dcast.data.table(
-    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
-    ,formula = TreeLvl ~ Transition
-    ,value.var = "N"
-    ,fill = 0
-  )
-  
-  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
-  if(length(transitions_not_there) > 0){
-    for(col in transitions_not_there){
-      gamma_and_parent_stats[,(col) := 0]
-    }
-  }
-  
-  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
-  return(gamma_and_parent_stats[])
-}
-
-print("Simulation 20...")
-# Set up a two row matrix - parents on top row, children on bottom row.
-gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
-gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
-# Add simulated data
-gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
-                        .(`11`/(`11`+`01`)
-                          ,`10`/(`10`+`00`))]
-gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
-                        .(p_grped_eps_11[-(1:2)]
-                          ,p_grped_eps_10[-(1:2)])]
-gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
-                        .(round(eps_11_s20[-(1:2)],2)
-                          ,round(eps_10_s20[-(1:2)],2))]
-gamma_transitions_s20
-
-print("Simulation 80...")
-# Set up a two row matrix - parents on top row, children on bottom row.
-gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
-gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
-# Add simulated data
-gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
-                        .(`11`/(`11`+`01`)
-                          ,`10`/(`10`+`00`))]
-gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
-                        .(p_grped_eps_11[-(1:2)]
-                          ,p_grped_eps_10[-(1:2)])]
-gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
-                        .(round(eps_11_s80[-(1:2)],2)
-                          ,round(eps_10_s80[-(1:2)],2))]
-gamma_transitions_s80
-```
-
-Save data for future use.
-```{r, include = FALSE}
-if(run_sims & overwrite){
-  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
-}
-```
-__Observations from attempt 5:__
-
-- Didn't really seem to do much
-- Epsilons still wildly fluctuate
-- Didn't seem to help our ability to distinguish signals vs noise. Although, i'd presume that once noise gets above some level, it will become quite difficult.
-
-## Attempt 6
-Main differences to attempt 3 (yes, we reverted back to attempt 3):
-
-- Switch pi_00 and pi_11
-
-```{r}
-attempt_no=6
-
-p_n_ind = 70
-p_n_pheno = 128
-p_tying_grp = c(1,2,3,17,33,65)
-p_param_pi_00 = 1
-p_param_pi_11 = 0
-p_grped_eps_11 = c(rep(0.9,(length(p_tying_grp)-1)),0)
-p_grped_eps_10 = c(rep(0.1,(length(p_tying_grp)-1)),0)
-p_coeff_mu = 0
-p_coeff_beta = 2
-p_param_gi_prob = 0.4
-p_param_sigma_beta = 0.5
-p_num_sims = 100
-p_seed = 20
-
-if(!is.null(batch_num_sims)){
-  p_num_sims = batch_num_sims
-}
-
-```
-
-```{r, include = FALSE}
-if(run_sims){
-  results_list <- run_sim2(
-  n_ind = p_n_ind
-  ,n_pheno = p_n_pheno
-  ,tying_grp = p_tying_grp
-  ,param_pi_00 = p_param_pi_00
-  ,param_pi_11 = p_param_pi_11
-  ,grped_eps_11 = p_grped_eps_11
-  ,grped_eps_10 = p_grped_eps_10
-  ,coeff_mu = p_coeff_mu
-  ,coeff_beta = p_coeff_beta
-  ,param_gi_prob = p_param_gi_prob
-  ,param_sigma_beta = p_param_sigma_beta
-  ,num_sims = p_num_sims
-  ,seed = p_seed)
-}else{
-  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
-}
-```
-
-Analysis:
-```{r}
-pi_mean <- mean(unlist(results_list$results_pi))
-pi_sd <- sd(unlist(results_list$results_pi))
-pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
-pi_range; p_param_pi_11
-
-results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
-                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
-results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
-                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
-
-eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
-eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
-eps_11_lb <- eps_11_mean - 3*eps_11_sd
-eps_11_ub <- eps_11_mean + 3*eps_11_sd
-eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
-table(eps_11_within_range)
-
-eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
-eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
-eps_10_lb <- eps_10_mean - 3*eps_10_sd
-eps_10_ub <- eps_10_mean + 3*eps_10_sd
-eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
-table(eps_10_within_range)
-```
-
-Some more informative plots:
-```{r}
-# Epsilon 11
-y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
-
-xval = 1:p_n_pheno
-which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
-
-plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
-     ,xlim = c(0,p_n_pheno)
-     ,ylim = y_axis_bounds)
-if(length(which_in_bound) > 0){
-  for(j in 1:length(which_in_bound)){
-    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
-            , col ="pink", border = NA)
-  }
-}
-
-axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(results_list$param_eps_11,type = "l")
-points(eps_11_mean,col = "red", type = "l")
-points(eps_11_ub,col = "blue", type = "l", lty = 2)
-points(eps_11_lb,col = "blue", type = "l", lty = 2)
-
-# Epsilon 10
-y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
-
-xval = 1:p_n_pheno
-which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
-
-plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
-     ,xlim = c(0,p_n_pheno)
-     ,ylim = y_axis_bounds)
-if(length(which_in_bound) > 0){
-  for(j in 1:length(which_in_bound)){
-    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
-            , col ="pink", border = NA)
-  }
-}
-
-axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(results_list$param_eps_10,type = "l")
-points(eps_10_mean,col = "red", type = "l")
-points(eps_10_ub,col = "blue", type = "l", lty = 2)
-points(eps_10_lb,col = "blue", type = "l", lty = 2)
-```
-
-Now I'd like to know some more information. Specifically, we would like to know more about:
-
-- Variation in gammas, betas, ys, between simulations
-- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
-- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
-
-Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
-```{r}
-g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
-beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
-y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
-y_avg_20_plot <- tree_plot(y_avg_20
-                           ,yaxis_lims = c(min(y_avg_20)
-                                           ,max(y_avg_20)), plot_title = "y_20")
-y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
-graphics.off()
-plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
-     ,xlim = c(0,p_n_ind)
-     ,ylim = c(min(results_list$results_y_mtx[[20]])
-               ,max(results_list$results_y_mtx[[20]])))
-lines(y_summary_20[1,], col = "red")
-lines(y_summary_20[3,], col = "black")
-lines(y_summary_20[6,], col = "blue")
-legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
-       ,lty = 1,cex = 0.8, bty = "n")
-
-
-g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
-beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
-y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
-y_avg_80_plot <- tree_plot(y_avg_80
-                           ,yaxis_lims = c(min(y_avg_80)
-                                           ,max(y_avg_80)), plot_title = "y_80")
-y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
-graphics.off()
-plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
-     ,xlim = c(0,p_n_ind)
-     ,ylim = c(min(results_list$results_y_mtx[[80]])
-               ,max(results_list$results_y_mtx[[80]])))
-lines(y_summary_80[1,], col = "red")
-lines(y_summary_80[3,], col = "black")
-lines(y_summary_80[6,], col = "blue")
-legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
-       ,lty = 1,cex = 0.8, bty = "n")
-
-```
-
-From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
-
-Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
-```{r}
-# Epsilon parameters
-# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
-eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
-eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
-eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
-eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
-
-print("Simulation 20...")
-print("Eps_11")
-round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
-print("Eps_10")
-round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
-print("Simulation 80...")
-print("Eps_11")
-round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
-print("Eps_10")
-round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
-```
-
-And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
-```{r}
-get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
-  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
-                             , nrow = 2, ncol = (n_pheno-1)
-                             , byrow = T)
-  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
-  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
-  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
-  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
-  
-  # Exclude the root
-  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
-  gamma_and_parent_stats <- dcast.data.table(
-    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
-    ,formula = TreeLvl ~ Transition
-    ,value.var = "N"
-    ,fill = 0
-  )
-  
-  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
-  if(length(transitions_not_there) > 0){
-    for(col in transitions_not_there){
-      gamma_and_parent_stats[,(col) := 0]
-    }
-  }
-  
-  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
-  return(gamma_and_parent_stats[])
-}
-
-print("Simulation 20...")
-# Set up a two row matrix - parents on top row, children on bottom row.
-gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
-gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
-# Add simulated data
-gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
-                        .(`11`/(`11`+`01`)
-                          ,`10`/(`10`+`00`))]
-gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
-                        .(p_grped_eps_11[-(1:2)]
-                          ,p_grped_eps_10[-(1:2)])]
-gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
-                        .(round(eps_11_s20[-(1:2)],2)
-                          ,round(eps_10_s20[-(1:2)],2))]
-gamma_transitions_s20
-
-print("Simulation 80...")
-# Set up a two row matrix - parents on top row, children on bottom row.
-gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
-gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
-# Add simulated data
-gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
-                        .(`11`/(`11`+`01`)
-                          ,`10`/(`10`+`00`))]
-gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
-                        .(p_grped_eps_11[-(1:2)]
-                          ,p_grped_eps_10[-(1:2)])]
-gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
-                        .(round(eps_11_s80[-(1:2)],2)
-                          ,round(eps_10_s80[-(1:2)],2))]
-gamma_transitions_s80
-```
-
-Save data for future use.
-```{r, include = FALSE}
-if(run_sims & overwrite){
-  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
-}
-```
-__Observations from attempt 6:__
-
-- Surprisingly, somehow, making scaling coeff 1 and head of tree 0 has improved our ability to hit the epsilon target. 
-- Having the head of the tree being 0 means that 1s are are a lot sparser, though.
-- We get a lot more variability in our estimates for 11 and 10, but a key feature is no over-confidence about the eps11 being 1. We get estimates, at the top levels of the tree, which hover around the required 0.9 area.
-- Our pi estimate is still on point, retrieving the required pi = 0 parameter.
-
-## Attempt 7
-Main differences to attempt 3:
-
-- Tie more (3 -> 32 now)
-
-```{r}
-attempt_no=7
-
-p_n_ind = 70
-p_n_pheno = 128
-p_tying_grp = c(1,2,3,33,65)
-p_param_pi_00 = 0
-p_param_pi_11 = 1
-p_grped_eps_11 = c(rep(0.9,(length(p_tying_grp)-1)),0)
-p_grped_eps_10 = c(rep(0.1,(length(p_tying_grp)-1)),0)
-p_coeff_mu = 0
-p_coeff_beta = 2
-p_param_gi_prob = 0.4
-p_param_sigma_beta = 0.5
-p_num_sims = 100
-p_seed = 20
-
-if(!is.null(batch_num_sims)){
-  p_num_sims = batch_num_sims
-}
-
-```
-
-```{r, include = FALSE}
-if(run_sims){
-  results_list <- run_sim2(
-  n_ind = p_n_ind
-  ,n_pheno = p_n_pheno
-  ,tying_grp = p_tying_grp
-  ,param_pi_00 = p_param_pi_00
-  ,param_pi_11 = p_param_pi_11
-  ,grped_eps_11 = p_grped_eps_11
-  ,grped_eps_10 = p_grped_eps_10
-  ,coeff_mu = p_coeff_mu
-  ,coeff_beta = p_coeff_beta
-  ,param_gi_prob = p_param_gi_prob
-  ,param_sigma_beta = p_param_sigma_beta
-  ,num_sims = p_num_sims
-  ,seed = p_seed)
-}else{
-  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
-}
-```
-
-Analysis:
-```{r}
-pi_mean <- mean(unlist(results_list$results_pi))
-pi_sd <- sd(unlist(results_list$results_pi))
-pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
-pi_range; p_param_pi_11
-
-results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
-                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
-results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
-                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
-
-eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
-eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
-eps_11_lb <- eps_11_mean - 3*eps_11_sd
-eps_11_ub <- eps_11_mean + 3*eps_11_sd
-eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
-table(eps_11_within_range)
-
-eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
-eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
-eps_10_lb <- eps_10_mean - 3*eps_10_sd
-eps_10_ub <- eps_10_mean + 3*eps_10_sd
-eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
-table(eps_10_within_range)
-```
-
-Some more informative plots:
-```{r}
-# Epsilon 11
-y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
-
-xval = 1:p_n_pheno
-which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
-
-plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
-     ,xlim = c(0,p_n_pheno)
-     ,ylim = y_axis_bounds)
-if(length(which_in_bound) > 0){
-  for(j in 1:length(which_in_bound)){
-    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
-            , col ="pink", border = NA)
-  }
-}
-
-axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(results_list$param_eps_11,type = "l")
-points(eps_11_mean,col = "red", type = "l")
-points(eps_11_ub,col = "blue", type = "l", lty = 2)
-points(eps_11_lb,col = "blue", type = "l", lty = 2)
-
-# Epsilon 10
-y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
-
-xval = 1:p_n_pheno
-which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
-
-plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
-     ,xlim = c(0,p_n_pheno)
-     ,ylim = y_axis_bounds)
-if(length(which_in_bound) > 0){
-  for(j in 1:length(which_in_bound)){
-    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
-            , col ="pink", border = NA)
-  }
-}
-
-axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
-points(results_list$param_eps_10,type = "l")
-points(eps_10_mean,col = "red", type = "l")
-points(eps_10_ub,col = "blue", type = "l", lty = 2)
-points(eps_10_lb,col = "blue", type = "l", lty = 2)
-```
-
-Now I'd like to know some more information. Specifically, we would like to know more about:
-
-- Variation in gammas, betas, ys, between simulations
-- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
-- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
-
-Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
-```{r}
-g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
-beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
-y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
-y_avg_20_plot <- tree_plot(y_avg_20
-                           ,yaxis_lims = c(min(y_avg_20)
-                                           ,max(y_avg_20)), plot_title = "y_20")
-y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
-graphics.off()
-plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
-     ,xlim = c(0,p_n_ind)
-     ,ylim = c(min(results_list$results_y_mtx[[20]])
-               ,max(results_list$results_y_mtx[[20]])))
-lines(y_summary_20[1,], col = "red")
-lines(y_summary_20[3,], col = "black")
-lines(y_summary_20[6,], col = "blue")
-legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
-       ,lty = 1,cex = 0.8, bty = "n")
-
-
-g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
-beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
-y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
-y_avg_80_plot <- tree_plot(y_avg_80
-                           ,yaxis_lims = c(min(y_avg_80)
-                                           ,max(y_avg_80)), plot_title = "y_80")
-y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
-graphics.off()
-plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
-     ,xlim = c(0,p_n_ind)
-     ,ylim = c(min(results_list$results_y_mtx[[80]])
-               ,max(results_list$results_y_mtx[[80]])))
-lines(y_summary_80[1,], col = "red")
-lines(y_summary_80[3,], col = "black")
-lines(y_summary_80[6,], col = "blue")
-legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
-       ,lty = 1,cex = 0.8, bty = "n")
-
-```
-
-From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
-
-Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
-```{r}
-# Epsilon parameters
-# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
-eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
-eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
-eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
-eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
-
-print("Simulation 20...")
-print("Eps_11")
-round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
-print("Eps_10")
-round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
-print("Simulation 80...")
-print("Eps_11")
-round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
-print("Eps_10")
-round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
-```
-
-And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
-```{r}
-get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
-  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
-                             , nrow = 2, ncol = (n_pheno-1)
-                             , byrow = T)
-  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
-  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
-  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
-  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
-  
-  # Exclude the root
-  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
-  gamma_and_parent_stats <- dcast.data.table(
-    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
-    ,formula = TreeLvl ~ Transition
-    ,value.var = "N"
-    ,fill = 0
-  )
-  
-  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
-  if(length(transitions_not_there) > 0){
-    for(col in transitions_not_there){
-      gamma_and_parent_stats[,(col) := 0]
-    }
-  }
-  
-  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
-  return(gamma_and_parent_stats[])
-}
-
-print("Simulation 20...")
-# Set up a two row matrix - parents on top row, children on bottom row.
-gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
-gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
-# Add simulated data
-gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
-                        .(`11`/(`11`+`01`)
-                          ,`10`/(`10`+`00`))]
-gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
-                        .(p_grped_eps_11[-(1:2)]
-                          ,p_grped_eps_10[-(1:2)])]
-gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
-                        .(round(eps_11_s20[-(1:2)],2)
-                          ,round(eps_10_s20[-(1:2)],2))]
-gamma_transitions_s20
-
-print("Simulation 80...")
-# Set up a two row matrix - parents on top row, children on bottom row.
-gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
-gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
-# Add simulated data
-gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
-                        .(`11`/(`11`+`01`)
-                          ,`10`/(`10`+`00`))]
-gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
-                        .(p_grped_eps_11[-(1:2)]
-                          ,p_grped_eps_10[-(1:2)])]
-gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
-                        .(round(eps_11_s80[-(1:2)],2)
-                          ,round(eps_10_s80[-(1:2)],2))]
-gamma_transitions_s80
-```
-
-Save data for future use.
-```{r, include = FALSE}
-if(run_sims & overwrite){
-  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
-}
-```
-__Observations from attempt 7:__
-
-- We're looking pretty good here, still the top part of the tree (1 - 63) which is causing issues.
-
-## Attempt 8
-Main differences to attempt 7:
-
-- 0.7, 0.3 params
-
-```{r}
-attempt_no=8
-
-p_n_ind = 70
-p_n_pheno = 128
-p_tying_grp = c(1,2,3,33,65)
+p_tying_grp = c(1,2,3,65)
 p_param_pi_00 = 0
 p_param_pi_11 = 1
 p_grped_eps_11 = c(rep(0.7,(length(p_tying_grp)-1)),0)
@@ -1910,29 +541,19 @@ if(run_sims & overwrite){
   saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
 }
 ```
-__Observations from attempt 8:__
 
-- Now we're starting to come unstuck. Having the tying of 7, but changing our probabilities to 0.7 and 0.3 seems to have injected a little less certainty, and a little more 'noise' into the system.
-- Even though we have more diversity of transitions (reflected in the samples above), this does not seem to be getting picked up by the algorithm.
-- Most concerning is that the eps_10 has gone up beyond the initial (poor) average of 0.5, and is now closing in on 1!
-- Also, contrarily, the eps_11 has not gone down. It's still very confident around the 1 mark.
-- It seems that for algorithm outputs, sample epsilon does not necessarily equate to algorithm epsilon. If sample algorithm is above a certain level, algorithm epsilon will push up towards the 1 region. Sample epsilons must be quite low for algorithm epsilons to be low (?)
-
-## Attempt 9
-Main differences to attempt 7:
-
-- Params: 0.8, 0.2
+## 0.5/0.5
 
 ```{r}
-attempt_no=9
+attempt_no=10
 
 p_n_ind = 70
 p_n_pheno = 128
-p_tying_grp = c(1,2,3,33,65)
+p_tying_grp = c(1,2,3,65)
 p_param_pi_00 = 0
 p_param_pi_11 = 1
-p_grped_eps_11 = c(rep(0.8,(length(p_tying_grp)-1)),0)
-p_grped_eps_10 = c(rep(0.2,(length(p_tying_grp)-1)),0)
+p_grped_eps_11 = c(rep(0.5,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.5,(length(p_tying_grp)-1)),0)
 p_coeff_mu = 0
 p_coeff_beta = 2
 p_param_gi_prob = 0.4
@@ -2182,9 +803,2873 @@ if(run_sims & overwrite){
 }
 ```
 
-__Observations from attempt 9:__
+## More noise!
 
-- Bringing 10 down to 0.2 has helped out a little
-- Bringing 11 back up to 0.8, hasn't really done much.
-- Seems like our algo's parameterisation of epsilon is quite sensitive to the simulated number of transitions, and it will swing bteween the extremes of 1 or 0.
-- Not great.
+```{r}
+attempt_no=10
+
+p_n_ind = 70
+p_n_pheno = 128
+p_tying_grp = c(1,2,3,65)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.9,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.1,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 2
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+
+```
+
+```{r, include = FALSE}
+if(run_sims){
+  results_list <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+}else{
+  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
+}
+```
+
+Analysis:
+```{r}
+pi_mean <- mean(unlist(results_list$results_pi))
+pi_sd <- sd(unlist(results_list$results_pi))
+pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; p_param_pi_11
+
+results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+
+eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb <- eps_11_mean - 3*eps_11_sd
+eps_11_ub <- eps_11_mean + 3*eps_11_sd
+eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)
+
+eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb <- eps_10_mean - 3*eps_10_sd
+eps_10_ub <- eps_10_mean + 3*eps_10_sd
+eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)
+```
+
+Some more informative plots:
+```{r}
+# Epsilon 11
+y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_11,type = "l")
+points(eps_11_mean,col = "red", type = "l")
+points(eps_11_ub,col = "blue", type = "l", lty = 2)
+points(eps_11_lb,col = "blue", type = "l", lty = 2)
+
+# Epsilon 10
+y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_10,type = "l")
+points(eps_10_mean,col = "red", type = "l")
+points(eps_10_ub,col = "blue", type = "l", lty = 2)
+points(eps_10_lb,col = "blue", type = "l", lty = 2)
+```
+
+Now I'd like to know some more information. Specifically, we would like to know more about:
+
+- Variation in gammas, betas, ys, between simulations
+- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
+- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
+
+Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
+```{r}
+g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
+beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
+y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
+y_avg_20_plot <- tree_plot(y_avg_20
+                           ,yaxis_lims = c(min(y_avg_20)
+                                           ,max(y_avg_20)), plot_title = "y_20")
+y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[20]])
+               ,max(results_list$results_y_mtx[[20]])))
+lines(y_summary_20[1,], col = "red")
+lines(y_summary_20[3,], col = "black")
+lines(y_summary_20[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+
+g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
+beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
+y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
+y_avg_80_plot <- tree_plot(y_avg_80
+                           ,yaxis_lims = c(min(y_avg_80)
+                                           ,max(y_avg_80)), plot_title = "y_80")
+y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[80]])
+               ,max(results_list$results_y_mtx[[80]])))
+lines(y_summary_80[1,], col = "red")
+lines(y_summary_80[3,], col = "black")
+lines(y_summary_80[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+```
+
+From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
+
+Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
+```{r}
+# Epsilon parameters
+# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
+eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
+eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
+eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
+eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
+
+print("Simulation 20...")
+print("Eps_11")
+round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
+print("Simulation 80...")
+print("Eps_11")
+round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
+```
+
+And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
+```{r}
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+print("Simulation 20...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
+gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s20[-(1:2)],2)
+                          ,round(eps_10_s20[-(1:2)],2))]
+gamma_transitions_s20
+
+print("Simulation 80...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
+gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s80[-(1:2)],2)
+                          ,round(eps_10_s80[-(1:2)],2))]
+gamma_transitions_s80
+```
+
+Save data for future use.
+```{r, include = FALSE}
+if(run_sims & overwrite){
+  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
+}
+```
+
+## More noise! - 0.5/0.5
+
+```{r}
+attempt_no=10
+
+p_n_ind = 70
+p_n_pheno = 128
+p_tying_grp = c(1,2,3,65)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.5,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.5,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 2
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+
+```
+
+```{r, include = FALSE}
+if(run_sims){
+  results_list <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+}else{
+  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
+}
+```
+
+Analysis:
+```{r}
+pi_mean <- mean(unlist(results_list$results_pi))
+pi_sd <- sd(unlist(results_list$results_pi))
+pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; p_param_pi_11
+
+results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+
+eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb <- eps_11_mean - 3*eps_11_sd
+eps_11_ub <- eps_11_mean + 3*eps_11_sd
+eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)
+
+eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb <- eps_10_mean - 3*eps_10_sd
+eps_10_ub <- eps_10_mean + 3*eps_10_sd
+eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)
+```
+
+Some more informative plots:
+```{r}
+# Epsilon 11
+y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_11,type = "l")
+points(eps_11_mean,col = "red", type = "l")
+points(eps_11_ub,col = "blue", type = "l", lty = 2)
+points(eps_11_lb,col = "blue", type = "l", lty = 2)
+
+# Epsilon 10
+y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_10,type = "l")
+points(eps_10_mean,col = "red", type = "l")
+points(eps_10_ub,col = "blue", type = "l", lty = 2)
+points(eps_10_lb,col = "blue", type = "l", lty = 2)
+```
+
+Now I'd like to know some more information. Specifically, we would like to know more about:
+
+- Variation in gammas, betas, ys, between simulations
+- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
+- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
+
+Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
+```{r}
+g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
+beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
+y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
+y_avg_20_plot <- tree_plot(y_avg_20
+                           ,yaxis_lims = c(min(y_avg_20)
+                                           ,max(y_avg_20)), plot_title = "y_20")
+y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[20]])
+               ,max(results_list$results_y_mtx[[20]])))
+lines(y_summary_20[1,], col = "red")
+lines(y_summary_20[3,], col = "black")
+lines(y_summary_20[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+
+g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
+beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
+y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
+y_avg_80_plot <- tree_plot(y_avg_80
+                           ,yaxis_lims = c(min(y_avg_80)
+                                           ,max(y_avg_80)), plot_title = "y_80")
+y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[80]])
+               ,max(results_list$results_y_mtx[[80]])))
+lines(y_summary_80[1,], col = "red")
+lines(y_summary_80[3,], col = "black")
+lines(y_summary_80[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+```
+
+From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
+
+Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
+```{r}
+# Epsilon parameters
+# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
+eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
+eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
+eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
+eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
+
+print("Simulation 20...")
+print("Eps_11")
+round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
+print("Simulation 80...")
+print("Eps_11")
+round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
+```
+
+And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
+```{r}
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+print("Simulation 20...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
+gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s20[-(1:2)],2)
+                          ,round(eps_10_s20[-(1:2)],2))]
+gamma_transitions_s20
+
+print("Simulation 80...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
+gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s80[-(1:2)],2)
+                          ,round(eps_10_s80[-(1:2)],2))]
+gamma_transitions_s80
+```
+
+Save data for future use.
+```{r, include = FALSE}
+if(run_sims & overwrite){
+  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
+}
+```
+
+## More noise! - 0.5/0.5, and 1/0, not 0/1
+
+```{r}
+attempt_no=10
+
+p_n_ind = 70
+p_n_pheno = 128
+p_tying_grp = c(1,2,3,65)
+p_param_pi_00 = 1
+p_param_pi_11 = 0
+p_grped_eps_11 = c(rep(0.5,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.5,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 2
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+
+```
+
+```{r, include = FALSE}
+if(run_sims){
+  results_list <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+}else{
+  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
+}
+```
+
+Analysis:
+```{r}
+pi_mean <- mean(unlist(results_list$results_pi))
+pi_sd <- sd(unlist(results_list$results_pi))
+pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; p_param_pi_11
+
+results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+
+eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb <- eps_11_mean - 3*eps_11_sd
+eps_11_ub <- eps_11_mean + 3*eps_11_sd
+eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)
+
+eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb <- eps_10_mean - 3*eps_10_sd
+eps_10_ub <- eps_10_mean + 3*eps_10_sd
+eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)
+```
+
+Some more informative plots:
+```{r}
+# Epsilon 11
+y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_11,type = "l")
+points(eps_11_mean,col = "red", type = "l")
+points(eps_11_ub,col = "blue", type = "l", lty = 2)
+points(eps_11_lb,col = "blue", type = "l", lty = 2)
+
+# Epsilon 10
+y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_10,type = "l")
+points(eps_10_mean,col = "red", type = "l")
+points(eps_10_ub,col = "blue", type = "l", lty = 2)
+points(eps_10_lb,col = "blue", type = "l", lty = 2)
+```
+
+Now I'd like to know some more information. Specifically, we would like to know more about:
+
+- Variation in gammas, betas, ys, between simulations
+- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
+- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
+
+Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
+```{r}
+g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
+beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
+y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
+y_avg_20_plot <- tree_plot(y_avg_20
+                           ,yaxis_lims = c(min(y_avg_20)
+                                           ,max(y_avg_20)), plot_title = "y_20")
+y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[20]])
+               ,max(results_list$results_y_mtx[[20]])))
+lines(y_summary_20[1,], col = "red")
+lines(y_summary_20[3,], col = "black")
+lines(y_summary_20[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+
+g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
+beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
+y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
+y_avg_80_plot <- tree_plot(y_avg_80
+                           ,yaxis_lims = c(min(y_avg_80)
+                                           ,max(y_avg_80)), plot_title = "y_80")
+y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[80]])
+               ,max(results_list$results_y_mtx[[80]])))
+lines(y_summary_80[1,], col = "red")
+lines(y_summary_80[3,], col = "black")
+lines(y_summary_80[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+```
+
+From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
+
+Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
+```{r}
+# Epsilon parameters
+# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
+eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
+eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
+eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
+eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
+
+print("Simulation 20...")
+print("Eps_11")
+round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
+print("Simulation 80...")
+print("Eps_11")
+round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
+```
+
+And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
+```{r}
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+print("Simulation 20...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
+gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s20[-(1:2)],2)
+                          ,round(eps_10_s20[-(1:2)],2))]
+gamma_transitions_s20
+
+print("Simulation 80...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
+gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s80[-(1:2)],2)
+                          ,round(eps_10_s80[-(1:2)],2))]
+gamma_transitions_s80
+```
+
+Save data for future use.
+```{r, include = FALSE}
+if(run_sims & overwrite){
+  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
+}
+```
+
+## More levels
+
+```{r}
+attempt_no=10
+
+p_n_ind = 70
+p_n_pheno = 1024
+p_tying_grp = c(1,2,3,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.7,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.3,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.5
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+
+```
+
+```{r, include = FALSE}
+if(run_sims){
+  results_list <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+}else{
+  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
+}
+```
+
+Analysis:
+```{r}
+pi_mean <- mean(unlist(results_list$results_pi))
+pi_sd <- sd(unlist(results_list$results_pi))
+pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; p_param_pi_11
+
+results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+
+eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb <- eps_11_mean - 3*eps_11_sd
+eps_11_ub <- eps_11_mean + 3*eps_11_sd
+eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)
+
+eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb <- eps_10_mean - 3*eps_10_sd
+eps_10_ub <- eps_10_mean + 3*eps_10_sd
+eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)
+```
+
+Some more informative plots:
+```{r}
+# Epsilon 11
+y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_11,type = "l")
+points(eps_11_mean,col = "red", type = "l")
+points(eps_11_ub,col = "blue", type = "l", lty = 2)
+points(eps_11_lb,col = "blue", type = "l", lty = 2)
+
+# Epsilon 10
+y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_10,type = "l")
+points(eps_10_mean,col = "red", type = "l")
+points(eps_10_ub,col = "blue", type = "l", lty = 2)
+points(eps_10_lb,col = "blue", type = "l", lty = 2)
+```
+
+Now I'd like to know some more information. Specifically, we would like to know more about:
+
+- Variation in gammas, betas, ys, between simulations
+- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
+- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
+
+Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
+```{r}
+g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
+beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
+y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
+y_avg_20_plot <- tree_plot(y_avg_20
+                           ,yaxis_lims = c(min(y_avg_20)
+                                           ,max(y_avg_20)), plot_title = "y_20")
+y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[20]])
+               ,max(results_list$results_y_mtx[[20]])))
+lines(y_summary_20[1,], col = "red")
+lines(y_summary_20[3,], col = "black")
+lines(y_summary_20[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+
+g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
+beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
+y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
+y_avg_80_plot <- tree_plot(y_avg_80
+                           ,yaxis_lims = c(min(y_avg_80)
+                                           ,max(y_avg_80)), plot_title = "y_80")
+y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[80]])
+               ,max(results_list$results_y_mtx[[80]])))
+lines(y_summary_80[1,], col = "red")
+lines(y_summary_80[3,], col = "black")
+lines(y_summary_80[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+```
+
+From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
+
+Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
+```{r}
+# Epsilon parameters
+# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
+eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
+eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
+eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
+eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
+
+print("Simulation 20...")
+print("Eps_11")
+round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
+print("Simulation 80...")
+print("Eps_11")
+round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
+```
+
+And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
+```{r}
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+print("Simulation 20...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
+gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s20[-(1:2)],2)
+                          ,round(eps_10_s20[-(1:2)],2))]
+gamma_transitions_s20
+
+print("Simulation 80...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
+gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s80[-(1:2)],2)
+                          ,round(eps_10_s80[-(1:2)],2))]
+gamma_transitions_s80
+```
+
+Save data for future use.
+```{r, include = FALSE}
+if(run_sims & overwrite){
+  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
+}
+```
+
+## 0.7/0.3 - same noise, high beta
+
+```{r}
+attempt_no=10
+
+p_n_ind = 70
+p_n_pheno = 128
+p_tying_grp = c(1,2,3,65)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.7,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.3,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 200
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.5
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+
+```
+
+```{r, include = FALSE}
+if(run_sims){
+  results_list <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+}else{
+  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
+}
+```
+
+Analysis:
+```{r}
+pi_mean <- mean(unlist(results_list$results_pi))
+pi_sd <- sd(unlist(results_list$results_pi))
+pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; p_param_pi_11
+
+results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+
+eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb <- eps_11_mean - 3*eps_11_sd
+eps_11_ub <- eps_11_mean + 3*eps_11_sd
+eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)
+
+eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb <- eps_10_mean - 3*eps_10_sd
+eps_10_ub <- eps_10_mean + 3*eps_10_sd
+eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)
+```
+
+Some more informative plots:
+```{r}
+# Epsilon 11
+y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_11,type = "l")
+points(eps_11_mean,col = "red", type = "l")
+points(eps_11_ub,col = "blue", type = "l", lty = 2)
+points(eps_11_lb,col = "blue", type = "l", lty = 2)
+
+# Epsilon 10
+y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_10,type = "l")
+points(eps_10_mean,col = "red", type = "l")
+points(eps_10_ub,col = "blue", type = "l", lty = 2)
+points(eps_10_lb,col = "blue", type = "l", lty = 2)
+```
+
+Now I'd like to know some more information. Specifically, we would like to know more about:
+
+- Variation in gammas, betas, ys, between simulations
+- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
+- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
+
+Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
+```{r}
+g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
+# beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
+y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
+y_avg_20_plot <- tree_plot(y_avg_20
+                           ,yaxis_lims = c(min(y_avg_20)
+                                           ,max(y_avg_20)), plot_title = "y_20")
+y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[20]])
+               ,max(results_list$results_y_mtx[[20]])))
+lines(y_summary_20[1,], col = "red")
+lines(y_summary_20[3,], col = "black")
+lines(y_summary_20[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+
+g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
+# beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
+y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
+y_avg_80_plot <- tree_plot(y_avg_80
+                           ,yaxis_lims = c(min(y_avg_80)
+                                           ,max(y_avg_80)), plot_title = "y_80")
+y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[80]])
+               ,max(results_list$results_y_mtx[[80]])))
+lines(y_summary_80[1,], col = "red")
+lines(y_summary_80[3,], col = "black")
+lines(y_summary_80[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+```
+
+From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
+
+Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
+```{r}
+# Epsilon parameters
+# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
+eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
+eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
+eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
+eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
+
+print("Simulation 20...")
+print("Eps_11")
+round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
+print("Simulation 80...")
+print("Eps_11")
+round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
+```
+
+And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
+```{r}
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+print("Simulation 20...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
+gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s20[-(1:2)],2)
+                          ,round(eps_10_s20[-(1:2)],2))]
+gamma_transitions_s20
+
+print("Simulation 80...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
+gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s80[-(1:2)],2)
+                          ,round(eps_10_s80[-(1:2)],2))]
+gamma_transitions_s80
+```
+
+Save data for future use.
+```{r, include = FALSE}
+if(run_sims & overwrite){
+  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
+}
+```
+
+## 0.7/0.3 - same noise, low beta
+
+```{r}
+attempt_no=10
+
+p_n_ind = 70
+p_n_pheno = 128
+p_tying_grp = c(1,2,3,65)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.7,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.3,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 0.1
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.5
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+
+```
+
+```{r, include = FALSE}
+if(run_sims){
+  results_list <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+}else{
+  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
+}
+```
+
+Analysis:
+```{r}
+pi_mean <- mean(unlist(results_list$results_pi))
+pi_sd <- sd(unlist(results_list$results_pi))
+pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; p_param_pi_11
+
+results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+
+eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb <- eps_11_mean - 3*eps_11_sd
+eps_11_ub <- eps_11_mean + 3*eps_11_sd
+eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)
+
+eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb <- eps_10_mean - 3*eps_10_sd
+eps_10_ub <- eps_10_mean + 3*eps_10_sd
+eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)
+```
+
+Some more informative plots:
+```{r}
+# Epsilon 11
+y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_11,type = "l")
+points(eps_11_mean,col = "red", type = "l")
+points(eps_11_ub,col = "blue", type = "l", lty = 2)
+points(eps_11_lb,col = "blue", type = "l", lty = 2)
+
+# Epsilon 10
+y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_10,type = "l")
+points(eps_10_mean,col = "red", type = "l")
+points(eps_10_ub,col = "blue", type = "l", lty = 2)
+points(eps_10_lb,col = "blue", type = "l", lty = 2)
+```
+
+Now I'd like to know some more information. Specifically, we would like to know more about:
+
+- Variation in gammas, betas, ys, between simulations
+- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
+- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
+
+Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
+```{r}
+g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
+# beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
+y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
+y_avg_20_plot <- tree_plot(y_avg_20
+                           ,yaxis_lims = c(min(y_avg_20)
+                                           ,max(y_avg_20)), plot_title = "y_20")
+y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[20]])
+               ,max(results_list$results_y_mtx[[20]])))
+lines(y_summary_20[1,], col = "red")
+lines(y_summary_20[3,], col = "black")
+lines(y_summary_20[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+
+g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
+# beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
+y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
+y_avg_80_plot <- tree_plot(y_avg_80
+                           ,yaxis_lims = c(min(y_avg_80)
+                                           ,max(y_avg_80)), plot_title = "y_80")
+y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[80]])
+               ,max(results_list$results_y_mtx[[80]])))
+lines(y_summary_80[1,], col = "red")
+lines(y_summary_80[3,], col = "black")
+lines(y_summary_80[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+```
+
+From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
+
+Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
+```{r}
+# Epsilon parameters
+# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
+eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
+eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
+eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
+eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
+
+print("Simulation 20...")
+print("Eps_11")
+round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
+print("Simulation 80...")
+print("Eps_11")
+round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
+```
+
+And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
+```{r}
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+print("Simulation 20...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
+gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s20[-(1:2)],2)
+                          ,round(eps_10_s20[-(1:2)],2))]
+gamma_transitions_s20
+
+print("Simulation 80...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
+gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s80[-(1:2)],2)
+                          ,round(eps_10_s80[-(1:2)],2))]
+gamma_transitions_s80
+```
+
+Save data for future use.
+```{r, include = FALSE}
+if(run_sims & overwrite){
+  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
+}
+```
+
+## 0.7/0.3 - same beta, high noise
+
+```{r}
+attempt_no=10
+
+p_n_ind = 70
+p_n_pheno = 128
+p_tying_grp = c(1,2,3,65)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.7,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.3,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 5
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+
+```
+
+```{r, include = FALSE}
+if(run_sims){
+  results_list <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+}else{
+  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
+}
+```
+
+Analysis:
+```{r}
+pi_mean <- mean(unlist(results_list$results_pi))
+pi_sd <- sd(unlist(results_list$results_pi))
+pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; p_param_pi_11
+
+results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+
+eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb <- eps_11_mean - 3*eps_11_sd
+eps_11_ub <- eps_11_mean + 3*eps_11_sd
+eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)
+
+eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb <- eps_10_mean - 3*eps_10_sd
+eps_10_ub <- eps_10_mean + 3*eps_10_sd
+eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)
+```
+
+Some more informative plots:
+```{r}
+# Epsilon 11
+y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_11,type = "l")
+points(eps_11_mean,col = "red", type = "l")
+points(eps_11_ub,col = "blue", type = "l", lty = 2)
+points(eps_11_lb,col = "blue", type = "l", lty = 2)
+
+# Epsilon 10
+y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_10,type = "l")
+points(eps_10_mean,col = "red", type = "l")
+points(eps_10_ub,col = "blue", type = "l", lty = 2)
+points(eps_10_lb,col = "blue", type = "l", lty = 2)
+```
+
+Now I'd like to know some more information. Specifically, we would like to know more about:
+
+- Variation in gammas, betas, ys, between simulations
+- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
+- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
+
+Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
+```{r}
+g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
+# beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
+y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
+y_avg_20_plot <- tree_plot(y_avg_20
+                           ,yaxis_lims = c(min(y_avg_20)
+                                           ,max(y_avg_20)), plot_title = "y_20")
+y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[20]])
+               ,max(results_list$results_y_mtx[[20]])))
+lines(y_summary_20[1,], col = "red")
+lines(y_summary_20[3,], col = "black")
+lines(y_summary_20[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+
+g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
+# beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
+y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
+y_avg_80_plot <- tree_plot(y_avg_80
+                           ,yaxis_lims = c(min(y_avg_80)
+                                           ,max(y_avg_80)), plot_title = "y_80")
+y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[80]])
+               ,max(results_list$results_y_mtx[[80]])))
+lines(y_summary_80[1,], col = "red")
+lines(y_summary_80[3,], col = "black")
+lines(y_summary_80[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+```
+
+From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
+
+Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
+```{r}
+# Epsilon parameters
+# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
+eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
+eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
+eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
+eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
+
+print("Simulation 20...")
+print("Eps_11")
+round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
+print("Simulation 80...")
+print("Eps_11")
+round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
+```
+
+And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
+```{r}
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+print("Simulation 20...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
+gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s20[-(1:2)],2)
+                          ,round(eps_10_s20[-(1:2)],2))]
+gamma_transitions_s20
+
+print("Simulation 80...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
+gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s80[-(1:2)],2)
+                          ,round(eps_10_s80[-(1:2)],2))]
+gamma_transitions_s80
+```
+
+Save data for future use.
+```{r, include = FALSE}
+if(run_sims & overwrite){
+  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
+}
+```
+
+## 0.7/0.3 - same beta, low noise
+
+```{r}
+attempt_no=10
+
+p_n_ind = 70
+p_n_pheno = 128
+p_tying_grp = c(1,2,3,65)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.7,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.3,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.01
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+
+```
+
+```{r, include = FALSE}
+if(run_sims){
+  results_list <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+}else{
+  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
+}
+```
+
+Analysis:
+```{r}
+pi_mean <- mean(unlist(results_list$results_pi))
+pi_sd <- sd(unlist(results_list$results_pi))
+pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; p_param_pi_11
+
+results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+
+eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb <- eps_11_mean - 3*eps_11_sd
+eps_11_ub <- eps_11_mean + 3*eps_11_sd
+eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)
+
+eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb <- eps_10_mean - 3*eps_10_sd
+eps_10_ub <- eps_10_mean + 3*eps_10_sd
+eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)
+```
+
+Some more informative plots:
+```{r}
+# Epsilon 11
+y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_11,type = "l")
+points(eps_11_mean,col = "red", type = "l")
+points(eps_11_ub,col = "blue", type = "l", lty = 2)
+points(eps_11_lb,col = "blue", type = "l", lty = 2)
+
+# Epsilon 10
+y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_10,type = "l")
+points(eps_10_mean,col = "red", type = "l")
+points(eps_10_ub,col = "blue", type = "l", lty = 2)
+points(eps_10_lb,col = "blue", type = "l", lty = 2)
+```
+
+Now I'd like to know some more information. Specifically, we would like to know more about:
+
+- Variation in gammas, betas, ys, between simulations
+- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
+- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
+
+Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
+```{r}
+g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
+# beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
+y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
+y_avg_20_plot <- tree_plot(y_avg_20
+                           ,yaxis_lims = c(min(y_avg_20)
+                                           ,max(y_avg_20)), plot_title = "y_20")
+y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[20]])
+               ,max(results_list$results_y_mtx[[20]])))
+lines(y_summary_20[1,], col = "red")
+lines(y_summary_20[3,], col = "black")
+lines(y_summary_20[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+
+g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
+# beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
+y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
+y_avg_80_plot <- tree_plot(y_avg_80
+                           ,yaxis_lims = c(min(y_avg_80)
+                                           ,max(y_avg_80)), plot_title = "y_80")
+y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[80]])
+               ,max(results_list$results_y_mtx[[80]])))
+lines(y_summary_80[1,], col = "red")
+lines(y_summary_80[3,], col = "black")
+lines(y_summary_80[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+```
+
+From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
+
+Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
+```{r}
+# Epsilon parameters
+# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
+eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
+eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
+eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
+eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
+
+print("Simulation 20...")
+print("Eps_11")
+round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
+print("Simulation 80...")
+print("Eps_11")
+round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
+```
+
+And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
+```{r}
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+print("Simulation 20...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
+gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s20[-(1:2)],2)
+                          ,round(eps_10_s20[-(1:2)],2))]
+gamma_transitions_s20
+
+print("Simulation 80...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
+gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s80[-(1:2)],2)
+                          ,round(eps_10_s80[-(1:2)],2))]
+gamma_transitions_s80
+```
+
+Save data for future use.
+```{r, include = FALSE}
+if(run_sims & overwrite){
+  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
+}
+```
+
+## 0.7/0.3 - low beta, low noise
+
+```{r}
+attempt_no=10
+
+p_n_ind = 70
+p_n_pheno = 128
+p_tying_grp = c(1,2,3,65)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.7,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.3,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 0.2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.01
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+
+```
+
+```{r, include = FALSE}
+if(run_sims){
+  results_list <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+}else{
+  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
+}
+```
+
+Analysis:
+```{r}
+pi_mean <- mean(unlist(results_list$results_pi))
+pi_sd <- sd(unlist(results_list$results_pi))
+pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; p_param_pi_11
+
+results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+
+eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb <- eps_11_mean - 3*eps_11_sd
+eps_11_ub <- eps_11_mean + 3*eps_11_sd
+eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)
+
+eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb <- eps_10_mean - 3*eps_10_sd
+eps_10_ub <- eps_10_mean + 3*eps_10_sd
+eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)
+```
+
+Some more informative plots:
+```{r}
+# Epsilon 11
+y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_11,type = "l")
+points(eps_11_mean,col = "red", type = "l")
+points(eps_11_ub,col = "blue", type = "l", lty = 2)
+points(eps_11_lb,col = "blue", type = "l", lty = 2)
+
+# Epsilon 10
+y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_10,type = "l")
+points(eps_10_mean,col = "red", type = "l")
+points(eps_10_ub,col = "blue", type = "l", lty = 2)
+points(eps_10_lb,col = "blue", type = "l", lty = 2)
+```
+
+Now I'd like to know some more information. Specifically, we would like to know more about:
+
+- Variation in gammas, betas, ys, between simulations
+- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
+- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
+
+Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
+```{r}
+g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
+# beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
+y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
+y_avg_20_plot <- tree_plot(y_avg_20
+                           ,yaxis_lims = c(min(y_avg_20)
+                                           ,max(y_avg_20)), plot_title = "y_20")
+y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[20]])
+               ,max(results_list$results_y_mtx[[20]])))
+lines(y_summary_20[1,], col = "red")
+lines(y_summary_20[3,], col = "black")
+lines(y_summary_20[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+
+g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
+# beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
+y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
+y_avg_80_plot <- tree_plot(y_avg_80
+                           ,yaxis_lims = c(min(y_avg_80)
+                                           ,max(y_avg_80)), plot_title = "y_80")
+y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[80]])
+               ,max(results_list$results_y_mtx[[80]])))
+lines(y_summary_80[1,], col = "red")
+lines(y_summary_80[3,], col = "black")
+lines(y_summary_80[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+```
+
+From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
+
+Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
+```{r}
+# Epsilon parameters
+# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
+eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
+eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
+eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
+eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
+
+print("Simulation 20...")
+print("Eps_11")
+round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
+print("Simulation 80...")
+print("Eps_11")
+round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
+```
+
+And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
+```{r}
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+print("Simulation 20...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
+gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s20[-(1:2)],2)
+                          ,round(eps_10_s20[-(1:2)],2))]
+gamma_transitions_s20
+
+print("Simulation 80...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
+gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s80[-(1:2)],2)
+                          ,round(eps_10_s80[-(1:2)],2))]
+gamma_transitions_s80
+```
+
+Save data for future use.
+```{r, include = FALSE}
+if(run_sims & overwrite){
+  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
+}
+```
+
+## 0.5/0.5 - same noise, low beta
+
+```{r}
+attempt_no=10
+
+p_n_ind = 70
+p_n_pheno = 128
+p_tying_grp = c(1,2,3,65)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.5,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.5,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 0.1
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.5
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+
+```
+
+```{r, include = FALSE}
+if(run_sims){
+  results_list <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+}else{
+  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
+}
+```
+
+Analysis:
+```{r}
+pi_mean <- mean(unlist(results_list$results_pi))
+pi_sd <- sd(unlist(results_list$results_pi))
+pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; p_param_pi_11
+
+results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+
+eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb <- eps_11_mean - 3*eps_11_sd
+eps_11_ub <- eps_11_mean + 3*eps_11_sd
+eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)
+
+eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb <- eps_10_mean - 3*eps_10_sd
+eps_10_ub <- eps_10_mean + 3*eps_10_sd
+eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)
+```
+
+Some more informative plots:
+```{r}
+# Epsilon 11
+y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_11,type = "l")
+points(eps_11_mean,col = "red", type = "l")
+points(eps_11_ub,col = "blue", type = "l", lty = 2)
+points(eps_11_lb,col = "blue", type = "l", lty = 2)
+
+# Epsilon 10
+y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_10,type = "l")
+points(eps_10_mean,col = "red", type = "l")
+points(eps_10_ub,col = "blue", type = "l", lty = 2)
+points(eps_10_lb,col = "blue", type = "l", lty = 2)
+```
+
+Now I'd like to know some more information. Specifically, we would like to know more about:
+
+- Variation in gammas, betas, ys, between simulations
+- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
+- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
+
+Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
+```{r}
+g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
+# beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
+y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
+y_avg_20_plot <- tree_plot(y_avg_20
+                           ,yaxis_lims = c(min(y_avg_20)
+                                           ,max(y_avg_20)), plot_title = "y_20")
+y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[20]])
+               ,max(results_list$results_y_mtx[[20]])))
+lines(y_summary_20[1,], col = "red")
+lines(y_summary_20[3,], col = "black")
+lines(y_summary_20[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+
+g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
+# beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
+y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
+y_avg_80_plot <- tree_plot(y_avg_80
+                           ,yaxis_lims = c(min(y_avg_80)
+                                           ,max(y_avg_80)), plot_title = "y_80")
+y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[80]])
+               ,max(results_list$results_y_mtx[[80]])))
+lines(y_summary_80[1,], col = "red")
+lines(y_summary_80[3,], col = "black")
+lines(y_summary_80[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+```
+
+From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
+
+Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
+```{r}
+# Epsilon parameters
+# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
+eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
+eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
+eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
+eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
+
+print("Simulation 20...")
+print("Eps_11")
+round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
+print("Simulation 80...")
+print("Eps_11")
+round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
+```
+
+And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
+```{r}
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+print("Simulation 20...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
+gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s20[-(1:2)],2)
+                          ,round(eps_10_s20[-(1:2)],2))]
+gamma_transitions_s20
+
+print("Simulation 80...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
+gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s80[-(1:2)],2)
+                          ,round(eps_10_s80[-(1:2)],2))]
+gamma_transitions_s80
+```
+
+Save data for future use.
+```{r, include = FALSE}
+if(run_sims & overwrite){
+  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
+}
+```
+
+## 0.9/0.1 - same noise, low beta
+
+```{r}
+attempt_no=10
+
+p_n_ind = 70
+p_n_pheno = 128
+p_tying_grp = c(1,2,3,65)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = c(rep(0.9,(length(p_tying_grp)-1)),0)
+p_grped_eps_10 = c(rep(0.1,(length(p_tying_grp)-1)),0)
+p_coeff_mu = 0
+p_coeff_beta = 0.1
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.5
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+
+```
+
+```{r, include = FALSE}
+if(run_sims){
+  results_list <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+}else{
+  results_list <- readRDS(paste0("../data/results_attempt",attempt_no,".RDS"))
+}
+```
+
+Analysis:
+```{r}
+pi_mean <- mean(unlist(results_list$results_pi))
+pi_sd <- sd(unlist(results_list$results_pi))
+pi_range <- c(pi_mean - 3*pi_sd, pi_mean + 3*pi_sd)
+pi_range; p_param_pi_11
+
+results_eps_11_mtx <- matrix(unlist(results_list$results_eps_11)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+results_eps_10_mtx <- matrix(unlist(results_list$results_eps_10)
+                             ,nrow = p_num_sims, ncol = (p_n_pheno - 2), byrow = T)
+
+eps_11_mean <- apply(results_eps_11_mtx,MARGIN = 2,mean)
+eps_11_sd <- apply(results_eps_11_mtx,MARGIN = 2,sd)
+eps_11_lb <- eps_11_mean - 3*eps_11_sd
+eps_11_ub <- eps_11_mean + 3*eps_11_sd
+eps_11_within_range <- between(results_list$param_eps_11,eps_11_lb,eps_11_ub)
+table(eps_11_within_range)
+
+eps_10_mean <- apply(results_eps_10_mtx,MARGIN = 2,mean)
+eps_10_sd <- apply(results_eps_10_mtx,MARGIN = 2,sd)
+eps_10_lb <- eps_10_mean - 3*eps_10_sd
+eps_10_ub <- eps_10_mean + 3*eps_10_sd
+eps_10_within_range <- between(results_list$param_eps_10,eps_10_lb,eps_10_ub)
+table(eps_10_within_range)
+```
+
+Some more informative plots:
+```{r}
+# Epsilon 11
+y_axis_bounds <- c(min(min(eps_11_lb),min(results_list$param_eps_11)),max(max(eps_11_ub),max(results_list$param_eps_11)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_11,eps_11_lb,eps_11_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 11", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_11,type = "l")
+points(eps_11_mean,col = "red", type = "l")
+points(eps_11_ub,col = "blue", type = "l", lty = 2)
+points(eps_11_lb,col = "blue", type = "l", lty = 2)
+
+# Epsilon 10
+y_axis_bounds <- c(min(min(eps_10_lb),min(results_list$param_eps_10)),max(max(eps_10_ub),max(results_list$param_eps_10)))*1.1
+
+xval = 1:p_n_pheno
+which_in_bound = xval[between(results_list$param_eps_10,eps_10_lb,eps_10_ub)]
+
+plot(1,1, type = "n", xlab = "Wavelet scale-loc", ylab = "Probability", main = "Epsilon 10", xaxt = "n"
+     ,xlim = c(0,p_n_pheno)
+     ,ylim = y_axis_bounds)
+if(length(which_in_bound) > 0){
+  for(j in 1:length(which_in_bound)){
+    polygon(c(which_in_bound[j]-0.5, which_in_bound[j]-0.5, which_in_bound[j]+0.5, which_in_bound[j]+0.5), c(y_axis_bounds[1], y_axis_bounds[2],  y_axis_bounds[2],  y_axis_bounds[1])
+            , col ="pink", border = NA)
+  }
+}
+
+axis(1,at = 2^(3:10),labels = 2^(3:10),las = 2)
+points(results_list$param_eps_10,type = "l")
+points(eps_10_mean,col = "red", type = "l")
+points(eps_10_ub,col = "blue", type = "l", lty = 2)
+points(eps_10_lb,col = "blue", type = "l", lty = 2)
+```
+
+Now I'd like to know some more information. Specifically, we would like to know more about:
+
+- Variation in gammas, betas, ys, between simulations
+- What our epsilons were, at each tying group level (we have many repeated epsilons due to tying groups)
+- Proportion of (child-parent) 11, 10, 01, 00 pairings in our simulated gammas, giving an estimate of what our epsilon should be
+
+Firstly, variation in gammas, betas, y's between simulations. Here's an example of the 20th, and 80th obs' y_mtx, beta_mtx, gamma_sequence:
+```{r}
+g_20 <- tree_plot(results_list$results_gamma_seq[[20]],yaxis_lims = c(0,1), plot_title = "gamma_20")
+# beta_20 <- tree_plot(results_list$results_beta_seq[[20]],yaxis_lims = c(0,2), plot_title = "beta_20")
+y_avg_20 <- apply(results_list$results_y_mtx[[20]],MARGIN = 2,mean)
+y_avg_20_plot <- tree_plot(y_avg_20
+                           ,yaxis_lims = c(min(y_avg_20)
+                                           ,max(y_avg_20)), plot_title = "y_20")
+y_summary_20 <- apply(results_list$results_y_mtx[[20]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 20"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[20]])
+               ,max(results_list$results_y_mtx[[20]])))
+lines(y_summary_20[1,], col = "red")
+lines(y_summary_20[3,], col = "black")
+lines(y_summary_20[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+
+g_80 <- tree_plot(results_list$results_gamma_seq[[80]],yaxis_lims = c(0,1), plot_title = "gamma_80")
+# beta_80 <- tree_plot(results_list$results_beta_seq[[80]],yaxis_lims = c(0,2), plot_title = "beta_80")
+y_avg_80 <- apply(results_list$results_y_mtx[[80]],MARGIN = 2,mean)
+y_avg_80_plot <- tree_plot(y_avg_80
+                           ,yaxis_lims = c(min(y_avg_80)
+                                           ,max(y_avg_80)), plot_title = "y_80")
+y_summary_80 <- apply(results_list$results_y_mtx[[80]], MARGIN = 1, summary)
+graphics.off()
+plot(1,1, type = "n", xlab = "Individual #", ylab = "WC-value", main = "Summary stats of simulated WCs for simulation 80"
+     ,xlim = c(0,p_n_ind)
+     ,ylim = c(min(results_list$results_y_mtx[[80]])
+               ,max(results_list$results_y_mtx[[80]])))
+lines(y_summary_80[1,], col = "red")
+lines(y_summary_80[3,], col = "black")
+lines(y_summary_80[6,], col = "blue")
+legend("topright",legend = c("Max","Median","Min"),col = c("blue","black","red")
+       ,lty = 1,cex = 0.8, bty = "n")
+
+```
+
+From the above, we can see the slight variation in the simulated gamma, based on the parameterised proportions we set for each tying group, as well as how noise gets injected into the system between generating gammas and betas, to the resulting y values. Finally, for each simulation, a min/median/max plot of the wavelet coefficients for each of the 70 simulated individuals are shown to demonstrate the differing values of g (our covariate), and how that impacts the wavelet coefficients for that individual. All looks good, and as expected.
+
+Given these simulated values for simulations 20 and 80, what were our resulting parameters? Extract the parameters corresponding to each tying level (otherwise we would get a very long vector of parameters with lots of duplicates).
+```{r}
+# Epsilon parameters
+# Include a 0,0 in front, as the eps results only give results for the transitions, which excludes any transition to the scaling coefficient (as there is none), or between the scaling coefficient and the head of the tree.
+eps_11_s20 <- c(0,0,results_list$results_eps_11[[20]])[p_tying_grp]
+eps_10_s20 <- c(0,0,results_list$results_eps_10[[20]])[p_tying_grp]
+eps_11_s80 <- c(0,0,results_list$results_eps_11[[80]])[p_tying_grp]
+eps_10_s80 <- c(0,0,results_list$results_eps_10[[80]])[p_tying_grp]
+
+print("Simulation 20...")
+print("Eps_11")
+round(eps_11_s20[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s20[-(1:2)],2); p_grped_eps_10[-(1:2)]
+print("Simulation 80...")
+print("Eps_11")
+round(eps_11_s80[-(1:2)],2); p_grped_eps_11[-(1:2)]
+print("Eps_10")
+round(eps_10_s80[-(1:2)],2); p_grped_eps_10[-(1:2)]
+```
+
+And lastly, based on the gammas we simulated, what were our sampled proportion of eps 11,10,01,00 that we were expecting? And how did it align with what our algorithm actually output? This one involves a little bit of tedious data manipulation. Also, add on the initial parameterisation (the goal), and the parameters which our algorithm recovered.
+```{r}
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+print("Simulation 20...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s20 <- results_list$results_gamma_seq[[20]][-1]
+gamma_transitions_s20 <- get_gamma_transition_props(gamma_noScale_s20,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s20[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s20[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s20[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s20[-(1:2)],2)
+                          ,round(eps_10_s20[-(1:2)],2))]
+gamma_transitions_s20
+
+print("Simulation 80...")
+# Set up a two row matrix - parents on top row, children on bottom row.
+gamma_noScale_s80 <- results_list$results_gamma_seq[[80]][-1]
+gamma_transitions_s80 <- get_gamma_transition_props(gamma_noScale_s80,tying_grp_vect = p_tying_grp,n_pheno = p_n_pheno)
+# Add simulated data
+gamma_transitions_s80[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_transitions_s80[,c("param_eps_11","param_eps_10") :=
+                        .(p_grped_eps_11[-(1:2)]
+                          ,p_grped_eps_10[-(1:2)])]
+gamma_transitions_s80[,c("algo_eps_11","algo_eps_10") :=
+                        .(round(eps_11_s80[-(1:2)],2)
+                          ,round(eps_10_s80[-(1:2)],2))]
+gamma_transitions_s80
+```
+
+Save data for future use.
+```{r, include = FALSE}
+if(run_sims & overwrite){
+  saveRDS(results_list,paste0("../data/results_attempt",attempt_no,".RDS"), compress=T)  
+}
+```

@@ -72,7 +72,7 @@ run_sim2 <- function(
   results_eps_11 <- list()
   results_eps_10 <- list()
   results_gamma_seq <- list()
-  results_beta_seq <- list()
+  results_g_seq <- list()
   results_y_mtx <- list()
 
   # Epsilon elements are for elements 3 -> 1024 (= 2 -> 1023 of tree)
@@ -152,12 +152,10 @@ run_sim2 <- function(
     cat(tying_grp, file = paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/sim_grouping.txt"))
 
     ### Step 3: Run through HMT ----
-    # command <- paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim2.cis.geno -p sim2_WCs.txt -u use_all.txt -o sim2_noQT -f ",n_pheno," -hmt 1")
     command <- paste0("../../WaveQTL -gmode 1"
                       ," -group sim_grouping.txt "
                       ,"-g ../../data/dsQTL/sim2.cis.geno -p sim2_WCs.txt -u use_all.txt -o sim2_noQT -f ",n_pheno," -hmt 1")
     system(command,show.output.on.console = showOutput)
-    # system(command)
 
     # I DON'T ACTUALLY HAVE A WAY OF RECOVERING PI_0 ATM UNLESS I RUN IT THROUGH WAVEQTL (NO HMT) ALSO!
     ### Step 4: Get HMT results ----
@@ -170,7 +168,7 @@ run_sim2 <- function(
     results_eps_11[[its]] <- eps_11_file
     results_eps_10[[its]] <- eps_10_file
     results_gamma_seq[[its]] <- gamma_seq
-    results_beta_seq[[its]] <- beta_seq
+    results_g_seq[[its]] <- g_seq
     results_y_mtx[[its]] <- y_mtx
 
   }
@@ -180,7 +178,7 @@ run_sim2 <- function(
               ,results_eps_11 = results_eps_11
               ,results_eps_10 = results_eps_10
               ,results_gamma_seq = results_gamma_seq
-              ,results_beta_seq = results_beta_seq
+              ,results_g_seq = results_g_seq
               ,results_y_mtx = results_y_mtx
               ,param_eps_11 = param_eps_11
               ,param_eps_10 = param_eps_10))

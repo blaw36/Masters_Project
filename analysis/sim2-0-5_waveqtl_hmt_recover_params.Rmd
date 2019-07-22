@@ -1,0 +1,710 @@
+---
+title: "WaveQTL with HMT - Simulation 2.0.5 - Small-scale logBFs algorithm deepdive"
+author: "Brendan Law"
+date: "18/07/2019"
+output: html_document
+---
+
+Small scale (16 - 32 tree size) experiments of the WaveQTL algorithm with HMT, so we can deepdive and figure out what's going on.
+
+## Initialisation
+```{r}
+# Clear environment and do some fresh simulations
+rm(list = ls());gc();cat("\014");
+source("../code/WaveQTL/waveqtl_hmt_test_calc_sumlog_func.R")
+source("../code/sim2_script.R")
+library(data.table)
+
+get_gamma_transition_props <- function(eps_no_scale_data, tying_grp_vect, n_pheno){
+  gamma_and_parent <- matrix(c(eps_no_scale_data[get_parent_indices(1:(n_pheno-1))],eps_no_scale_data)
+                             , nrow = 2, ncol = (n_pheno-1)
+                             , byrow = T)
+  gamma_and_parent_dt <- as.data.table(t(gamma_and_parent))
+  setnames(gamma_and_parent_dt,names(gamma_and_parent_dt),c("Parent","Child"))
+  gamma_and_parent_dt[,"Transition" := paste0(Child,Parent)]
+  gamma_and_parent_dt[,"TreeLvl" := findInterval(.I + 1,tying_grp_vect[-1])]
+  
+  # Exclude the root
+  gamma_and_parent_dt <- copy(gamma_and_parent_dt[-1])
+  gamma_and_parent_stats <- dcast.data.table(
+    gamma_and_parent_dt[,.N,by = .(Transition,TreeLvl)]
+    ,formula = TreeLvl ~ Transition
+    ,value.var = "N"
+    ,fill = 0
+  )
+  
+  transitions_not_there <- setdiff(c("11","01","10","00"),names(gamma_and_parent_stats))
+  if(length(transitions_not_there) > 0){
+    for(col in transitions_not_there){
+      gamma_and_parent_stats[,(col) := 0]
+    }
+  }
+  
+  gamma_and_parent_stats[,"Total" := apply(.SD,1,sum),.SDcols = 2:5]
+  return(gamma_and_parent_stats[])
+}
+
+```
+
+There are quite a few experiments I want to run. These are the variants of tree-tying we want to try:
+
+- Full tree tying (all from tree root below)
+- Tree-level tying (at the scales of trees)
+- No tying (each parameter only has one data point)
+
+These are the variants to the logBFs we want to try:
+- Original logBFs from WaveQTL output
+- logBF_1_0: ie. if gamma = 1, then logBF = 1, else logBF = 0
+- logBF_1_n1: ie. if gamma = 1, then logBF = 1, else logBF = -1
+- logBF_50_1: ie. if gamma = 1, then logBF = 50, else logBF = 0
+
+We then want to try this with a 16-tree, and then a 32-tree. The 32-tree will probably just be the extension of the 16-tree (same simulation - 16-tree is first 16 nodes, 32-tree is first 32 nodes).
+
+We also want to investigate what happens if we:
+- Treat logBF > 0 as a gamma = 1 situation
+- Exclude situations where logBF = 0
+
+That's a lot of experiments to run. Let's try and load in the data and visualise it first. Also, let's try and derive empirical transition probabilities and quantites to get a feel for what our $\varepsilon$'s should look like at different levels of tying.
+
+## 16-tree.
+Load in the tree data. Here's how it looks. This is based off sim2's attempt 15 (somewhere in a previous markdown), and simulation number 1.
+```{r load_data, include = F}
+a <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/toy_eg1_16wc_noTie_noHmt.fph.logLR.txt"))
+logBFs = log(10)*as.numeric(a[1,4:(dim(a)[2])])
+```
+
+Some empirical stats and tree plots:
+```{r}
+p_logbf <- tree_plot(c(0,logBFs),yaxis_lims = c(min(logBFs),max(logBFs)),plot_title = "logBFs")
+
+gamma_seq <- copy(logBFs)
+gamma_seq[between(logBFs,30,50)] <- 1
+gamma_seq[between(logBFs,-0.3,3)] <- 0
+
+gamma_trans_full_tie <- get_gamma_transition_props(gamma_seq,tying_grp_vect = c(1,2),n_pheno = 16)
+gamma_trans_tree_tie <- get_gamma_transition_props(gamma_seq,tying_grp_vect = c(1,2,3,5,9),n_pheno = 16)
+gamma_trans_no_tie <- get_gamma_transition_props(gamma_seq,tying_grp_vect = c(1:16),n_pheno = 16)
+gamma_trans_full_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_trans_tree_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_trans_no_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+
+gamma_trans_full_tie
+gamma_trans_tree_tie
+gamma_trans_no_tie
+
+# If we treat logBF > 0 as gamma = 1, and otherwise as gamma = 0...here's how it changes transition numbers
+gamma_seq2 <- copy(logBFs)
+gamma_seq2[gamma_seq2 > 0] <- 1
+gamma_seq2[gamma_seq2 <= 0] <- 0
+
+gamma2_trans_full_tie <- get_gamma_transition_props(gamma_seq2,tying_grp_vect = c(1,2),n_pheno = 16)
+gamma2_trans_tree_tie <- get_gamma_transition_props(gamma_seq2,tying_grp_vect = c(1,2,3,5,9),n_pheno = 16)
+gamma2_trans_no_tie <- get_gamma_transition_props(gamma_seq2,tying_grp_vect = c(1:16),n_pheno = 16)
+gamma2_trans_full_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma2_trans_tree_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma2_trans_no_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+
+gamma2_trans_full_tie
+gamma2_trans_tree_tie
+gamma2_trans_no_tie
+
+```
+
+## Original LogBFs
+```{r}
+# Full tying
+orig_full_tie <- waveQTL_HMT_R(tying_groups = 1, logBFs = logBFs)
+orig_full_tie$new_logL
+round(exp(orig_full_tie$pp_i),5)
+cbind(round(exp(orig_full_tie$pp_i$`1`),5),logBFs)
+cbind(gamma_trans_full_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(orig_full_tie$eps[-1][1][,.(`11`,`10`)]))
+# Tree tying
+orig_tree_tie <- waveQTL_HMT_R(tying_groups = c(1,2,4,8), logBFs = logBFs)
+orig_tree_tie$new_logL
+round(exp(orig_tree_tie$pp_i),5)
+cbind(round(exp(orig_tree_tie$pp_i$`1`),5),logBFs)
+cbind(gamma_trans_tree_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(orig_tree_tie$eps[c(2,4,8)][,.(`11`,`10`)]))
+# No tying
+orig_no_tie <- waveQTL_HMT_R(tying_groups = 1:15, logBFs = logBFs)
+orig_no_tie$new_logL
+round(exp(orig_no_tie$pp_i),5)
+cbind(round(exp(orig_no_tie$pp_i$`1`),5),logBFs)
+cbind(gamma_trans_no_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,round(exp(orig_no_tie$eps[-1][,.(`11`,`10`)]),4))
+```
+
+## logBF_1_0
+logBFs which represent gamma = 1 are set to 1. LogBFs which represent gamma = 0 are set to 0.
+```{r}
+logBF_1_0 <- copy(logBFs)
+logBF_1_0[between(logBF_1_0,-0.3,3)] <- 0
+logBF_1_0[!between(logBF_1_0,-0.3,3)] <- 1
+
+# Full tying
+logBF_1_0_full_tie <- waveQTL_HMT_R(tying_groups = 1, logBFs = logBF_1_0)
+logBF_1_0_full_tie$new_logL
+round(exp(logBF_1_0_full_tie$pp_i),5)
+cbind(round(exp(logBF_1_0_full_tie$pp_i$`1`),5),logBF_1_0)
+cbind(gamma_trans_full_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(logBF_1_0_full_tie$eps[-1][1][,.(`11`,`10`)]))
+# Tree tying
+logBF_1_0_tree_tie <- waveQTL_HMT_R(tying_groups = c(1,2,4,8), logBFs = logBF_1_0)
+logBF_1_0_tree_tie$new_logL
+round(exp(logBF_1_0_tree_tie$pp_i),5)
+cbind(round(exp(logBF_1_0_tree_tie$pp_i$`1`),5),logBF_1_0)
+cbind(gamma_trans_tree_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(logBF_1_0_tree_tie$eps[c(2,4,8)][,.(`11`,`10`)]))
+# No tying
+logBF_1_0_no_tie <- waveQTL_HMT_R(tying_groups = 1:15, logBFs = logBF_1_0)
+logBF_1_0_no_tie$new_logL
+round(exp(logBF_1_0_no_tie$pp_i),5)
+cbind(round(exp(logBF_1_0_no_tie$pp_i$`1`),5),logBF_1_0)
+cbind(gamma_trans_no_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,round(exp(logBF_1_0_no_tie$eps[-1][,.(`11`,`10`)]),4))
+```
+
+## logBF_1_n1
+logBFs which represent gamma = 1 are set to 1. LogBFs which represent gamma = 0 are set to -1.
+```{r}
+logBF_1_n1 <- copy(logBFs)
+logBF_1_n1[between(logBF_1_n1,-0.3,3)] <- -1
+logBF_1_n1[logBF_1_n1 > 3] <- 1
+
+# Full tying
+logBF_1_n1_full_tie <- waveQTL_HMT_R(tying_groups = 1, logBFs = logBF_1_n1)
+logBF_1_n1_full_tie$new_logL
+round(exp(logBF_1_n1_full_tie$pp_i),5)
+cbind(round(exp(logBF_1_n1_full_tie$pp_i$`1`),5),logBF_1_n1)
+cbind(gamma_trans_full_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(logBF_1_n1_full_tie$eps[-1][1][,.(`11`,`10`)]))
+# Tree tying
+logBF_1_n1_tree_tie <- waveQTL_HMT_R(tying_groups = c(1,2,4,8), logBFs = logBF_1_n1)
+logBF_1_n1_tree_tie$new_logL
+round(exp(logBF_1_n1_tree_tie$pp_i),5)
+cbind(round(exp(logBF_1_n1_tree_tie$pp_i$`1`),5),logBF_1_n1)
+cbind(gamma_trans_tree_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(logBF_1_n1_tree_tie$eps[c(2,4,8)][,.(`11`,`10`)]))
+# No tying
+logBF_1_n1_no_tie <- waveQTL_HMT_R(tying_groups = 1:15, logBFs = logBF_1_n1)
+logBF_1_n1_no_tie$new_logL
+round(exp(logBF_1_n1_no_tie$pp_i),5)
+cbind(round(exp(logBF_1_n1_no_tie$pp_i$`1`),5),logBF_1_n1)
+cbind(gamma_trans_no_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,round(exp(logBF_1_n1_no_tie$eps[-1][,.(`11`,`10`)]),4))
+```
+
+## logBF_50_1
+logBFs which represent gamma = 1 are set to 50. LogBFs which represent gamma = 0 are set to -1.
+```{r}
+logBF_50_1 <- copy(logBFs)
+logBF_50_1[between(logBF_50_1,-0.3,3)] <- -1
+logBF_50_1[logBF_50_1 > 3] <- 50
+
+# Full tying
+logBF_50_1_full_tie <- waveQTL_HMT_R(tying_groups = 1, logBFs = logBF_50_1)
+logBF_50_1_full_tie$new_logL
+round(exp(logBF_50_1_full_tie$pp_i),5)
+cbind(round(exp(logBF_50_1_full_tie$pp_i$`1`),5),logBF_50_1)
+cbind(gamma_trans_full_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(logBF_50_1_full_tie$eps[-1][1][,.(`11`,`10`)]))
+# Tree tying
+logBF_50_1_tree_tie <- waveQTL_HMT_R(tying_groups = c(1,2,4,8), logBFs = logBF_50_1)
+logBF_50_1_tree_tie$new_logL
+round(exp(logBF_50_1_tree_tie$pp_i),5)
+cbind(round(exp(logBF_50_1_tree_tie$pp_i$`1`),5),logBF_50_1)
+cbind(gamma_trans_tree_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(logBF_50_1_tree_tie$eps[c(2,4,8)][,.(`11`,`10`)]))
+# No tying
+logBF_50_1_no_tie <- waveQTL_HMT_R(tying_groups = 1:15, logBFs = logBF_50_1)
+logBF_50_1_no_tie$new_logL
+round(exp(logBF_50_1_no_tie$pp_i),5)
+cbind(round(exp(logBF_50_1_no_tie$pp_i$`1`),5),logBF_50_1)
+cbind(gamma_trans_no_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,round(exp(logBF_50_1_no_tie$eps[-1][,.(`11`,`10`)]),4))
+```
+
+
+# 32-tree.
+More or less the same process.
+
+Load in the tree data. Here's how it looks. This is based off sim2's attempt 15 (somewhere in a previous markdown), and simulation number 1.
+```{r load_data, include = F}
+a_32 <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/toy_eg1_32wc_wTie_hmt.fph.logLR.txt"))
+logBFs_32 = log(10)*as.numeric(a_32[1,4:(dim(a_32)[2])])
+```
+
+Some empirical stats and tree plots:
+```{r}
+p_logbf_32 <- tree_plot(c(0,logBFs_32),yaxis_lims = c(min(logBFs_32),max(logBFs_32)),plot_title = "logBFs_32")
+
+gamma_seq_32 <- copy(logBFs_32)
+gamma_seq_32[between(logBFs_32,30,50)] <- 1
+gamma_seq_32[between(logBFs_32,-0.3,3)] <- 0
+
+gamma_32_trans_full_tie <- get_gamma_transition_props(gamma_seq_32,tying_grp_vect = c(1,2),n_pheno = 32)
+gamma_32_trans_tree_tie <- get_gamma_transition_props(gamma_seq_32,tying_grp_vect = c(1,2,3,5,9,17),n_pheno = 32)
+gamma_32_trans_no_tie <- get_gamma_transition_props(gamma_seq_32,tying_grp_vect = 1:32,n_pheno = 32)
+gamma_32_trans_full_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_32_trans_tree_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_32_trans_no_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+
+gamma_32_trans_full_tie
+gamma_32_trans_tree_tie
+gamma_32_trans_no_tie
+
+# If we treat logBF > 0 as gamma = 1, and otherwise as gamma = 0...here's how it changes transition numbers
+gamma_32_seq2 <- copy(logBFs_32)
+gamma_32_seq2[gamma_32_seq2 > 0] <- 1
+gamma_32_seq2[gamma_32_seq2 <= 0] <- 0
+
+gamma2_32_trans_full_tie <- get_gamma_transition_props(gamma_32_seq2,tying_grp_vect = c(1,2),n_pheno = 32)
+gamma2_32_trans_tree_tie <- get_gamma_transition_props(gamma_32_seq2,tying_grp_vect = c(1,2,3,5,9,17),n_pheno = 32)
+gamma2_32_trans_no_tie <- get_gamma_transition_props(gamma_32_seq2,tying_grp_vect = c(1:32),n_pheno = 32)
+gamma2_32_trans_full_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma2_32_trans_tree_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma2_32_trans_no_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+
+gamma2_32_trans_full_tie
+gamma2_32_trans_tree_tie
+gamma2_32_trans_no_tie
+
+```
+
+## Original LogBFs
+```{r}
+# Full tying
+orig_32_full_tie <- waveQTL_HMT_R(tying_groups = 1, logBFs = logBFs_32)
+orig_32_full_tie$new_logL
+round(exp(orig_32_full_tie$pp_i),5)
+cbind(round(exp(orig_32_full_tie$pp_i$`1`),5),logBFs_32)
+cbind(gamma_32_trans_full_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(orig_32_full_tie$eps[-1][1][,.(`11`,`10`)]))
+# Tree tying
+orig_32_tree_tie <- waveQTL_HMT_R(tying_groups = c(1,2,4,8,16), logBFs = logBFs_32)
+orig_32_tree_tie$new_logL
+round(exp(orig_32_tree_tie$pp_i),5)
+cbind(round(exp(orig_32_tree_tie$pp_i$`1`),5),logBFs_32)
+cbind(gamma_32_trans_tree_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(orig_32_tree_tie$eps[c(2,4,8,16)][,.(`11`,`10`)]))
+# No tying
+orig_32_no_tie <- waveQTL_HMT_R(tying_groups = 1:32, logBFs = logBFs_32)
+orig_32_no_tie$new_logL
+round(exp(orig_32_no_tie$pp_i),5)
+cbind(round(exp(orig_32_no_tie$pp_i$`1`),5),logBFs_32)
+cbind(gamma_32_trans_no_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,round(exp(orig_32_no_tie$eps[-1][,.(`11`,`10`)]),4))
+```
+
+## logBF_1_0
+logBFs which represent gamma = 1 are set to 1. LogBFs which represent gamma = 0 are set to 0.
+```{r}
+logBF_32_1_0 <- copy(logBFs_32)
+logBF_32_1_0[between(logBF_32_1_0,-0.3,3)] <- 0
+logBF_32_1_0[!between(logBF_32_1_0,-0.3,3)] <- 1
+
+# Full tying
+logBF_32_1_0_full_tie <- waveQTL_HMT_R(tying_groups = 1, logBFs = logBF_32_1_0)
+logBF_32_1_0_full_tie$new_logL
+round(exp(logBF_32_1_0_full_tie$pp_i),5)
+cbind(round(exp(logBF_32_1_0_full_tie$pp_i$`1`),5),logBF_32_1_0)
+cbind(gamma_32_trans_full_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(logBF_32_1_0_full_tie$eps[-1][1][,.(`11`,`10`)]))
+# Tree tying
+logBF_32_1_0_tree_tie <- waveQTL_HMT_R(tying_groups = c(1,2,4,8,16), logBFs = logBF_32_1_0)
+logBF_32_1_0_tree_tie$new_logL
+round(exp(logBF_32_1_0_tree_tie$pp_i),5)
+cbind(round(exp(logBF_32_1_0_tree_tie$pp_i$`1`),5),logBF_32_1_0)
+cbind(gamma_32_trans_tree_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(logBF_32_1_0_tree_tie$eps[c(2,4,8,16)][,.(`11`,`10`)]))
+# No tying
+logBF_32_1_0_no_tie <- waveQTL_HMT_R(tying_groups = 1:32, logBFs = logBF_32_1_0)
+logBF_32_1_0_no_tie$new_logL
+round(exp(logBF_32_1_0_no_tie$pp_i),5)
+cbind(round(exp(logBF_32_1_0_no_tie$pp_i$`1`),5),logBF_32_1_0)
+cbind(gamma_32_trans_no_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,round(exp(logBF_32_1_0_no_tie$eps[-1][,.(`11`,`10`)]),4))
+```
+
+## logBF_1_n1
+logBFs which represent gamma = 1 are set to 1. LogBFs which represent gamma = 0 are set to -1.
+```{r}
+logBF_32_1_n1 <- copy(logBFs_32)
+logBF_32_1_n1[between(logBF_32_1_n1,-0.3,3)] <- -1
+logBF_32_1_n1[logBF_32_1_n1 > 3] <- 1
+
+# Full tying
+logBF_32_1_n1_full_tie <- waveQTL_HMT_R(tying_groups = 1, logBFs = logBF_32_1_n1)
+logBF_32_1_n1_full_tie$new_logL
+round(exp(logBF_32_1_n1_full_tie$pp_i),5)
+cbind(round(exp(logBF_32_1_n1_full_tie$pp_i$`1`),5),logBF_32_1_n1)
+cbind(gamma_32_trans_full_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(logBF_32_1_n1_full_tie$eps[-1][1][,.(`11`,`10`)]))
+# Tree tying
+logBF_32_1_n1_tree_tie <- waveQTL_HMT_R(tying_groups = c(1,2,4,8,16), logBFs = logBF_32_1_n1)
+logBF_32_1_n1_tree_tie$new_logL
+round(exp(logBF_32_1_n1_tree_tie$pp_i),5)
+cbind(round(exp(logBF_32_1_n1_tree_tie$pp_i$`1`),5),logBF_32_1_n1)
+cbind(gamma_32_trans_tree_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(logBF_32_1_n1_tree_tie$eps[c(2,4,8,16)][,.(`11`,`10`)]))
+# No tying
+  logBF_32_1_n1_no_tie <- waveQTL_HMT_R(tying_groups = 1:32, logBFs = logBF_32_1_n1)
+logBF_32_1_n1_no_tie$new_logL
+round(exp(logBF_32_1_n1_no_tie$pp_i),5)
+cbind(round(exp(logBF_32_1_n1_no_tie$pp_i$`1`),5),logBF_32_1_n1)
+cbind(gamma_32_trans_no_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,round(exp(logBF_32_1_n1_no_tie$eps[-1][,.(`11`,`10`)]),4))
+```
+
+## logBF_50_1
+logBFs which represent gamma = 1 are set to 50. LogBFs which represent gamma = 0 are set to -1.
+```{r}
+logBF_32_50_1 <- copy(logBFs_32)
+logBF_32_50_1[between(logBF_32_50_1,-0.3,3)] <- -1
+logBF_32_50_1[logBF_32_50_1 > 3] <- 50
+
+# Full tying
+logBF_32_50_1_full_tie <- waveQTL_HMT_R(tying_groups = 1, logBFs = logBF_32_50_1)
+logBF_32_50_1_full_tie$new_logL
+round(exp(logBF_32_50_1_full_tie$pp_i),5)
+cbind(round(exp(logBF_32_50_1_full_tie$pp_i$`1`),5),logBF_32_50_1)
+cbind(gamma_32_trans_full_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(logBF_32_50_1_full_tie$eps[-1][1][,.(`11`,`10`)]))
+# Tree tying
+logBF_32_50_1_tree_tie <- waveQTL_HMT_R(tying_groups = c(1,2,4,8,16), logBFs = logBF_32_50_1)
+logBF_32_50_1_tree_tie$new_logL
+round(exp(logBF_32_50_1_tree_tie$pp_i),5)
+cbind(round(exp(logBF_32_50_1_tree_tie$pp_i$`1`),5),logBF_32_50_1)
+cbind(gamma_32_trans_tree_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,exp(logBF_32_50_1_tree_tie$eps[c(2,4,8,16)][,.(`11`,`10`)]))
+# No tying
+logBF_32_50_1_no_tie <- waveQTL_HMT_R(tying_groups = 1:32, logBFs = logBF_32_50_1)
+logBF_32_50_1_no_tie$new_logL
+round(exp(logBF_32_50_1_no_tie$pp_i),5)
+cbind(round(exp(logBF_32_50_1_no_tie$pp_i$`1`),5),logBF_32_50_1)
+cbind(gamma_32_trans_no_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,round(exp(logBF_32_50_1_no_tie$eps[-1][,.(`11`,`10`)]),4))
+```
+
+## Some analysis
+```{r}
+## True values
+round(exp(logBF_32_1_n1_full_tie$pp_i_hist[[1]]),5)
+round(exp(logBF_32_1_n1_tree_tie$pp_i_hist[[1]]),5)
+round(exp(logBF_32_1_n1_no_tie$pp_i_hist[[1]]),5)
+
+
+cbind(round(exp(logBF_32_1_n1_tree_tie$pp_i_hist[[1]]),5)
+      ,logBF_32_1_n1)
+cbind(round(exp(logBF_32_1_n1_tree_tie$pp_j_i_hist[[1]]),5)
+      ,logBF_32_1_n1)
+exp(logBF_32_1_n1_tree_tie$eps_hist[[2]])[c(2,4,8,16)]
+
+sum(exp(logBF_32_1_n1_tree_tie$pp_j_i_hist[[1]])[16:31,1])/sum(exp(logBF_32_1_n1_tree_tie$pp_i_hist[[1]])[8:15,1]*2)
+
+
+cbind(round(exp(logBF_32_1_n1_full_tie$pp_i_hist[[1]]),5)
+      ,logBF_32_1_n1)
+cbind(round(exp(logBF_32_1_n1_full_tie$pp_j_i_hist[[1]]),5)
+      ,logBF_32_1_n1)
+
+cbind(round(exp(logBF_32_1_n1_no_tie$pp_i_hist[[1]]),5)
+      ,logBF_32_1_n1)
+cbind(round(exp(logBF_32_1_n1_no_tie$pp_j_i_hist[[1]]),5)
+      ,logBF_32_1_n1)
+
+
+# Tree tying
+
+cbind(round(exp(logBF_1_n1_tree_tie$pp_i_hist[[1]]),5)
+      ,logBF_1_n1)
+cbind(round(exp(logBF_1_n1_tree_tie$pp_j_i_hist[[1]]),5)
+      ,logBF_1_n1)
+exp(logBF_1_n1_tree_tie$eps_hist[[2]])[c(2,4,8)]
+
+plot(unlist(lapply(logBF_1_n1_tree_tie$eps_hist,function(x){round(exp(x)[c(2),`11`],5)})),type="l")
+plot(unlist(lapply(logBF_1_n1_tree_tie$eps_hist,function(x){round(exp(x)[c(4),`11`],5)})),type="l")
+plot(unlist(lapply(logBF_1_n1_tree_tie$eps_hist,function(x){round(exp(x)[c(8),`11`],5)})),type="l")
+
+all_series_data <- t(sapply(logBF_1_n1_tree_tie$pp_i_hist,function(x){round(exp(x)[,`1`],5)}))
+plot(all_series_data[,1],type="l",col=ifelse(all_series_data[1,1] > 0.5, "red","blue"),ylim = c(min(all_series_data),max(all_series_data)))
+for(i in 2:15){
+  lines(all_series_data[,i],col=ifelse(all_series_data[1,i] > 0.5, "red","blue"))
+}
+
+#32
+# Tree tying
+cbind(round(exp(logBF_32_1_n1_tree_tie$pp_i_hist[[1]]),5)
+      ,logBF_32_1_n1)
+cbind(round(exp(logBF_32_1_n1_tree_tie$pp_j_i_hist[[1]]),5)
+      ,logBF_32_1_n1)
+exp(logBF_32_1_n1_tree_tie$eps_hist[[2]])[c(2,4,8,16)]
+
+all_series_data <- t(sapply(logBF_32_1_n1_tree_tie$pp_i_hist,function(x){round(exp(x)[,`1`],5)}))
+plot(all_series_data[,1],type="l",col=ifelse(all_series_data[1,1] > 0.5, "red","blue"),ylim = c(min(all_series_data),max(all_series_data)))
+for(i in 2:31){
+  lines(all_series_data[,i],col=ifelse(all_series_data[1,i] > 0.5, "red","blue"))
+}
+cbind(round(exp(logBF_32_1_n1_tree_tie$pp_i),5),logBF_32_1_n1)
+
+# Full tying
+cbind(round(exp(logBF_32_1_n1_full_tie$pp_i_hist[[1]]),5)
+      ,logBF_32_1_n1)
+cbind(round(exp(logBF_32_1_n1_full_tie$pp_j_i_hist[[1]]),5)
+      ,logBF_32_1_n1)
+exp(logBF_32_1_n1_full_tie$eps_hist[[2]])[c(2,4,8,16)]
+
+all_series_data <- t(sapply(logBF_32_1_n1_full_tie$pp_i_hist,function(x){round(exp(x)[,`1`],5)}))
+plot(all_series_data[,1],type="l",col=ifelse(all_series_data[1,1] > 0.5, "red","blue"),ylim = c(min(all_series_data),max(all_series_data)))
+for(i in 2:31){
+  lines(all_series_data[,i],col=ifelse(all_series_data[1,i] > 0.5, "red","blue"))
+}
+cbind(round(exp(logBF_32_1_n1_full_tie$pp_i),5),logBF_32_1_n1)
+
+# No tying
+cbind(round(exp(logBF_32_1_n1_no_tie$pp_i_hist[[1]]),5)
+      ,logBF_32_1_n1)
+cbind(round(exp(logBF_32_1_n1_no_tie$pp_j_i_hist[[1]]),5)
+      ,logBF_32_1_n1)
+exp(logBF_32_1_n1_no_tie$eps_hist[[2]])[c(2,4,8,16)]
+
+all_series_data <- t(sapply(logBF_32_1_n1_no_tie$pp_i_hist,function(x){round(exp(x)[,`1`],5)}))
+plot(all_series_data[,1],type="l",col=ifelse(all_series_data[1,1] > 0.5, "red","blue"),ylim = c(min(all_series_data),max(all_series_data)))
+for(i in 2:31){
+  lines(all_series_data[,i],col=ifelse(all_series_data[1,i] > 0.5, "red","blue"))
+}
+cbind(round(exp(logBF_32_1_n1_no_tie$pp_i),5),logBF_32_1_n1)
+
+logBF_32_1_n1_full_tie <- waveQTL_HMT_R(tying_groups = 1, logBFs = logBF_32_1_n1,init_eps_11 = 0.7,init_eps_10 = 0.3)
+logBF_32_1_n1_tree_tie <- waveQTL_HMT_R(tying_groups = c(1,2,4,8,16), logBFs = logBF_32_1_n1,init_eps_11 = 0.7,init_eps_10 = 0.3)
+logBF_32_1_n1_no_tie <- waveQTL_HMT_R(tying_groups = 1:32, logBFs = logBF_32_1_n1,init_eps_11 = 0.7,init_eps_10 = 0.3)
+
+for(i in 1:(length(logBF_1_n1_tree_tie$pp_i_hist)-1)){
+  print(cbind(logBF_1_n1,cbind(round(exp(logBF_1_n1_tree_tie$pp_i_hist[[i]]),5),round(exp(logBF_1_n1_tree_tie$eps_hist[[i+1]]),5))))
+}
+```
+
+# New experiments - 19th July
+
+# Small trees - 32 nodes
+- Plug in empirical (true) values
+  - Need to customise the waveQTL function to input not just default eps, but a default eps data table (as per the one it uses) [DONE]
+- Test for BF range sensitivity {(1,-1), (2,-2), ..., (20,-20)}
+- Test for sensitivity in tree size (32, 64, 128, 256, 512, etc)?
+
+```{r, include = F}
+full_gamma <- readRDS("~/Cpp/WaveQTL_HMT/test/dsQTL/DeepdiveExamples/toy_eg1_1024gamma.RDS")[-1]
+```
+
+Start with 32-sized tree.
+```{r}
+gamma_seq <- copy(full_gamma[1:31])
+p_logbf <- tree_plot(c(0,gamma_seq),yaxis_lims = c(min(gamma_seq),max(gamma_seq)),plot_title = "logBFs")
+
+gamma_trans_full_tie <- get_gamma_transition_props(gamma_seq,tying_grp_vect = c(1,2),n_pheno = 32)
+gamma_trans_tree_tie <- get_gamma_transition_props(gamma_seq,tying_grp_vect = c(1,2,3,5,9,17),n_pheno = 32)
+gamma_trans_no_tie <- get_gamma_transition_props(gamma_seq,tying_grp_vect = c(1:32),n_pheno = 32)
+gamma_trans_full_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_trans_tree_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_trans_no_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+
+gamma_trans_full_tie
+gamma_trans_tree_tie
+gamma_trans_no_tie
+
+```
+### Full tying
+```{r}
+gamma_32_1_n1 <- copy(gamma_seq)
+gamma_32_1_n1[gamma_32_1_n1 == 0] <- -1
+eps_full <- generate_eps_from_empirical(gamma_trans_full_tie,n_pheno = 32,nan_default = 0.5)
+
+full_tie_32_res <- list()
+for(bf_mult in c(1,2,5,10,20)){
+  full_tie_32_res[[as.character(bf_mult)]] <- 
+    waveQTL_HMT_R(tying_groups = 1, logBFs = gamma_32_1_n1*bf_mult,eps_table = log(eps_full), init_pi = 0.99999)
+}
+
+for(i in names(full_tie_32_res)){
+  print(i)
+  print(round(exp(full_tie_32_res[[i]]$pp_i),5))
+  print(cbind(round(exp(full_tie_32_res[[i]]$pp_i$`1`),5),gamma_32_1_n1))
+  print(cbind(gamma_trans_full_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+        ,exp(full_tie_32_res[[i]]$eps[-1][1][,.(`11`,`10`)])))
+}
+```
+
+### Tree tying
+```{r}
+eps_tree <- generate_eps_from_empirical(gamma_trans_tree_tie,n_pheno = 32,nan_default = 0.5)
+
+tree_tie_32_res <- list()
+for(bf_mult in c(1,2,5,10,20)){
+  tree_tie_32_res[[as.character(bf_mult)]] <- 
+    waveQTL_HMT_R(tying_groups = c(1,2,4,8,16), logBFs = gamma_32_1_n1*bf_mult,eps_table = log(eps_tree), init_pi = 0.99999)
+}
+
+for(i in names(tree_tie_32_res)){
+  print(i)
+  print(round(exp(tree_tie_32_res[[i]]$pp_i),5))
+  print(cbind(round(exp(tree_tie_32_res[[i]]$pp_i$`1`),5),gamma_32_1_n1))
+  print(cbind(gamma_trans_tree_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+        ,round(exp(tree_tie_32_res[[i]]$eps[c(2,4,8,16)][,.(`11`,`10`)]),4)))
+}
+```
+
+### No tying (default initial values will do)
+```{r}
+no_tie_32_res <- list()
+for(bf_mult in c(1,2,5,10,20)){
+  no_tie_32_res[[as.character(bf_mult)]] <- 
+    waveQTL_HMT_R(tying_groups = c(1:32), logBFs = gamma_32_1_n1*bf_mult,init_eps_11 = 0.5,init_eps_10 = 0.5, init_pi = 0.99999)
+}
+
+for(i in names(no_tie_32_res)){
+  print(i)
+  print(round(exp(no_tie_32_res[[i]]$pp_i),5))
+  print(cbind(round(exp(no_tie_32_res[[i]]$pp_i$`1`),5),gamma_32_1_n1))
+  print(cbind(gamma_trans_no_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+              ,round(exp(no_tie_32_res[[i]]$eps[-1][,.(`11`,`10`)]),4)))
+}
+```
+
+
+## One strong, one weak.
+Now, let's see a strong and a weak signal (20, -1) for example. Full tying, and tree tying, 32 sized tree.
+
+```{r}
+### Full tying
+gamma_32_strong_weak <- copy(gamma_seq)
+gamma_32_strong_weak[gamma_32_strong_weak == 0] <- -1
+gamma_32_strong_weak[gamma_32_strong_weak == 1] <- 20
+
+strong_weak_full <- waveQTL_HMT_R(tying_groups = 1, logBFs = gamma_32_strong_weak,eps_table = log(eps_full), init_pi = 0.99999)
+round(exp(strong_weak_full$pp_i),5)
+cbind(round(exp(strong_weak_full$pp_i$`1`),5),gamma_32_1_n1)
+cbind(gamma_trans_full_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,round(exp(strong_weak_full$eps[-1][1][,.(`11`,`10`)]),5))
+
+### Tree tying
+strong_weak_tree <- waveQTL_HMT_R(tying_groups = c(1,2,4,8,16), logBFs = gamma_32_strong_weak,eps_table = log(eps_tree), init_pi = 0.99999)
+round(exp(strong_weak_tree$pp_i),5)
+cbind(round(exp(strong_weak_tree$pp_i$`1`),5),gamma_32_1_n1)
+cbind(gamma_trans_tree_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+      ,round(exp(strong_weak_tree$eps[c(2,4,8,16)][,.(`11`,`10`)]),5))
+```
+
+# Bigger trees - 256 nodes
+Repeat the process (full tying, tree tying, no tying)
+```{r}
+gamma_seq <- copy(full_gamma[1:255])
+p_logbf <- tree_plot(c(0,gamma_seq),yaxis_lims = c(min(gamma_seq),max(gamma_seq)),plot_title = "logBFs")
+
+gamma_trans_full_tie <- get_gamma_transition_props(gamma_seq,tying_grp_vect = c(1,2),n_pheno = 256)
+gamma_trans_tree_tie <- get_gamma_transition_props(gamma_seq,tying_grp_vect = c(1,2,3,5,9,17,33,65,129),n_pheno = 256)
+gamma_trans_no_tie <- get_gamma_transition_props(gamma_seq,tying_grp_vect = c(1:256),n_pheno = 256)
+gamma_trans_full_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_trans_tree_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+gamma_trans_no_tie[,c("sim_eps_11","sim_eps_10") :=
+                        .(`11`/(`11`+`01`)
+                          ,`10`/(`10`+`00`))]
+
+gamma_trans_full_tie
+gamma_trans_tree_tie
+gamma_trans_no_tie
+
+```
+### Full tying
+```{r}
+gamma_256_1_n1 <- copy(gamma_seq)
+gamma_256_1_n1[gamma_256_1_n1 == 0] <- -1
+eps_full <- generate_eps_from_empirical(gamma_trans_full_tie,n_pheno = 256,nan_default = 0.5)
+
+full_tie_256_res <- list()
+for(bf_mult in c(1,2,5,10,20)){
+  full_tie_256_res[[as.character(bf_mult)]] <- 
+    waveQTL_HMT_R(tying_groups = 1, logBFs = gamma_256_1_n1*bf_mult,eps_table = log(eps_full), init_pi = 0.99999)
+}
+
+for(i in names(full_tie_256_res)){
+  print(i)
+  # print(round(exp(full_tie_256_res[[i]]$pp_i),5))
+  # print(cbind(round(exp(full_tie_256_res[[i]]$pp_i$`1`),5),gamma_256_1_n1))
+  plot(cbind(round(exp(full_tie_256_res[[i]]$pp_i$`1`),5),gamma_256_1_n1),xlab = "marginal posterior prob of sl", ylab = "logBF")
+  print(cbind(gamma_trans_full_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+        ,exp(full_tie_256_res[[i]]$eps[-1][1][,.(`11`,`10`)])))
+}
+```
+
+### Tree tying
+```{r}
+eps_tree <- generate_eps_from_empirical(gamma_trans_tree_tie,n_pheno = 256,nan_default = 0.5)
+
+tree_tie_256_res <- list()
+for(bf_mult in c(1,2,5,10,20)){
+  tree_tie_256_res[[as.character(bf_mult)]] <- 
+    waveQTL_HMT_R(tying_groups = c(1,2,4,8,16,32,64,128), logBFs = gamma_256_1_n1*bf_mult,eps_table = log(eps_tree), init_pi = 0.99999)
+}
+
+for(i in names(tree_tie_256_res)){
+  print(i)
+  # print(round(exp(tree_tie_256_res[[i]]$pp_i),5))
+  # print(cbind(round(exp(tree_tie_256_res[[i]]$pp_i$`1`),5),gamma_256_1_n1))
+  plot(cbind(round(exp(tree_tie_256_res[[i]]$pp_i$`1`),5),gamma_256_1_n1),xlab = "marginal posterior prob of sl", ylab = "logBF")
+  print(cbind(gamma_trans_tree_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+        ,round(exp(tree_tie_256_res[[i]]$eps[c(2,4,8,16,32,64,128)][,.(`11`,`10`)]),4)))
+}
+```
+
+### No tying (default initial values will do)
+```{r}
+no_tie_256_res <- list()
+for(bf_mult in c(1,2,5,10,20)){
+  no_tie_256_res[[as.character(bf_mult)]] <- 
+    waveQTL_HMT_R(tying_groups = c(1:256), logBFs = gamma_256_1_n1*bf_mult,init_eps_11 = 0.5,init_eps_10 = 0.5, init_pi = 0.99999)
+}
+
+for(i in names(no_tie_256_res)){
+  print(i)
+  # print(round(exp(no_tie_256_res[[i]]$pp_i),5))
+  # print(cbind(round(exp(no_tie_256_res[[i]]$pp_i$`1`),5),gamma_256_1_n1))
+  plot(cbind(round(exp(no_tie_256_res[[i]]$pp_i$`1`),5),gamma_256_1_n1),xlab = "marginal posterior prob of sl", ylab = "logBF")
+  print(cbind(gamma_trans_no_tie[,.(TreeLvl,sim_eps_11,sim_eps_10)]
+              ,round(exp(no_tie_256_res[[i]]$eps[-1][,.(`11`,`10`)]),4)))
+}
+```

@@ -15,14 +15,14 @@ library(data.table)
 # log(10)*as.numeric(a[11,4:1026])
 
 # "chr17.10159002"
-logBFs = c(0.350769
-           ,-2.62E-05
-           ,-0.0155632
-           ,-0.0895906
-           ,0.147018
-           ,-0.0964465
-           ,-0.0330294
-)
+# logBFs = c(0.350769
+#            ,-2.62E-05
+#            ,-0.0155632
+#            ,-0.0895906
+#            ,0.147018
+#            ,-0.0964465
+#            ,-0.0330294
+# )
 # # Omit the scaling coefficient from this script!
 # a <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/all_snp_hmt.fph.logLR.txt"))
 # logBFs = log(10)*as.numeric(a[1,4:1026])
@@ -37,6 +37,26 @@ logBFs = c(0.350769
 #            ,0.20578
 # )
 
+# a <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/sim_07_03_bad.fph.logLR.txt"))
+# logBFs = log(10)*as.numeric(a[1,4:(dim(a)[2])])
+
+# Toy example ----
+a <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/toy_eg1_16wc_noTie_noHmt.fph.logLR.txt"))
+logBFs = log(10)*as.numeric(a[1,4:(dim(a)[2])])
+
+# # LogBF alterations
+logBFs[between(logBFs,-2,3)] <- 0
+logBFs[!between(logBFs,-2,3)] <- 1
+# logBFs[between(logBFs,-2,3)] <- -1
+# logBFs[!between(logBFs,-2,3)] <- 1
+
+# # Tying alterations
+# Tree level tying
+tying_groups = c(1,2,4,8)
+# Individual tying
+# tying_groups = 1:15
+
+# Toy example END ----
 
 groups = floor(log2((1:length(logBFs))))+1
 
@@ -44,15 +64,20 @@ groups = floor(log2((1:length(logBFs))))+1
 # tying_groups = NULL # for no tying
 # tying_groups = c(1,2,4,8,16,32,64,128,256,512)
 
-tying_groups = c(1,2)
+# tying_groups = c(1,2,64)
+# tying_groups = c(1,2)
 # tying_groups = c(1,2,4)
 # Note this should be c(1,2,3,5) in the c++ code to account for
 # scaling coefficient @ 1 always being in its own group.
+
 
 iterations_max = 1000 #1
 conv_tol = 0.0005
 diff <- Inf
 sumlog_use <- T
+init_pi = 0.5
+init_eps_11 = 0.5
+init_eps_10 = 0.5
 
 # Helper functions with trees ---------------------------------------------
 
@@ -128,18 +153,27 @@ b <- data.table(`11` = rep(NA_real_, length(bfs))
 
 # Parameters
 if(!sumlog_use){
-  eps <- data.table(`11` = c(NA, rep(0.5, length(bfs) - 1))
-                    ,`10` = c(NA, rep(0.5, length(bfs) - 1)))
+  eps <- data.table(`11` = c(NA, rep(init_eps_11, length(bfs) - 1))
+                    ,`10` = c(NA, rep(init_eps_10, length(bfs) - 1)))
 
-  pi <- 0.5
+  pi <- init_pi
 }else{
   #### LOG ADD ####
-  eps <- data.table(`11` = c(NA, rep(log(0.5), length(bfs) - 1))
-                    ,`01` = c(NA, rep(log(0.5), length(bfs) - 1))
-                    ,`10` = c(NA, rep(log(0.5), length(bfs) - 1))
-                    ,`00` = c(NA, rep(log(0.5), length(bfs) - 1)))
-  pi <- log(0.5)
-  pi_1_minus <- log(0.5)
+  # eps <- data.table(`11` = c(NA, rep(log(init_eps_11), length(bfs) - 1))
+  #                   ,`01` = c(NA, rep(log(1-init_eps_11), length(bfs) - 1))
+  #                   ,`10` = c(NA, rep(log(init_eps_10), length(bfs) - 1))
+  #                   ,`00` = c(NA, rep(log(1-init_eps_10), length(bfs) - 1)))
+  eps <- data.table(`11` = c(NA, rep(log(0.5),2), rep(log(0.1), 4), rep(log(0.75), 8))
+                    ,`01` = c(NA, rep(log(0.5),2), rep(log(0.9), 4), rep(log(0.25), 8))
+                    ,`10` = c(NA, rep(log(0.5),2), rep(log(0.9), 4), rep(log(0.5), 8))
+                    ,`00` = c(NA, rep(log(0.5),2), rep(log(0.1), 4), rep(log(0.5), 8)))
+  # With bottom level tarnsition to 0
+  # eps <- data.table(`11` = c(NA, rep(log(init_eps_11), 62), rep(log(0.000000001),64))
+  #                   ,`01` = c(NA, rep(log(1-init_eps_11), 62), rep(log(1-0.000000001),64))
+  #                   ,`10` = c(NA, rep(log(init_eps_10), 62), rep(log(0.000000001),64))
+  #                   ,`00` = c(NA, rep(log(1-init_eps_10), 62), rep(log(1-0.000000001),64)))
+  pi <- log(init_pi)
+  pi_1_minus <- log(init_pi)
   ## END LOG ADD ##
 }
 
@@ -300,7 +334,7 @@ if(!sumlog_use){
   apply(exp(pp_j_i),1,sum)
 
   new_logL <- sumlog_waveQTL_gen(b_i[1,`1`] + a_i[1,`1`]
-                                 , b_i[1,`0`] +a_i[1,`0`])
+                                 , b_i[1,`0`] + a_i[1,`0`])
   # cat(paste0("New LogL: ", new_logL,"\n"))
   ## END LOG ADD ##
 }
@@ -621,7 +655,12 @@ while(n < iterations_max && abs(diff) > conv_tol){
   diff <- new_logL - old_logL
 
   n <- n + 1
-
+print(exp(eps[tying_groups,]))
+print(exp(pp_i))
+print(cbind(round(exp(pp_i$`1`),5),logBFs))
 }
 
 cat(paste0("New LogL: ", new_logL,"\n"))
+round(exp(eps[tying_groups,]),5)
+round(exp(pp_i),5)
+print(cbind(round(exp(pp_i$`1`),5),logBFs))
