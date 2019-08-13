@@ -26,8 +26,8 @@ library(data.table)
 #            ,-0.0330294
 # )
 # # Omit the scaling coefficient from this script!
-# a <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/all_snp_hmt.fph.logLR.txt"))
-# logBFs = log(10)*as.numeric(a[1,4:1026])
+a <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/test_runs/all_snp_hmt.fph.logLR.txt"))
+logBFs = log(10)*as.numeric(a[1,4:1026])
 
 # # "chr17.10161485"
 # logBFs = c(-0.0134792
@@ -39,8 +39,8 @@ library(data.table)
 #            ,0.20578
 # )
 
-a <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/sim_07_03_bad.fph.logLR.txt"))
-logBFs = log(10)*as.numeric(a[1,4:(dim(a)[2])])
+# a <- as.matrix(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/sim_07_03_bad.fph.logLR.txt"))
+# logBFs = log(10)*as.numeric(a[1,4:(dim(a)[2])])
 
 groups = floor(log2((1:length(logBFs))))+1
 
