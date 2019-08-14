@@ -875,7 +875,7 @@ alt_50_hmt <- with_hmt_effect_size(data_path = alt_50_data_path
 Two final comparisons, by plot:
 
 Null case:
-```{r, include = F}
+```{r, echo = F}
 ### Null
 
 # Determine graph boundaries
@@ -955,7 +955,7 @@ box()
 ```
 
 Alt case:
-```{r, include = F}
+```{r, echo = F}
 ### Alt
 
 # Determine graph boundaries
@@ -1034,8 +1034,8 @@ points(xval, beta_r, col = "skyblue", type="l")
 box()
 
 ### Zoom in on region of interest
-min(effect_50)
-max(effect_50)
+# min(effect_50)
+# max(effect_50)
 # zoom in on 400-500
 region_interest <- c(400,500)
 
