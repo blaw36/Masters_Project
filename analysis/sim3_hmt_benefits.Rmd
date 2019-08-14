@@ -1,0 +1,1100 @@
+---
+title: "sim3_hmt_benefits"
+author: "Brendan Law"
+date: "14/08/2019"
+header-includes:
+   - \usepackage{bm}
+   - \usepackage{amsmath}
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+input_data_path = "~/Cpp/WaveQTL_HMT/data/dsQTL/"
+data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/" # change this when you port it all over to the Masters Git repo
+dataset <- "tree_tie_noQT"
+waveqtl_data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/WaveQTL/"
+waveqtl_dataset <- "test.no.QT"
+geno_select <- 11 # the one used in the demo
+
+# from 'code/sim2_script.R'
+get_parent_indices <- function(indx, tree_root_indx = 1){
+  return_indices <- indx
+  return_indices <- (return_indices - tree_root_indx + 1) %/% 2
+  
+  # root of tree doesn't return any index
+  return_indices[which(indx == tree_root_indx)] <- NA_integer_
+  return(return_indices)
+}
+
+tree_plot <- function(data, yaxis_lims = c(0,1),plot_title){
+  
+  # Interleaves vectors with two bookend 0s, and a 0 between each current element
+  # (for spacing of elements like a tree in a plot)
+  vector_centeriser <- function(vect){
+    in_between_zeros <- length(vect) - 1
+    
+    res_vect <- c(0,vect[1],0)
+    if(in_between_zeros > 0){
+      for(i in 1:in_between_zeros){
+        res_vect <- c(res_vect,vect[i + 1],0)
+      }
+    }
+    return(res_vect)
+  }
+  
+  num_lvls <- floor(log2(length(data))) + 1
+  par(mfrow = c(num_lvls,1),mar = c(1,1,1,1))
+  plot(vector_centeriser(data[1]),type = "h",ylab = "",axes = F,ylim=yaxis_lims,main=plot_title) # scaling coeff
+  plot(vector_centeriser(data[2]),type = "h",ylab = "",axes = F,ylim=yaxis_lims) # head of tree
+  for(i in 1:(num_lvls-2)){
+    plot(vector_centeriser(data[((2^i)+1):(2^(i+1))]),type = "h",ylab = "",axes = F,ylim=yaxis_lims)
+  }
+  p <- recordPlot()
+  return(p)
+}
+```
+## WaveQTL_HMT vs WaveQTL
+The idea is that the benefits will come from being able to detect signals which are not necessarily strong, and not necessarily broad, but relatively localised. These sorts of signals won't be captured by WaveQTL as they may be 'split' or 'spread' across a particular scale, and not propagate strongly enough to lower scales. (???)
+
+Perhaps see Shim and Stephens figures for some examples. Perhaps some of that matter around the middle of Figure 4 may be able to be better captured using a HMT prior. There is potentially some difference between groups here, but very narrow, inconsistent, and seemingly very spiky signal.
+
+### Read in phenotype (sequencing count) data
+Here is just a sample codebase. We're working off the data in the WaveQTL git repo -- DNase-seq data at chr17.10160989.10162012
+and genotypes at 24 SNPs in 2kb cis-candidate region on 70 individuals.
+```{r}
+pheno.dat = as.matrix(read.table(paste0(input_data_path, "chr17.10160989.10162012.pheno.dat")))
+dim(pheno.dat)
+#[1]   70 1024
+
+### Is this useful at all? For later on
+## read library read depth
+library.read.depth = scan(paste0(input_data_path, "library.read.depth.dat"))
+length(library.read.depth)
+
+## read Covariates
+Covariates = as.matrix(read.table(paste0(input_data_path, "PC4.dat")))
+
+
+```
+
+Now, summarise the counts, and average:
+```{r}
+# Count summation
+seq_sum <- apply(pheno.dat,MARGIN = 2,sum)
+# Count average
+seq_avg <- apply(pheno.dat,MARGIN = 2,mean)
+```
+These are very small counts over 70 individuals (like 0 - 25).
+
+### Simulate effect sizes and effect locations.
+What we now need is, for each base, $b = 1,\dots,1024$, the estimated (data-space) effect size, as well as the locations where there are effects. A lot of this work was done in 'sim1_waveqtl_hmt_gamma_phi.Rmd'. So what i'll do (for now) is just drop the code in to get an example output for the 11th SNP/genotype, as was done in that markdown.
+
+_To do:_
+
+- Extend out the effect size simulation script, so can run on all SNPs
+- So can estimate effect sizes and locations for all SNPs in our sample dataset
+
+Running the following code chunk should do everything required to get the simulations.
+```{r sim1_code_copy}
+a_1 <- as.matrix(read.table(paste0(data_path,dataset,".fph.pp.txt")))[geno_select,]
+b_11 <- as.matrix(read.table(paste0(data_path,dataset,".fph.pp_joint_11.txt")))[geno_select,]
+b_10 <- as.matrix(read.table(paste0(data_path,dataset,".fph.pp_joint_10.txt")))[geno_select,]
+# dim(a_1);dim(b_11);dim(b_10);
+# Just take the 1023 numeric values (excl first one as it's the scaling coefficient), from cols 3:1025. Also, we exp() our values as our software returned everything in logs.
+# Keep in mind that the first value of b_11, b_10 is just a placeholder - as the top element of the tree has no parent.
+a_1 <- exp(as.numeric(a_1[3:1025]))
+b_11 <- exp(as.numeric(b_11[3:1025]))
+b_10 <- exp(as.numeric(b_10[3:1025]))
+
+waveqtl_phi <- as.matrix(read.table(paste0(waveqtl_data_path,waveqtl_dataset,".fph.phi.txt")))[geno_select,]
+waveqtl_phi <- as.numeric(waveqtl_phi[2])
+
+# Now, let's simulate a sequence of gammas:
+gamma_seq <- numeric()
+post_prob_seq <- numeric()
+set.seed(10)
+rand_seq <- runif(1024)
+
+# Scaling coefficient
+gamma_seq[1] <- ifelse(rand_seq[1] < waveqtl_phi, 1, 0)
+post_prob_seq[1] <- waveqtl_phi
+
+# Head of tree
+gamma_seq[2] <- ifelse(rand_seq[2] < a_1[1], 1, 0)
+post_prob_seq[2] <- a_1[1]
+
+# i is the index of tree, where i = 1 is the head of the tree
+# Using this notation because that's how 'get_parent_indices' has been written
+for(i in 2:1023){
+  indx <- i
+  parent_indx <- get_parent_indices(indx)
+  parent_gamma <- gamma_seq[parent_indx + 1]
+  
+  if(parent_gamma == 1){
+    numerator <- b_11[indx]
+    denominator <- a_1[parent_indx]
+  }else if(parent_gamma == 0){
+    numerator <- b_10[indx]
+    denominator <- 1 - a_1[parent_indx]
+  }
+  
+  post_prob <- numerator/denominator
+  post_prob_seq[i+1] <- post_prob
+  
+  gamma_seq[i+1] <- ifelse(rand_seq[i+1] < post_prob, 1, 0)
+  
+}
+
+# Load mean, var outputs from HMT
+mean1 <- as.matrix(read.table(paste0(data_path,dataset,".fph.mean1.txt")))[geno_select,]
+var1 <- as.matrix(read.table(paste0(data_path,dataset,".fph.var1.txt")))[geno_select,]
+
+# Load mean, var outputs from WaveQTL
+mean1_waveqtl <- as.matrix(read.table(paste0(waveqtl_data_path,waveqtl_dataset,".fph.mean1.txt")))[geno_select,2]
+var1_waveqtl <- as.matrix(read.table(paste0(waveqtl_data_path,waveqtl_dataset,".fph.var1.txt")))[geno_select,2]
+
+# Append top coeff to the 1023 numeric values (excl first one as it's the scaling coefficient), from cols 3:1025 from HMT
+mean1 <- c(as.numeric(mean1_waveqtl), as.numeric(mean1[3:1025]))
+var1 <- c(as.numeric(var1_waveqtl), as.numeric(var1[3:1025]))
+
+## back out a, b (from t-dist) parameters:
+t_nu <- 70
+t_a <- mean1
+t_b <- var1*(t_nu-2)/t_nu
+num_pheno <- length(mean1)
+
+t_sample <- stats::rt(n = num_pheno, df = t_nu)
+t_sample_3p <- t_a+(sqrt(t_b)*t_sample)
+
+## Simulate beta, being either 3-param t-dist, or 0
+beta_seq <- rep(0,num_pheno)
+gamma_1_indx <- which(gamma_seq == 1) 
+beta_seq[gamma_1_indx] <- t_sample_3p[gamma_1_indx]
+
+## Inverse wavelet transform for data space effects
+Wmat_1024 = read.table("~/Cpp/WaveQTL_HMT/data/DWT/Wmat_1024",as.is = TRUE)
+
+### '-ve' is taken to represent biological definition of effects (akin to a base level)
+beta_dataS = as.vector(-matrix(data=beta_seq, nr = 1, nc = 1024)%*%as.matrix(Wmat_1024))
+# plot(beta_dataS, main = "Simulation 1", type = "l")
+# abline(h = 0, col = "red")
+
+### Now, run simulations
+num_samples <- 1000
+set.seed(10)
+beta_data_samples <- matrix(nrow = num_samples,ncol = num_pheno)
+
+for(j in 1:num_samples){
+  # Generate gamma
+  gamma_seq <- numeric()
+  rand_seq <- runif(num_pheno)
+  
+  # Scaling coefficient
+  gamma_seq[1] <- ifelse(rand_seq[1] < waveqtl_phi, 1, 0)
+  
+  # Head of tree
+  gamma_seq[2] <- ifelse(rand_seq[2] < a_1[1], 1, 0)
+  
+  # i is the index of tree, where i = 1 is the head of the tree
+  # Using this notation because that's how 'get_parent_indices' has been written
+  for(i in 2:1023){
+    indx <- i
+    parent_indx <- get_parent_indices(indx)
+    parent_gamma <- gamma_seq[parent_indx + 1]
+    
+    if(parent_gamma == 1){
+      numerator <- b_11[indx]
+      denominator <- a_1[parent_indx]
+    }else if(parent_gamma == 0){
+      numerator <- b_10[indx]
+      denominator <- 1 - a_1[parent_indx]
+    }
+    
+    post_prob <- numerator/denominator
+    
+    gamma_seq[i+1] <- ifelse(rand_seq[i+1] < post_prob, 1, 0)
+  }
+  
+  # Generate beta
+  t_sample <- stats::rt(n = num_pheno, df = t_nu)
+  t_sample_3p <- t_a+(sqrt(t_b)*t_sample)
+  
+  ## Simulate beta, being either 3-param t-dist, or 0
+  beta_seq <- rep(0,num_pheno)
+  gamma_1_indx <- which(gamma_seq == 1) 
+  beta_seq[gamma_1_indx] <- t_sample_3p[gamma_1_indx]
+  
+  # Transform into data space
+  beta_data_samples[j,] = as.vector(-matrix(data=beta_seq, nr = 1, nc = num_pheno)%*%as.matrix(Wmat_1024))
+}
+
+sample_mean <- apply(beta_data_samples,MARGIN = 2,mean)
+sample_sd <- apply(beta_data_samples,MARGIN = 2,sd)
+
+```
+
+Just to verify that we get something similar, here are some plots:
+
+Plots in WaveQTL style:
+```{r sample_plots_waveqtl}
+ymin_beta = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+ymax_beta = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+
+beta_l = sample_mean - 3*sample_sd
+beta_r = sample_mean + 3*sample_sd
+
+wh_l = which(beta_l > 0)
+wh_r = which(beta_r < 0)
+high_wh = sort(unique(union(wh_l, wh_r)))
+
+xval = 1:1024
+col_posi = xval[high_wh]
+
+# pdf("../test/dsQTL/effectSize.pdf", width = 8, height=3)
+par(mar = c(2,4,4,2))
+plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=c(1, 1024),main ="Posterior mean +/-3 posterior standard deviation", axes=FALSE)
+axis(2)
+if(length(col_posi) > 0){
+  for(j in 1:length(col_posi)){
+    polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
+  }
+}
+
+abline(h = 0, col = "red")
+points(xval, sample_mean, col = "blue", type="l")
+points(xval, beta_l, col = "skyblue", type="l")
+points(xval, beta_r, col = "skyblue", type="l")
+box()
+```
+Looks about right. Most importantly, we have mean effect sizes, and the locations where we have effects:
+```{r}
+# Base-level effect sizes:
+length(sample_mean)
+# Locations of effects:
+length(col_posi)
+```
+
+### Simulate realistic effect size
+Does it matter if the magnitude of the effect is positive, or negative? Need to find a way to keep the p's between 0 and 1.
+
+Generate effect sizes, and corresponding probabilities
+```{r}
+p1_vector <- 2/70 * (1/(1 + sample_mean))
+p2_vector <- 2/70 * (sample_mean/(1 + sample_mean))
+
+par(mar = c(2,4,4,2))
+plot(1,1,type="n"
+     , xlab = "position"
+     , ylab = "p parameter"
+     , ylim=c(min(min(p1_vector),min(p2_vector)) * 0.5, max(max(p1_vector),max(p2_vector)) * 1.5)
+     , xlim=c(1, 1024)
+     , main ="Simulation - p1 (null) vs p2 (alt) parameters"
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+
+abline(h = 0, col = "red")
+lines(p1_vector, col = "blue")
+lines(p2_vector, col = "blue")
+box()
+
+plot(p1_vector, type = "l")
+plot(p2_vector, type = "l")
+```
+
+For now, the effect size is a bit weird (has positives and negatives), so just use this for now as a toy example:
+```{r}
+new_sample_mean <- abs(sample_mean*10e10)
+p1_vector <- 2/70 * (1/(1 + abs(new_sample_mean)))
+p2_vector <- 2/70 * (abs(new_sample_mean)/(1 + abs(new_sample_mean)))
+
+par(mar = c(2,4,4,2))
+plot(1,1,type="n"
+     , xlab = "position"
+     , ylab = "p parameter"
+     , ylim=c(min(min(p1_vector),min(p2_vector)) * 0.5, max(max(p1_vector),max(p2_vector)) * 1.5)
+     , xlim=c(1, 1024)
+     , main ="Simulation - p1 (null) vs p2 (alt) parameters"
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+
+abline(h = 0, col = "red")
+lines(p1_vector, col = "blue")
+lines(p2_vector, col = "blue")
+box()
+```
+
+Issues to deal with:
+
+- effect sizes changing signs (some positive, some negative)
+- the really small magnitude of the effect sizes (ie. 10e-13)
+- Sum of counts at some bases are fractional -- how to deal with this? Do we just round?
+
+Set up beta-binomial distribution:
+```{r}
+library(rmutil) # for beta-binomial distirbution
+
+over_disp_mult <- 70
+p1_alpha <- over_disp_mult*p1_vector
+p1_beta <- over_disp_mult - p1_alpha
+p2_alpha <- over_disp_mult*p2_vector
+p2_beta <- over_disp_mult - p2_alpha
+
+# Check to see that these alphas and betas generate the desired probabilities
+all.equal(p1_vector, p1_alpha/(p1_alpha + p1_beta))
+all.equal(p2_vector, p2_alpha/(p2_alpha + p2_beta))
+```
+
+### Simulate realistic effect lengths
+For example, let's do effect length 5, 10, and 50.
+
+I want to generate the effects such that they affect consecutive bases (for now), so i'll randomly pick out a base from the effect area, and create an effect which is centred around that base. 
+
+__There's a slight issue:__ this might mean that the effect 'windows' we generate go outside the actual effect area of the actual data. I won't worry about this for now, as I just want some comparison for performance of algorithms at different effect lengths. Ideas to work around this:
+
+- Restrict where I can pick the start from, to make sure the windows are contained within the actual effect windows
+- This would require me to 'cluster' my effects together, so i have well defined start and end points of each effect window
+
+I've currently got a lucky seed below which gets me a 50 length window, but this won't always be the case. I suspect that when I do sims, i'll opt out of this requirement, and figure it out later.
+```{r}
+set.seed(6) # Hey look, a lucky seed which gets me a 50 sized window which works!
+# Binary dataset - 1/0 for effect/no effect
+effect_ind <- rep(0,1024)
+effect_ind[col_posi] <- 1
+
+# Length 5
+effect_5_start <- sample(col_posi,size = 1)
+# effect_5 <- (effect_5_start-2):(effect_5_start+2)
+effect_5 <- intersect((effect_5_start-2):(effect_5_start+2),col_posi)
+
+# Length 10
+effect_10_start <- sample(col_posi,size = 1)
+# effect_10 <- (effect_10_start-4):(effect_10_start+5)
+effect_10 <- intersect((effect_10_start-4):(effect_10_start+5),col_posi)
+
+# Length 50
+effect_50_start <- sample(col_posi,size = 1)
+# effect_50 <- (effect_50_start-24):(effect_50_start+25)
+effect_50 <- intersect((effect_50_start-24):(effect_50_start+25),col_posi)
+```
+
+### Combine the two to create simulations
+Have a 1024 length vector where we know:
+
+- Which bases we want an effect for
+- The total sequence counts (# of trials) at each base
+- The probability parameter which governs the sequencing count at each base, to mimic the 'effect size'
+
+Then, we need to process the data, run it through WaveQTL and WaveQTL_HMT, and analyse the results -- ie replicate the effect size plots. Along the way, we should also visualise the null and alternative datasets we've generated.
+
+Just a note about the 'rmutil::rbetabinom' function -- the parameterisation is different.
+
+Sometimes, we denote:
+\begin{align*}
+X &\sim Beta-Binomial(n,\alpha,\beta) \\
+\Rightarrow P(X = k) &= \binom{n}{k}\frac{B(k + \alpha, n - k + \beta)}{B(\alpha, \beta)}
+\end{align*}
+where $B(a,b) = \frac{\Gamma(a)\Gamma(b)}{\Gamma(a+b)}$ is the beta function. An alternative parameterisation, as per rbetabinom, is to use two parameters, $m$, a probability (corresponding to the $p = \frac{\alpha}{\alpha + \beta}$ of the original), and $s$, an overdispersion parameter. In this representation, we have:
+\begin{align*}
+X &\sim Beta-Binomial(n,m,s) \\
+\Rightarrow P(X = k) &= \binom{n}{k}\frac{B(k + sm, n - k + s(1-m))}{B(sm, s(1-m))}
+\end{align*}
+This corresponds to:
+\begin{align*}
+\alpha &= sm \\
+\beta &= s(1-m) \\
+\therefore m &= \frac{\alpha}{\alpha + \beta} \\
+\therefore s &= \alpha + \beta
+\end{align*}
+
+We need to generate null and alternative samples. We want to create 70 x 1024 matrices -- 70 individuals, 1024 bases. We fill out each column of our matrix by taking 70 samples from a beta-binomial to populate each column. Our beta binomial does the 'total count at base b' number of trials, but the parameters have the 'divide by 70' inbuilt, so the proportion of any one individual having a count is very low. The mean count for each column corresponds to around sum of counts divide by 70, which is the desired mean (sample mean of counts).
+
+Length 50 sample -- generate both null and alt.
+```{r}
+set.seed(6)
+# Null
+# Alternatively, do column-wise
+null_data_50 <- matrix(nrow = 70,ncol = 1024)
+for(i in 1:1024){
+  null_data_50[,i] <- rmutil::rbetabinom(n = 70, size = ceiling(seq_sum[i]), m = (p1_alpha/(p1_alpha+p1_beta))[i]
+                                         , s = (p1_alpha+p1_beta)[i])
+}
+
+# Alt
+# Params should be p1, except where there is an effect.
+effect50_alpha <- p1_alpha
+effect50_alpha[effect_50] <- p2_alpha[effect_50]
+effect50_beta <- p1_beta
+effect50_beta[effect_50] <- p2_beta[effect_50]
+
+alt_data_50 <- matrix(nrow = 70,ncol = 1024)
+for(i in 1:1024){
+  alt_data_50[,i] <- rmutil::rbetabinom(n = 70, size = ceiling(seq_sum[i])
+                                        , m = (effect50_alpha/(effect50_alpha+effect50_beta))[i]
+                                        , s = (effect50_alpha+effect50_beta)[i])
+}
+```
+
+Plot the average of the two together?
+```{r}
+null_data_50_avg <- apply(null_data_50,2,sum)
+alt_data_50_avg <- apply(alt_data_50,2,sum)
+
+plt_rng_y <- c(min(min(null_data_50_avg),min(alt_data_50_avg)) * 0.5, max(max(null_data_50_avg),max(alt_data_50_avg)) * 1.5)
+
+par(mfrow = c(3,1),mar = c(2,4,4,1))
+plot(1,1,type="n"
+     , xlab = "position"
+     , ylab = "count"
+     , ylim=plt_rng_y
+     , xlim=c(1, 1024)
+     , main ="Simulation - null vs alt datasets - effect of length 50"
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+if(length(effect_50) > 0){
+  for(j in 1:length(effect_50)){
+    polygon(c(effect_50[j]-0.5, effect_50[j]-0.5, effect_50[j]+0.5, effect_50[j]+0.5), c(plt_rng_y[1], plt_rng_y[2], plt_rng_y[1], plt_rng_y[2]), col ="pink", border = NA)
+  }
+}
+lines(null_data_50_avg, col = "blue", lty = "dashed")
+lines(alt_data_50_avg, col = "red", lty = "dashed")
+box()
+
+plot(1,1,type="n"
+     , xlab = "position"
+     , ylab = "count"
+     , ylim=plt_rng_y
+     , xlim=c(1, 1024)
+     , main ="Simulation - null dataset - effect of length 50"
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+lines(null_data_50_avg, col = "blue", lty = "dashed")
+box()
+
+plot(1,1,type="n"
+     , xlab = "position"
+     , ylab = "count"
+     , ylim=plt_rng_y
+     , xlim=c(1, 1024)
+     , main ="Simulation - alt dataset - effect of length 50"
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+if(length(effect_50) > 0){
+  for(j in 1:length(effect_50)){
+    polygon(c(effect_50[j]-0.5, effect_50[j]-0.5, effect_50[j]+0.5, effect_50[j]+0.5), c(plt_rng_y[1], plt_rng_y[2], plt_rng_y[1], plt_rng_y[2]), col ="pink", border = NA)
+  }
+}
+lines(alt_data_50_avg, col = "red", lty = "dashed")
+box()
+
+```
+
+### Run a sample analyses
+- Clean both Null and Alt data through WC transform R thingy
+  + Do we do all the usual bells and whistles (PCA regression, quantile transforms?)
+  + What tying level?
+  + Same set of covariates, right?
+- Null data through WaveQTL and WaveQTL_HMT
+- Alt data through WaveQTL and WaveQTL_HMT
+
+The cleaning functionality, functionalised up. See 'code/WaveQTL/R/WaveQTL_preprocess_example.R' for details of where all this came from.
+```{r}
+# pheno.dat - the simulated 70 x 1024 matrix from above
+# output.path - where you want all the data to be saved
+# meanR.thresh - low WC filtering threshold (default is 2)
+wavelet_cleaning_wrapper_function <- function(pheno.dat, output.path, meanR.thresh = 2, library.read.depth, Covariates){
+  ## read functions for WaveQTL preprocess
+  source("../code/WaveQTL/R/WaveQTL_preprocess_funcs.R")
+  
+  # data.path = "../code/WaveQTL/data/dsQTL/"
+  
+  ## set seed
+  set.seed(1)
+  
+  # ## read library read depth
+  # library.read.depth = scan(paste0(data.path, "library.read.depth.dat"))
+  # 
+  # ## read Covariates
+  # Covariates = as.matrix(read.table(paste0(data.path, "PC4.dat")))
+  
+  ## preprocess functional phenotype
+  res = WaveQTL_preprocess(Data = pheno.dat, library.read.depth=library.read.depth , Covariates = Covariates, meanR.thresh = meanR.thresh)
+  
+  ## save output as files
+  cat(res$filtered.WCs, file = paste0(output.path, "use.txt"))
+  write.table(res$WCs, file= paste0(output.path, "WCs.txt"), row.names=FALSE, col.names = FALSE, quote=FALSE)
+  
+  ## produce group information and save it as a file
+  group.info = generate_Group(dim(res$WCs)[2])
+  cat(group.info, file = paste0(output.path, "group.txt"))
+  
+  ## for effect size estimation, we need WCs without QT.
+  set.seed(1)
+  res.noQT = WaveQTL_preprocess(Data = pheno.dat, library.read.depth=library.read.depth , Covariates = Covariates, meanR.thresh = meanR.thresh, no.QT = TRUE)
+  
+  write.table(res.noQT$WCs, file= paste0(output.path, "WCs.no.QT.txt"), row.names=FALSE, col.names = FALSE, quote=FALSE)
+}
+```
+
+Cleaning the Null dataset:
+```{r}
+wavelet_cleaning_wrapper_function(pheno.dat = null_data_50
+                                  ,output.path = "~/Cpp/WaveQTL_HMT/test/dsQTL/sims/length_50/null_data/"
+                                  ,library.read.depth = library.read.depth
+                                  ,Covariates = Covariates)
+```
+
+Cleaning the Alt dataset:
+```{r}
+wavelet_cleaning_wrapper_function(pheno.dat = alt_data_50
+                                  ,output.path = "~/Cpp/WaveQTL_HMT/test/dsQTL/sims/length_50/alt_data/"
+                                  ,library.read.depth = library.read.depth
+                                  ,Covariates = Covariates)
+```
+
+_SHOULD WE ONLY NEED THE NON-QT version for effect sizes? The QT version is for likelihood/association testing - is this something we're going to be interested in also? Or just ability to identify effects at certain locations?_
+
+#### Run null dataset
+Run through WaveQTL:
+```{r, include = FALSE}
+setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/test_chr17.10161485.cis.geno -p sims/length_50/null_data/WCs.no.QT.txt -u sims/length_50/null_data/use.txt -o sim3_noQT_null -f 1024 -fph 1"
+       ,show.output.on.console = F)
+setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
+```
+Run through WaveQTL_HMT:
+```{r, include = FALSE}
+setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/test_chr17.10161485.cis.geno -p sims/length_50/null_data/WCs.no.QT.txt -u sims/length_50/null_data/use.txt -o sim3_noQT_null_HMT -f 1024 -hmt 1"
+       ,show.output.on.console = F)
+setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
+```
+
+#### Run alt dataset
+Run through WaveQTL:
+```{r, include = FALSE}
+setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/test_chr17.10161485.cis.geno -p sims/length_50/alt_data/WCs.no.QT.txt -u sims/length_50/alt_data/use.txt -o sim3_noQT_alt -f 1024 -fph 1"
+       ,show.output.on.console = F)
+setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
+```
+Run through WaveQTL_HMT:
+```{r, include = FALSE}
+setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/test_chr17.10161485.cis.geno -p sims/length_50/alt_data/WCs.no.QT.txt -u sims/length_50/alt_data/use.txt -o sim3_noQT_alt_HMT -f 1024 -hmt 1"
+       ,show.output.on.console = F)
+setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
+```
+
+### Analysis - no HMT
+Quick effect size analysis and plotting. No_HMT is easy. Read in some more pre-requisite data (like the inverse wavelet transform):
+```{r}
+## Read DWT matrix 
+Wmat_1024 = read.table("~/Cpp/WaveQTL/data/DWT/Wmat_1024",as.is = TRUE)
+W2mat_1024 = Wmat_1024*Wmat_1024
+
+# No_HMT effect size
+no_hmt_effect_size <- function(data_path, data_prefix, Wmat_1024, W2mat_1024, sel_geno_IX = 1){
+  
+  ## Read posterior mean in Wavelet space and transform them back to data space 
+  beta_mean = as.numeric(read.table(paste0(data_path,data_prefix,".fph.mean.txt"))[sel_geno_IX,2:1025])
+  beta_dataS = as.vector(-matrix(data=beta_mean, nr = 1, nc = 1024)%*%as.matrix(Wmat_1024))
+  
+  ## Read posterior variance in Wavelet space, transform them back to data space, and get standard deviation
+  beta_var = as.numeric(read.table(paste0(data_path, data_prefix, ".fph.var.txt"))[sel_geno_IX,2:1025])
+  beta_var_dataS = as.vector(matrix(data=beta_var, nr = 1, nc = 1024)%*%as.matrix(W2mat_1024))
+  beta_sd_dataS = sqrt(beta_var_dataS)
+  
+  ## Visualize estimated effect size in the data space
+  ymin_beta = min(beta_dataS - 3*beta_sd_dataS) - abs(min(beta_dataS - 3*beta_sd_dataS))*0.0000000001
+  ymax_beta = max(beta_dataS + 3*beta_sd_dataS) + abs(max(beta_dataS + 3*beta_sd_dataS))*0.0000000001
+  
+  beta_l = beta_dataS - 3*beta_sd_dataS
+  beta_r = beta_dataS + 3*beta_sd_dataS
+  
+  wh_l = which(beta_l > 0)
+  wh_r = which(beta_r < 0)
+  high_wh = sort(unique(union(wh_l, wh_r)))
+  
+  xval = 1:1024
+  col_posi = xval[high_wh]
+  
+  # pdf("../test/dsQTL/effectSize.pdf", width = 8, height=3)
+  par(mar = c(2,4,4,2))
+  plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=c(1, 1024),main ="Posterior mean +/-3 posterior standard deviation", axes=FALSE)
+  axis(2)
+  if(length(col_posi) > 0){
+    for(j in 1:length(col_posi)){
+      polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
+    }
+  }
+  
+  abline(h = 0, col = "red")
+  points(xval, beta_dataS, col = "blue", type="l")
+  points(xval, beta_l, col = "skyblue", type="l")
+  points(xval, beta_r, col = "skyblue", type="l")
+  box()
+  
+  # dev.off()
+  p <- recordPlot()
+  return(list(
+    beta_dataS = beta_dataS
+    ,beta_sd_dataS = beta_sd_dataS
+    ,p = p
+  ))
+}
+
+```
+
+```{r}
+## We'll look at effect size of 11th SNP in genotype file
+sel_geno_IX = 11
+
+##### Null
+null_50_data_path = "~/Cpp/WaveQTL_HMT/test/dsQTL/output/"
+null_50_data_prefix = "sim3_noQT_null"
+null_50 <- no_hmt_effect_size(data_path = null_50_data_path
+                              ,data_prefix = null_50_data_prefix
+                              ,Wmat_1024 = Wmat_1024
+                              ,W2mat_1024 = W2mat_1024
+                              ,sel_geno_IX = 1)
+
+##### Alt
+alt_50_data_path = "~/Cpp/WaveQTL_HMT/test/dsQTL/output/"
+alt_50_data_prefix = "sim3_noQT_alt"
+alt_50 <- no_hmt_effect_size(data_path = alt_50_data_path
+                             ,data_prefix = alt_50_data_prefix
+                             ,Wmat_1024 = Wmat_1024
+                             ,W2mat_1024 = W2mat_1024
+                             ,sel_geno_IX = 1)
+```
+
+### Analysis - with HMT
+Functionalise it up
+```{r}
+# waveqtl_dataset is the prefix of the outputs from WaveQTL analysis (no HMT) on the same thing - needed for the scaling coef.
+with_hmt_effect_size <- function(data_path, dataset, waveqtl_dataset, Wmat_1024, geno_select = 1){
+  
+  a_1 <- as.matrix(read.table(paste0(data_path,dataset,".fph.pp.txt")))[geno_select,]
+  b_11 <- as.matrix(read.table(paste0(data_path,dataset,".fph.pp_joint_11.txt")))[geno_select,]
+  b_10 <- as.matrix(read.table(paste0(data_path,dataset,".fph.pp_joint_10.txt")))[geno_select,]
+  # dim(a_1);dim(b_11);dim(b_10);
+  # Just take the 1023 numeric values (excl first one as it's the scaling coefficient), from cols 3:1025. Also, we exp() our values as our software returned everything in logs.
+  # Keep in mind that the first value of b_11, b_10 is just a placeholder - as the top element of the tree has no parent.
+  a_1 <- exp(as.numeric(a_1[3:1025]))
+  b_11 <- exp(as.numeric(b_11[3:1025]))
+  b_10 <- exp(as.numeric(b_10[3:1025]))
+  
+  waveqtl_phi <- as.matrix(read.table(paste0(data_path,waveqtl_dataset,".fph.phi.txt")))[geno_select,]
+  waveqtl_phi <- as.numeric(waveqtl_phi[2])
+  
+  # Now, let's simulate a sequence of gammas:
+  gamma_seq <- numeric()
+  post_prob_seq <- numeric()
+  set.seed(10)
+  rand_seq <- runif(1024)
+  
+  # Scaling coefficient
+  gamma_seq[1] <- ifelse(rand_seq[1] < waveqtl_phi, 1, 0)
+  post_prob_seq[1] <- waveqtl_phi
+  
+  # Head of tree
+  gamma_seq[2] <- ifelse(rand_seq[2] < a_1[1], 1, 0)
+  post_prob_seq[2] <- a_1[1]
+  
+  # i is the index of tree, where i = 1 is the head of the tree
+  # Using this notation because that's how 'get_parent_indices' has been written
+  for(i in 2:1023){
+    indx <- i
+    parent_indx <- get_parent_indices(indx)
+    parent_gamma <- gamma_seq[parent_indx + 1]
+    
+    if(parent_gamma == 1){
+      numerator <- b_11[indx]
+      denominator <- a_1[parent_indx]
+    }else if(parent_gamma == 0){
+      numerator <- b_10[indx]
+      denominator <- 1 - a_1[parent_indx]
+    }
+    
+    post_prob <- numerator/denominator
+    post_prob_seq[i+1] <- post_prob
+    
+    gamma_seq[i+1] <- ifelse(rand_seq[i+1] < post_prob, 1, 0)
+    
+  }
+  
+  # Load mean, var outputs from HMT
+  mean1 <- as.matrix(read.table(paste0(data_path,dataset,".fph.mean1.txt")))[geno_select,]
+  var1 <- as.matrix(read.table(paste0(data_path,dataset,".fph.var1.txt")))[geno_select,]
+  
+  # Load mean, var outputs from WaveQTL
+  mean1_waveqtl <- as.matrix(read.table(paste0(data_path,waveqtl_dataset,".fph.mean1.txt")))[geno_select,2]
+  var1_waveqtl <- as.matrix(read.table(paste0(data_path,waveqtl_dataset,".fph.var1.txt")))[geno_select,2]
+  
+  # Append top coeff to the 1023 numeric values (excl first one as it's the scaling coefficient), from cols 3:1025 from HMT
+  mean1 <- c(as.numeric(mean1_waveqtl), as.numeric(mean1[3:1025]))
+  var1 <- c(as.numeric(var1_waveqtl), as.numeric(var1[3:1025]))
+  
+  ## back out a, b (from t-dist) parameters:
+  t_nu <- 70
+  t_a <- mean1
+  t_b <- var1*(t_nu-2)/t_nu
+  num_pheno <- length(mean1)
+  
+  t_sample <- stats::rt(n = num_pheno, df = t_nu)
+  t_sample_3p <- t_a+(sqrt(t_b)*t_sample)
+  
+  ## Simulate beta, being either 3-param t-dist, or 0
+  beta_seq <- rep(0,num_pheno)
+  gamma_1_indx <- which(gamma_seq == 1) 
+  beta_seq[gamma_1_indx] <- t_sample_3p[gamma_1_indx]
+  
+  ### '-ve' is taken to represent biological definition of effects (akin to a base level)
+  beta_dataS = as.vector(-matrix(data=beta_seq, nr = 1, nc = 1024)%*%as.matrix(Wmat_1024))
+  # plot(beta_dataS, main = "Simulation 1", type = "l")
+  # abline(h = 0, col = "red")
+  
+  ### Now, run simulations
+  num_samples <- 1000
+  set.seed(10)
+  beta_data_samples <- matrix(nrow = num_samples,ncol = num_pheno)
+  
+  for(j in 1:num_samples){
+    # Generate gamma
+    gamma_seq <- numeric()
+    rand_seq <- runif(num_pheno)
+    
+    # Scaling coefficient
+    gamma_seq[1] <- ifelse(rand_seq[1] < waveqtl_phi, 1, 0)
+    
+    # Head of tree
+    gamma_seq[2] <- ifelse(rand_seq[2] < a_1[1], 1, 0)
+    
+    # i is the index of tree, where i = 1 is the head of the tree
+    # Using this notation because that's how 'get_parent_indices' has been written
+    for(i in 2:1023){
+      indx <- i
+      parent_indx <- get_parent_indices(indx)
+      parent_gamma <- gamma_seq[parent_indx + 1]
+      
+      if(parent_gamma == 1){
+        numerator <- b_11[indx]
+        denominator <- a_1[parent_indx]
+      }else if(parent_gamma == 0){
+        numerator <- b_10[indx]
+        denominator <- 1 - a_1[parent_indx]
+      }
+      
+      post_prob <- numerator/denominator
+      
+      gamma_seq[i+1] <- ifelse(rand_seq[i+1] < post_prob, 1, 0)
+    }
+    
+    # Generate beta
+    t_sample <- stats::rt(n = num_pheno, df = t_nu)
+    t_sample_3p <- t_a+(sqrt(t_b)*t_sample)
+    
+    ## Simulate beta, being either 3-param t-dist, or 0
+    beta_seq <- rep(0,num_pheno)
+    gamma_1_indx <- which(gamma_seq == 1) 
+    beta_seq[gamma_1_indx] <- t_sample_3p[gamma_1_indx]
+    
+    # Transform into data space
+    beta_data_samples[j,] = as.vector(-matrix(data=beta_seq, nr = 1, nc = num_pheno)%*%as.matrix(Wmat_1024))
+  }
+  
+  sample_mean <- apply(beta_data_samples,MARGIN = 2,mean)
+  sample_sd <- apply(beta_data_samples,MARGIN = 2,sd)
+  
+  ymin_beta = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+  ymax_beta = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+  
+  beta_l = sample_mean - 3*sample_sd
+  beta_r = sample_mean + 3*sample_sd
+  
+  wh_l = which(beta_l > 0)
+  wh_r = which(beta_r < 0)
+  high_wh = sort(unique(union(wh_l, wh_r)))
+  
+  xval = 1:1024
+  col_posi = xval[high_wh]
+  
+  # pdf("../test/dsQTL/effectSize.pdf", width = 8, height=3)
+  par(mar = c(2,4,4,2))
+  plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=c(1, 1024),main ="Posterior mean +/-3 posterior standard deviation", axes=FALSE)
+  axis(2)
+  if(length(col_posi) > 0){
+    for(j in 1:length(col_posi)){
+      polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
+    }
+  }
+  
+  abline(h = 0, col = "red")
+  points(xval, sample_mean, col = "blue", type="l")
+  points(xval, beta_l, col = "skyblue", type="l")
+  points(xval, beta_r, col = "skyblue", type="l")
+  box()
+  
+  p <- recordPlot()
+  return(list(
+    beta_dataS = sample_mean
+    ,beta_sd_dataS = sample_sd
+    ,p = p
+  ))
+  
+}
+```
+
+```{r}
+##### Null
+null_50_data_path = "~/Cpp/WaveQTL_HMT/test/dsQTL/output/"
+null_50_data_prefix = "sim3_noQT_null"
+null_50_hmt <- with_hmt_effect_size(data_path = null_50_data_path
+                                    ,dataset = paste0(null_50_data_prefix,"_HMT")
+                                    ,waveqtl_dataset = null_50_data_prefix
+                                    ,Wmat_1024 = Wmat_1024
+                                    ,geno_select = 1)
+
+##### Alt
+alt_50_data_path = "~/Cpp/WaveQTL_HMT/test/dsQTL/output/"
+alt_50_data_prefix = "sim3_noQT_alt"
+alt_50_hmt <- with_hmt_effect_size(data_path = alt_50_data_path
+                                   ,dataset = paste0(alt_50_data_prefix,"_HMT")
+                                   ,waveqtl_dataset = alt_50_data_prefix
+                                   ,Wmat_1024 = Wmat_1024
+                                   ,geno_select = 1)
+```
+
+### Ad hoc plots
+Two final comparisons, by plot:
+
+Null case:
+```{r}
+### Null
+
+# Determine graph boundaries
+# No HMT
+sample_mean <- null_50$beta_dataS
+sample_sd <- null_50$beta_sd_dataS
+ymin_beta_noHMT = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+ymax_beta_noHMT = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+# HMT
+sample_mean <- null_50_hmt$beta_dataS
+sample_sd <- null_50_hmt$beta_sd_dataS
+ymin_beta_HMT = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+ymax_beta_HMT = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+
+# ymin_beta = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+# ymax_beta = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+ymin_beta = min(ymin_beta_HMT,ymin_beta_noHMT)
+ymax_beta = min(ymax_beta_HMT,ymax_beta_noHMT)
+
+# No HMT
+sample_mean <- null_50$beta_dataS
+sample_sd <- null_50$beta_sd_dataS
+beta_l = sample_mean - 3*sample_sd
+beta_r = sample_mean + 3*sample_sd
+
+wh_l = which(beta_l > 0)
+wh_r = which(beta_r < 0)
+high_wh = sort(unique(union(wh_l, wh_r)))
+
+xval = 1:1024
+col_posi = xval[high_wh]
+
+# pdf("../test/dsQTL/effectSize.pdf", width = 8, height=3)
+par(mar = c(2,4,4,2))
+plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=c(1, 1024),main ="Posterior mean +/-3 posterior standard deviation - No HMT", axes=FALSE)
+axis(2)
+if(length(col_posi) > 0){
+  for(j in 1:length(col_posi)){
+    polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
+  }
+}
+
+abline(h = 0, col = "red")
+points(xval, sample_mean, col = "blue", type="l")
+points(xval, beta_l, col = "skyblue", type="l")
+points(xval, beta_r, col = "skyblue", type="l")
+box()
+
+# HMT
+sample_mean <- null_50_hmt$beta_dataS
+sample_sd <- null_50_hmt$beta_sd_dataS
+beta_l = sample_mean - 3*sample_sd
+beta_r = sample_mean + 3*sample_sd
+
+wh_l = which(beta_l > 0)
+wh_r = which(beta_r < 0)
+high_wh = sort(unique(union(wh_l, wh_r)))
+
+xval = 1:1024
+col_posi = xval[high_wh]
+
+# pdf("../test/dsQTL/effectSize.pdf", width = 8, height=3)
+par(mar = c(2,4,4,2))
+plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=c(1, 1024),main ="Posterior mean +/-3 posterior standard deviation - HMT", axes=FALSE)
+axis(2)
+if(length(col_posi) > 0){
+  for(j in 1:length(col_posi)){
+    polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
+  }
+}
+
+abline(h = 0, col = "red")
+points(xval, sample_mean, col = "blue", type="l")
+points(xval, beta_l, col = "skyblue", type="l")
+points(xval, beta_r, col = "skyblue", type="l")
+box()
+```
+
+Alt case:
+```{r}
+### Alt
+
+# Determine graph boundaries
+# No HMT
+sample_mean <- alt_50$beta_dataS
+sample_sd <- alt_50$beta_sd_dataS
+ymin_beta_noHMT = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+ymax_beta_noHMT = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+# HMT
+sample_mean <- alt_50_hmt$beta_dataS
+sample_sd <- alt_50_hmt$beta_sd_dataS
+ymin_beta_HMT = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+ymax_beta_HMT = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+
+# ymin_beta = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+# ymax_beta = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+ymin_beta = min(ymin_beta_HMT,ymin_beta_noHMT)
+ymax_beta = min(ymax_beta_HMT,ymax_beta_noHMT)
+
+# No HMT
+sample_mean <- alt_50$beta_dataS
+sample_sd <- alt_50$beta_sd_dataS
+beta_l = sample_mean - 3*sample_sd
+beta_r = sample_mean + 3*sample_sd
+
+wh_l = which(beta_l > 0)
+wh_r = which(beta_r < 0)
+high_wh = sort(unique(union(wh_l, wh_r)))
+
+xval = 1:1024
+col_posi = xval[high_wh]
+
+# pdf("../test/dsQTL/effectSize.pdf", width = 8, height=3)
+par(mar = c(2,4,4,2))
+plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=c(1, 1024),main ="Posterior mean +/-3 posterior standard deviation - No HMT", axes=FALSE)
+axis(2)
+if(length(col_posi) > 0){
+  for(j in 1:length(col_posi)){
+    polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
+  }
+}
+
+abline(h = 0, col = "red")
+points(xval, sample_mean, col = "blue", type="l")
+points(xval, beta_l, col = "skyblue", type="l")
+points(xval, beta_r, col = "skyblue", type="l")
+box()
+
+# HMT
+sample_mean <- alt_50_hmt$beta_dataS
+sample_sd <- alt_50_hmt$beta_sd_dataS
+beta_l = sample_mean - 3*sample_sd
+beta_r = sample_mean + 3*sample_sd
+
+wh_l = which(beta_l > 0)
+wh_r = which(beta_r < 0)
+high_wh = sort(unique(union(wh_l, wh_r)))
+
+xval = 1:1024
+col_posi = xval[high_wh]
+
+# pdf("../test/dsQTL/effectSize.pdf", width = 8, height=3)
+par(mar = c(2,4,4,2))
+plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=c(1, 1024),main ="Posterior mean +/-3 posterior standard deviation - HMT", axes=FALSE)
+axis(2)
+if(length(col_posi) > 0){
+  for(j in 1:length(col_posi)){
+    polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
+  }
+}
+
+abline(h = 0, col = "red")
+points(xval, sample_mean, col = "blue", type="l")
+points(xval, beta_l, col = "skyblue", type="l")
+points(xval, beta_r, col = "skyblue", type="l")
+box()
+
+### Zoom in on region of interest
+min(effect_50)
+max(effect_50)
+# zoom in on 400-500
+region_interest <- c(400,500)
+
+# No HMT
+sample_mean <- alt_50$beta_dataS[region_interest[1]:region_interest[2]]
+sample_sd <- alt_50$beta_sd_dataS[region_interest[1]:region_interest[2]]
+beta_l = sample_mean - 3*sample_sd
+beta_r = sample_mean + 3*sample_sd
+
+wh_l = which(beta_l > 0)
+wh_r = which(beta_r < 0)
+high_wh = sort(unique(union(wh_l, wh_r)))
+
+xval = region_interest[1]:region_interest[2]
+col_posi = xval[high_wh]
+
+# pdf("../test/dsQTL/effectSize.pdf", width = 8, height=3)
+par(mar = c(2,4,4,2))
+plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=region_interest,main ="Posterior mean +/-3 posterior standard deviation - No HMT", axes=FALSE)
+axis(2)
+if(length(col_posi) > 0){
+  for(j in 1:length(col_posi)){
+    polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
+  }
+}
+
+abline(h = 0, col = "red")
+points(xval, sample_mean, col = "blue", type="l")
+points(xval, beta_l, col = "skyblue", type="l")
+points(xval, beta_r, col = "skyblue", type="l")
+box()
+
+# HMT
+sample_mean <- alt_50_hmt$beta_dataS[region_interest[1]:region_interest[2]]
+sample_sd <- alt_50_hmt$beta_sd_dataS[region_interest[1]:region_interest[2]]
+beta_l = sample_mean - 3*sample_sd
+beta_r = sample_mean + 3*sample_sd
+
+wh_l = which(beta_l > 0)
+wh_r = which(beta_r < 0)
+high_wh = sort(unique(union(wh_l, wh_r)))
+
+xval = region_interest[1]:region_interest[2]
+col_posi = xval[high_wh]
+
+# pdf("../test/dsQTL/effectSize.pdf", width = 8, height=3)
+par(mar = c(2,4,4,2))
+plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=region_interest,main ="Posterior mean +/-3 posterior standard deviation - HMT", axes=FALSE)
+axis(2)
+if(length(col_posi) > 0){
+  for(j in 1:length(col_posi)){
+    polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
+  }
+}
+
+abline(h = 0, col = "red")
+points(xval, sample_mean, col = "blue", type="l")
+points(xval, beta_l, col = "skyblue", type="l")
+points(xval, beta_r, col = "skyblue", type="l")
+box()
+
+```
