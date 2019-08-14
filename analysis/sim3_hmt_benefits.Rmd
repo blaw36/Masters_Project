@@ -923,7 +923,6 @@ points(xval, sample_mean, col = "blue", type="l")
 points(xval, beta_l, col = "skyblue", type="l")
 points(xval, beta_r, col = "skyblue", type="l")
 box()
-p_noHMT <- recordPlot()
 
 # HMT
 sample_mean <- null_50_hmt$beta_dataS
@@ -953,10 +952,6 @@ points(xval, sample_mean, col = "blue", type="l")
 points(xval, beta_l, col = "skyblue", type="l")
 points(xval, beta_r, col = "skyblue", type="l")
 box()
-p_HMT <- recordPlot()
-
-p_noHMT
-p_HMT
 ```
 
 Alt case:
@@ -1072,7 +1067,6 @@ points(xval, sample_mean, col = "blue", type="l")
 points(xval, beta_l, col = "skyblue", type="l")
 points(xval, beta_r, col = "skyblue", type="l")
 box()
-p_noHMT <- recordPlot()
 
 # HMT
 sample_mean <- alt_50_hmt$beta_dataS[region_interest[1]:region_interest[2]]
@@ -1102,9 +1096,5 @@ points(xval, sample_mean, col = "blue", type="l")
 points(xval, beta_l, col = "skyblue", type="l")
 points(xval, beta_r, col = "skyblue", type="l")
 box()
-p_HMT <- recordPlot()
-
-p_noHMT
-p_HMT
 
 ```
