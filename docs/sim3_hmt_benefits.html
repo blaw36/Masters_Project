@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Brendan Law" />
+
+
+<title>sim3_hmt_benefits</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/flatly.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
+<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
+<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.1.0/css/all.css" rel="stylesheet" />
+<link href="site_libs/font-awesome-5.1.0/css/v4-shims.css" rel="stylesheet" />
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+summary {
+  display: list-item;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 60px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h2 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h3 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h4 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h5 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.section h6 {
+  padding-top: 65px;
+  margin-top: -65px;
+}
+.dropdown-submenu {
+  position: relative;
+}
+.dropdown-submenu>.dropdown-menu {
+  top: 0;
+  left: 100%;
+  margin-top: -6px;
+  margin-left: -1px;
+  border-radius: 0 6px 6px 6px;
+}
+.dropdown-submenu:hover>.dropdown-menu {
+  display: block;
+}
+.dropdown-submenu>a:after {
+  display: block;
+  content: " ";
+  float: right;
+  width: 0;
+  height: 0;
+  border-color: transparent;
+  border-style: solid;
+  border-width: 5px 0 5px 5px;
+  border-left-color: #cccccc;
+  margin-top: 5px;
+  margin-right: -10px;
+}
+.dropdown-submenu:hover>a:after {
+  border-left-color: #ffffff;
+}
+.dropdown-submenu.pull-left {
+  float: none;
+}
+.dropdown-submenu.pull-left>.dropdown-menu {
+  left: -100%;
+  margin-left: 10px;
+  border-radius: 6px 0 6px 6px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+
+<style type="text/css">
+.tabset-dropdown > .nav-tabs {
+  display: inline-table;
+  max-height: 500px;
+  min-height: 44px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs > li.active:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
+  content: "&#xe258;";
+  border: none;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "";
+  font-family: 'Glyphicons Halflings';
+  display: inline-block;
+  padding: 10px;
+  border-right: 1px solid #ddd;
+}
+
+.tabset-dropdown > .nav-tabs > li.active {
+  display: block;
+}
+
+.tabset-dropdown > .nav-tabs > li > a,
+.tabset-dropdown > .nav-tabs > li > a:focus,
+.tabset-dropdown > .nav-tabs > li > a:hover {
+  border: none;
+  display: inline-block;
+  border-radius: 4px;
+}
+
+.tabset-dropdown > .nav-tabs.nav-tabs-open > li {
+  display: block;
+  float: none;
+}
+
+.tabset-dropdown > .nav-tabs > li {
+  display: none;
+}
+</style>
+
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+
+$(document).ready(function () {
+  $('.tabset-dropdown > .nav-tabs > li').click(function () {
+    $(this).parent().toggleClass('nav-tabs-open')
+  });
+});
+</script>
+
+<!-- code folding -->
+
+
+
+<script>
+$(document).ready(function ()  {
+
+    // move toc-ignore selectors from section div to header
+    $('div.section.toc-ignore')
+        .removeClass('toc-ignore')
+        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
+
+    // establish options
+    var options = {
+      selectors: "h1,h2,h3",
+      theme: "bootstrap3",
+      context: '.toc-content',
+      hashGenerator: function (text) {
+        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
+      },
+      ignoreSelector: ".toc-ignore",
+      scrollTo: 0
+    };
+    options.showAndHide = true;
+    options.smoothScroll = true;
+
+    // tocify
+    var toc = $("#TOC").tocify(options).data("toc-tocify");
+});
+</script>
+
+<style type="text/css">
+
+#TOC {
+  margin: 25px 0px 20px 0px;
+}
+@media (max-width: 768px) {
+#TOC {
+  position: relative;
+  width: 100%;
+}
+}
+
+
+.toc-content {
+  padding-left: 30px;
+  padding-right: 40px;
+}
+
+div.main-container {
+  max-width: 1200px;
+}
+
+div.tocify {
+  width: 20%;
+  max-width: 260px;
+  max-height: 85%;
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+  div.tocify {
+    width: 25%;
+  }
+}
+
+@media (max-width: 767px) {
+  div.tocify {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.tocify ul, .tocify li {
+  line-height: 20px;
+}
+
+.tocify-subheader .tocify-item {
+  font-size: 0.90em;
+  padding-left: 25px;
+  text-indent: 0;
+}
+
+.tocify .list-group-item {
+  border-radius: 0px;
+}
+
+
+</style>
+
+<!-- setup 3col/9col grid for toc_float and main content  -->
+<div class="row-fluid">
+<div class="col-xs-12 col-sm-4 col-md-3">
+<div id="TOC" class="tocify">
+</div>
+</div>
+
+<div class="toc-content col-xs-12 col-sm-8 col-md-9">
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">Brendan's Masters Project</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/blaw36/Masters_Project">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<div class="fluid-row" id="header">
+
+
+
+<h1 class="title toc-ignore">sim3_hmt_benefits</h1>
+<h4 class="author"><em>Brendan Law</em></h4>
+<h4 class="date"><em>14/08/2019</em></h4>
+
+</div>
+
+
+<div id="waveqtl_hmt-vs-waveqtl" class="section level2">
+<h2>WaveQTL_HMT vs WaveQTL</h2>
+<p>The idea is that the benefits will come from being able to detect signals which are not necessarily strong, and not necessarily broad, but relatively localised. These sorts of signals won’t be captured by WaveQTL as they may be ‘split’ or ‘spread’ across a particular scale, and not propagate strongly enough to lower scales. (???)</p>
+<p>Perhaps see Shim and Stephens figures for some examples. Perhaps some of that matter around the middle of Figure 4 may be able to be better captured using a HMT prior. There is potentially some difference between groups here, but very narrow, inconsistent, and seemingly very spiky signal.</p>
+<div id="read-in-phenotype-sequencing-count-data" class="section level3">
+<h3>Read in phenotype (sequencing count) data</h3>
+<p>Here is just a sample codebase. We’re working off the data in the WaveQTL git repo – DNase-seq data at chr17.10160989.10162012 and genotypes at 24 SNPs in 2kb cis-candidate region on 70 individuals.</p>
+<pre class="r"><code>pheno.dat = as.matrix(read.table(paste0(input_data_path, &quot;chr17.10160989.10162012.pheno.dat&quot;)))
+dim(pheno.dat)</code></pre>
+<pre><code>## [1]   70 1024</code></pre>
+<pre class="r"><code>#[1]   70 1024
+
+### Is this useful at all? For later on
+## read library read depth
+library.read.depth = scan(paste0(input_data_path, &quot;library.read.depth.dat&quot;))
+length(library.read.depth)</code></pre>
+<pre><code>## [1] 70</code></pre>
+<pre class="r"><code>## read Covariates
+Covariates = as.matrix(read.table(paste0(input_data_path, &quot;PC4.dat&quot;)))</code></pre>
+<p>Now, summarise the counts, and average:</p>
+<pre class="r"><code># Count summation
+seq_sum &lt;- apply(pheno.dat,MARGIN = 2,sum)
+# Count average
+seq_avg &lt;- apply(pheno.dat,MARGIN = 2,mean)</code></pre>
+<p>These are very small counts over 70 individuals (like 0 - 25).</p>
+</div>
+<div id="simulate-effect-sizes-and-effect-locations." class="section level3">
+<h3>Simulate effect sizes and effect locations.</h3>
+<p>What we now need is, for each base, <span class="math inline">\(b = 1,\dots,1024\)</span>, the estimated (data-space) effect size, as well as the locations where there are effects. A lot of this work was done in ‘sim1_waveqtl_hmt_gamma_phi.Rmd’. So what i’ll do (for now) is just drop the code in to get an example output for the 11th SNP/genotype, as was done in that markdown.</p>
+<p><em>To do:</em></p>
+<ul>
+<li>Extend out the effect size simulation script, so can run on all SNPs</li>
+<li>So can estimate effect sizes and locations for all SNPs in our sample dataset</li>
+</ul>
+<p>Running the following code chunk should do everything required to get the simulations.</p>
+<p>Just to verify that we get something similar, here are some plots:</p>
+<p>Plots in WaveQTL style:</p>
+<p>Looks about right. Most importantly, we have mean effect sizes, and the locations where we have effects:</p>
+<pre class="r"><code># Base-level effect sizes:
+length(sample_mean)</code></pre>
+<pre><code>## [1] 1024</code></pre>
+<pre class="r"><code># Locations of effects:
+length(col_posi)</code></pre>
+<pre><code>## [1] 144</code></pre>
+</div>
+<div id="simulate-realistic-effect-size" class="section level3">
+<h3>Simulate realistic effect size</h3>
+<p>Does it matter if the magnitude of the effect is positive, or negative? Need to find a way to keep the p’s between 0 and 1.</p>
+<p>Generate effect sizes, and corresponding probabilities</p>
+<pre class="r"><code>p1_vector &lt;- 2/70 * (1/(1 + sample_mean))
+p2_vector &lt;- 2/70 * (sample_mean/(1 + sample_mean))
+
+par(mar = c(2,4,4,2))
+plot(1,1,type=&quot;n&quot;
+     , xlab = &quot;position&quot;
+     , ylab = &quot;p parameter&quot;
+     , ylim=c(min(min(p1_vector),min(p2_vector)) * 0.5, max(max(p1_vector),max(p2_vector)) * 1.5)
+     , xlim=c(1, 1024)
+     , main =&quot;Simulation - p1 (null) vs p2 (alt) parameters&quot;
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+
+abline(h = 0, col = &quot;red&quot;)
+lines(p1_vector, col = &quot;blue&quot;)
+lines(p2_vector, col = &quot;blue&quot;)
+box()</code></pre>
+<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<pre class="r"><code>plot(p1_vector, type = &quot;l&quot;)</code></pre>
+<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
+<pre class="r"><code>plot(p2_vector, type = &quot;l&quot;)</code></pre>
+<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-4-3.png" width="672" /></p>
+<p>For now, the effect size is a bit weird (has positives and negatives), so just use this for now as a toy example:</p>
+<pre class="r"><code>new_sample_mean &lt;- abs(sample_mean*10e10)
+p1_vector &lt;- 2/70 * (1/(1 + abs(new_sample_mean)))
+p2_vector &lt;- 2/70 * (abs(new_sample_mean)/(1 + abs(new_sample_mean)))
+
+par(mar = c(2,4,4,2))
+plot(1,1,type=&quot;n&quot;
+     , xlab = &quot;position&quot;
+     , ylab = &quot;p parameter&quot;
+     , ylim=c(min(min(p1_vector),min(p2_vector)) * 0.5, max(max(p1_vector),max(p2_vector)) * 1.5)
+     , xlim=c(1, 1024)
+     , main =&quot;Simulation - p1 (null) vs p2 (alt) parameters&quot;
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+
+abline(h = 0, col = &quot;red&quot;)
+lines(p1_vector, col = &quot;blue&quot;)
+lines(p2_vector, col = &quot;blue&quot;)
+box()</code></pre>
+<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p>Issues to deal with:</p>
+<ul>
+<li>effect sizes changing signs (some positive, some negative)</li>
+<li>the really small magnitude of the effect sizes (ie. 10e-13)</li>
+<li>Sum of counts at some bases are fractional – how to deal with this? Do we just round?</li>
+</ul>
+<p>Set up beta-binomial distribution:</p>
+<pre class="r"><code>library(rmutil) # for beta-binomial distirbution</code></pre>
+<pre><code>## 
+## Attaching package: &#39;rmutil&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:stats&#39;:
+## 
+##     nobs</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     as.data.frame, units</code></pre>
+<pre class="r"><code>over_disp_mult &lt;- 70
+p1_alpha &lt;- over_disp_mult*p1_vector
+p1_beta &lt;- over_disp_mult - p1_alpha
+p2_alpha &lt;- over_disp_mult*p2_vector
+p2_beta &lt;- over_disp_mult - p2_alpha
+
+# Check to see that these alphas and betas generate the desired probabilities
+all.equal(p1_vector, p1_alpha/(p1_alpha + p1_beta))</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code>all.equal(p2_vector, p2_alpha/(p2_alpha + p2_beta))</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+</div>
+<div id="simulate-realistic-effect-lengths" class="section level3">
+<h3>Simulate realistic effect lengths</h3>
+<p>For example, let’s do effect length 5, 10, and 50.</p>
+<p>I want to generate the effects such that they affect consecutive bases (for now), so i’ll randomly pick out a base from the effect area, and create an effect which is centred around that base.</p>
+<p><strong>There’s a slight issue:</strong> this might mean that the effect ‘windows’ we generate go outside the actual effect area of the actual data. I won’t worry about this for now, as I just want some comparison for performance of algorithms at different effect lengths. Ideas to work around this:</p>
+<ul>
+<li>Restrict where I can pick the start from, to make sure the windows are contained within the actual effect windows</li>
+<li>This would require me to ‘cluster’ my effects together, so i have well defined start and end points of each effect window</li>
+</ul>
+<p>I’ve currently got a lucky seed below which gets me a 50 length window, but this won’t always be the case. I suspect that when I do sims, i’ll opt out of this requirement, and figure it out later.</p>
+<pre class="r"><code>set.seed(6) # Hey look, a lucky seed which gets me a 50 sized window which works!
+# Binary dataset - 1/0 for effect/no effect
+effect_ind &lt;- rep(0,1024)
+effect_ind[col_posi] &lt;- 1
+
+# Length 5
+effect_5_start &lt;- sample(col_posi,size = 1)
+# effect_5 &lt;- (effect_5_start-2):(effect_5_start+2)
+effect_5 &lt;- intersect((effect_5_start-2):(effect_5_start+2),col_posi)
+
+# Length 10
+effect_10_start &lt;- sample(col_posi,size = 1)
+# effect_10 &lt;- (effect_10_start-4):(effect_10_start+5)
+effect_10 &lt;- intersect((effect_10_start-4):(effect_10_start+5),col_posi)
+
+# Length 50
+effect_50_start &lt;- sample(col_posi,size = 1)
+# effect_50 &lt;- (effect_50_start-24):(effect_50_start+25)
+effect_50 &lt;- intersect((effect_50_start-24):(effect_50_start+25),col_posi)</code></pre>
+</div>
+<div id="combine-the-two-to-create-simulations" class="section level3">
+<h3>Combine the two to create simulations</h3>
+<p>Have a 1024 length vector where we know:</p>
+<ul>
+<li>Which bases we want an effect for</li>
+<li>The total sequence counts (# of trials) at each base</li>
+<li>The probability parameter which governs the sequencing count at each base, to mimic the ‘effect size’</li>
+</ul>
+<p>Then, we need to process the data, run it through WaveQTL and WaveQTL_HMT, and analyse the results – ie replicate the effect size plots. Along the way, we should also visualise the null and alternative datasets we’ve generated.</p>
+<p>Just a note about the ‘rmutil::rbetabinom’ function – the parameterisation is different.</p>
+<p>Sometimes, we denote: <span class="math display">\[\begin{align*}
+X &amp;\sim Beta-Binomial(n,\alpha,\beta) \\
+\Rightarrow P(X = k) &amp;= \binom{n}{k}\frac{B(k + \alpha, n - k + \beta)}{B(\alpha, \beta)}
+\end{align*}\]</span> where <span class="math inline">\(B(a,b) = \frac{\Gamma(a)\Gamma(b)}{\Gamma(a+b)}\)</span> is the beta function. An alternative parameterisation, as per rbetabinom, is to use two parameters, <span class="math inline">\(m\)</span>, a probability (corresponding to the <span class="math inline">\(p = \frac{\alpha}{\alpha + \beta}\)</span> of the original), and <span class="math inline">\(s\)</span>, an overdispersion parameter. In this representation, we have: <span class="math display">\[\begin{align*}
+X &amp;\sim Beta-Binomial(n,m,s) \\
+\Rightarrow P(X = k) &amp;= \binom{n}{k}\frac{B(k + sm, n - k + s(1-m))}{B(sm, s(1-m))}
+\end{align*}\]</span> This corresponds to: <span class="math display">\[\begin{align*}
+\alpha &amp;= sm \\
+\beta &amp;= s(1-m) \\
+\therefore m &amp;= \frac{\alpha}{\alpha + \beta} \\
+\therefore s &amp;= \alpha + \beta
+\end{align*}\]</span></p>
+<p>We need to generate null and alternative samples. We want to create 70 x 1024 matrices – 70 individuals, 1024 bases. We fill out each column of our matrix by taking 70 samples from a beta-binomial to populate each column. Our beta binomial does the ‘total count at base b’ number of trials, but the parameters have the ‘divide by 70’ inbuilt, so the proportion of any one individual having a count is very low. The mean count for each column corresponds to around sum of counts divide by 70, which is the desired mean (sample mean of counts).</p>
+<p>Length 50 sample – generate both null and alt.</p>
+<pre class="r"><code>set.seed(6)
+# Null
+# Alternatively, do column-wise
+null_data_50 &lt;- matrix(nrow = 70,ncol = 1024)
+for(i in 1:1024){
+  null_data_50[,i] &lt;- rmutil::rbetabinom(n = 70, size = ceiling(seq_sum[i]), m = (p1_alpha/(p1_alpha+p1_beta))[i]
+                                         , s = (p1_alpha+p1_beta)[i])
+}
+
+# Alt
+# Params should be p1, except where there is an effect.
+effect50_alpha &lt;- p1_alpha
+effect50_alpha[effect_50] &lt;- p2_alpha[effect_50]
+effect50_beta &lt;- p1_beta
+effect50_beta[effect_50] &lt;- p2_beta[effect_50]
+
+alt_data_50 &lt;- matrix(nrow = 70,ncol = 1024)
+for(i in 1:1024){
+  alt_data_50[,i] &lt;- rmutil::rbetabinom(n = 70, size = ceiling(seq_sum[i])
+                                        , m = (effect50_alpha/(effect50_alpha+effect50_beta))[i]
+                                        , s = (effect50_alpha+effect50_beta)[i])
+}</code></pre>
+<p>Plot the average of the two together?</p>
+<pre class="r"><code>null_data_50_avg &lt;- apply(null_data_50,2,sum)
+alt_data_50_avg &lt;- apply(alt_data_50,2,sum)
+
+plt_rng_y &lt;- c(min(min(null_data_50_avg),min(alt_data_50_avg)) * 0.5, max(max(null_data_50_avg),max(alt_data_50_avg)) * 1.5)
+
+par(mfrow = c(3,1),mar = c(2,4,4,1))
+plot(1,1,type=&quot;n&quot;
+     , xlab = &quot;position&quot;
+     , ylab = &quot;count&quot;
+     , ylim=plt_rng_y
+     , xlim=c(1, 1024)
+     , main =&quot;Simulation - null vs alt datasets - effect of length 50&quot;
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+if(length(effect_50) &gt; 0){
+  for(j in 1:length(effect_50)){
+    polygon(c(effect_50[j]-0.5, effect_50[j]-0.5, effect_50[j]+0.5, effect_50[j]+0.5), c(plt_rng_y[1], plt_rng_y[2], plt_rng_y[1], plt_rng_y[2]), col =&quot;pink&quot;, border = NA)
+  }
+}
+lines(null_data_50_avg, col = &quot;blue&quot;, lty = &quot;dashed&quot;)
+lines(alt_data_50_avg, col = &quot;red&quot;, lty = &quot;dashed&quot;)
+box()
+
+plot(1,1,type=&quot;n&quot;
+     , xlab = &quot;position&quot;
+     , ylab = &quot;count&quot;
+     , ylim=plt_rng_y
+     , xlim=c(1, 1024)
+     , main =&quot;Simulation - null dataset - effect of length 50&quot;
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+lines(null_data_50_avg, col = &quot;blue&quot;, lty = &quot;dashed&quot;)
+box()
+
+plot(1,1,type=&quot;n&quot;
+     , xlab = &quot;position&quot;
+     , ylab = &quot;count&quot;
+     , ylim=plt_rng_y
+     , xlim=c(1, 1024)
+     , main =&quot;Simulation - alt dataset - effect of length 50&quot;
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+if(length(effect_50) &gt; 0){
+  for(j in 1:length(effect_50)){
+    polygon(c(effect_50[j]-0.5, effect_50[j]-0.5, effect_50[j]+0.5, effect_50[j]+0.5), c(plt_rng_y[1], plt_rng_y[2], plt_rng_y[1], plt_rng_y[2]), col =&quot;pink&quot;, border = NA)
+  }
+}
+lines(alt_data_50_avg, col = &quot;red&quot;, lty = &quot;dashed&quot;)
+box()</code></pre>
+<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+</div>
+<div id="run-a-sample-analyses" class="section level3">
+<h3>Run a sample analyses</h3>
+<ul>
+<li>Clean both Null and Alt data through WC transform R thingy
+<ul>
+<li>Do we do all the usual bells and whistles (PCA regression, quantile transforms?)</li>
+<li>What tying level?</li>
+<li>Same set of covariates, right?</li>
+</ul></li>
+<li>Null data through WaveQTL and WaveQTL_HMT</li>
+<li>Alt data through WaveQTL and WaveQTL_HMT</li>
+</ul>
+<p>The cleaning functionality, functionalised up. See ‘code/WaveQTL/R/WaveQTL_preprocess_example.R’ for details of where all this came from.</p>
+<p>Cleaning the Null dataset:</p>
+<pre class="r"><code>wavelet_cleaning_wrapper_function(pheno.dat = null_data_50
+                                  ,output.path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/sims/length_50/null_data/&quot;
+                                  ,library.read.depth = library.read.depth
+                                  ,Covariates = Covariates)</code></pre>
+<pre><code>## Loading required package: wavethresh</code></pre>
+<pre><code>## Warning: package &#39;wavethresh&#39; was built under R version 3.5.3</code></pre>
+<pre><code>## Loading required package: MASS</code></pre>
+<pre><code>## Warning: package &#39;MASS&#39; was built under R version 3.5.3</code></pre>
+<pre><code>## WaveThresh: R wavelet software, release 4.6.8, installed</code></pre>
+<pre><code>## Copyright Guy Nason and others 1993-2016</code></pre>
+<pre><code>## Note: nlevels has been renamed to nlevelsWT</code></pre>
+<pre><code>## 
+## Attaching package: &#39;wavethresh&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:rmutil&#39;:
+## 
+##     wr</code></pre>
+<p>Cleaning the Alt dataset:</p>
+<pre class="r"><code>wavelet_cleaning_wrapper_function(pheno.dat = alt_data_50
+                                  ,output.path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/sims/length_50/alt_data/&quot;
+                                  ,library.read.depth = library.read.depth
+                                  ,Covariates = Covariates)</code></pre>
+<p><em>SHOULD WE ONLY NEED THE NON-QT version for effect sizes? The QT version is for likelihood/association testing - is this something we’re going to be interested in also? Or just ability to identify effects at certain locations?</em></p>
+<div id="run-null-dataset" class="section level4">
+<h4>Run null dataset</h4>
+<p>Run through WaveQTL:</p>
+<p>Run through WaveQTL_HMT:</p>
+</div>
+<div id="run-alt-dataset" class="section level4">
+<h4>Run alt dataset</h4>
+<p>Run through WaveQTL:</p>
+<p>Run through WaveQTL_HMT:</p>
+</div>
+</div>
+<div id="analysis---no-hmt" class="section level3">
+<h3>Analysis - no HMT</h3>
+<p>Quick effect size analysis and plotting. No_HMT is easy. Read in some more pre-requisite data (like the inverse wavelet transform):</p>
+<pre class="r"><code>## We&#39;ll look at effect size of 11th SNP in genotype file
+sel_geno_IX = 11
+
+##### Null
+null_50_data_path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/output/&quot;
+null_50_data_prefix = &quot;sim3_noQT_null&quot;
+null_50 &lt;- no_hmt_effect_size(data_path = null_50_data_path
+                              ,data_prefix = null_50_data_prefix
+                              ,Wmat_1024 = Wmat_1024
+                              ,W2mat_1024 = W2mat_1024
+                              ,sel_geno_IX = 1)</code></pre>
+<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<pre class="r"><code>##### Alt
+alt_50_data_path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/output/&quot;
+alt_50_data_prefix = &quot;sim3_noQT_alt&quot;
+alt_50 &lt;- no_hmt_effect_size(data_path = alt_50_data_path
+                             ,data_prefix = alt_50_data_prefix
+                             ,Wmat_1024 = Wmat_1024
+                             ,W2mat_1024 = W2mat_1024
+                             ,sel_geno_IX = 1)</code></pre>
+<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-18-2.png" width="672" /></p>
+</div>
+<div id="analysis---with-hmt" class="section level3">
+<h3>Analysis - with HMT</h3>
+<p>Functionalise it up</p>
+<pre class="r"><code>##### Null
+null_50_data_path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/output/&quot;
+null_50_data_prefix = &quot;sim3_noQT_null&quot;
+null_50_hmt &lt;- with_hmt_effect_size(data_path = null_50_data_path
+                                    ,dataset = paste0(null_50_data_prefix,&quot;_HMT&quot;)
+                                    ,waveqtl_dataset = null_50_data_prefix
+                                    ,Wmat_1024 = Wmat_1024
+                                    ,geno_select = 1)</code></pre>
+<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<pre class="r"><code>##### Alt
+alt_50_data_path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/output/&quot;
+alt_50_data_prefix = &quot;sim3_noQT_alt&quot;
+alt_50_hmt &lt;- with_hmt_effect_size(data_path = alt_50_data_path
+                                   ,dataset = paste0(alt_50_data_prefix,&quot;_HMT&quot;)
+                                   ,waveqtl_dataset = alt_50_data_prefix
+                                   ,Wmat_1024 = Wmat_1024
+                                   ,geno_select = 1)</code></pre>
+<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-20-2.png" width="672" /></p>
+</div>
+<div id="ad-hoc-plots" class="section level3">
+<h3>Ad hoc plots</h3>
+<p>Two final comparisons, by plot:</p>
+<p>Null case:</p>
+<p>Alt case:</p>
+</div>
+</div>
+
+
+
+</div>
+</div>
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
