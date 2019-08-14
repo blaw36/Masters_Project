@@ -69,6 +69,11 @@ Some writings about the simulations and data analysis exercises we undertook aro
 - V1 method [here](sim2_waveqtl_hmt_recover_params.html)
 - V1 results [here](sim2-0-0_waveqtl_hmt_recover_params.html)
 
+#### Simulation - HMT vs non-HMT
+- Goal here is to simulate the real data, then to demonstrate the benefits of a HMT vs non-HMT approach.
+- V1 method [WIP]
+- V1 results [here](sim3_hmt_benefits.html)
+
 ***
 
 ## Papers, presentations, resources

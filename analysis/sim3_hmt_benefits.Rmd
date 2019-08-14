@@ -96,7 +96,7 @@ _To do:_
 - So can estimate effect sizes and locations for all SNPs in our sample dataset
 
 Running the following code chunk should do everything required to get the simulations.
-```{r sim1_code_copy}
+```{r sim1_code_copy, include = F}
 a_1 <- as.matrix(read.table(paste0(data_path,dataset,".fph.pp.txt")))[geno_select,]
 b_11 <- as.matrix(read.table(paste0(data_path,dataset,".fph.pp_joint_11.txt")))[geno_select,]
 b_10 <- as.matrix(read.table(paste0(data_path,dataset,".fph.pp_joint_10.txt")))[geno_select,]
@@ -237,7 +237,7 @@ sample_sd <- apply(beta_data_samples,MARGIN = 2,sd)
 Just to verify that we get something similar, here are some plots:
 
 Plots in WaveQTL style:
-```{r sample_plots_waveqtl}
+```{r sample_plots_waveqtl, include = F}
 ymin_beta = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
 ymax_beta = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
 
@@ -503,7 +503,7 @@ box()
 - Alt data through WaveQTL and WaveQTL_HMT
 
 The cleaning functionality, functionalised up. See 'code/WaveQTL/R/WaveQTL_preprocess_example.R' for details of where all this came from.
-```{r}
+```{r, include = F}
 # pheno.dat - the simulated 70 x 1024 matrix from above
 # output.path - where you want all the data to be saved
 # meanR.thresh - low WC filtering threshold (default is 2)
@@ -593,7 +593,7 @@ setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
 
 ### Analysis - no HMT
 Quick effect size analysis and plotting. No_HMT is easy. Read in some more pre-requisite data (like the inverse wavelet transform):
-```{r}
+```{r, include = F}
 ## Read DWT matrix 
 Wmat_1024 = read.table("~/Cpp/WaveQTL/data/DWT/Wmat_1024",as.is = TRUE)
 W2mat_1024 = Wmat_1024*Wmat_1024
@@ -676,7 +676,7 @@ alt_50 <- no_hmt_effect_size(data_path = alt_50_data_path
 
 ### Analysis - with HMT
 Functionalise it up
-```{r}
+```{r, include = F}
 # waveqtl_dataset is the prefix of the outputs from WaveQTL analysis (no HMT) on the same thing - needed for the scaling coef.
 with_hmt_effect_size <- function(data_path, dataset, waveqtl_dataset, Wmat_1024, geno_select = 1){
   
@@ -875,7 +875,7 @@ alt_50_hmt <- with_hmt_effect_size(data_path = alt_50_data_path
 Two final comparisons, by plot:
 
 Null case:
-```{r}
+```{r, include = F}
 ### Null
 
 # Determine graph boundaries
@@ -955,7 +955,7 @@ box()
 ```
 
 Alt case:
-```{r}
+```{r, include = F}
 ### Alt
 
 # Determine graph boundaries
