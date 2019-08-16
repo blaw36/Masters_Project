@@ -30,6 +30,14 @@ Covariates = as.matrix(read.table(paste0(input_data_path, "PC4.dat")))
 Wmat_1024 = read.table("~/Cpp/WaveQTL/data/DWT/Wmat_1024",as.is = TRUE)
 W2mat_1024 = Wmat_1024*Wmat_1024
 
+## Read in SNPs
+geno_data = read.table("~/Cpp/WaveQTL/data/dsQTL/chr17.10160989.10162012.2kb.cis.geno",as.is = TRUE)
+geno_data = geno_data[11,4:73]
+
+# Group based on midpoint of the data
+med_data <- median(as.numeric(as.vector(geno_data[1,])))
+group_data <- as.numeric(as.numeric(as.vector(geno_data[1,])) >= med_data)
+
 # Summarise pheno.data ----------------------------------------------------
 
 # Count summation
@@ -58,6 +66,7 @@ run_sim3 <- function(
   , W2mat_1024 = W2mat_1024
   , library.read.depth = library.read.depth
   , Covariates = Covariates
+  , group_data = group_data
 ){
 
   # Pick effect bucket ------------------------------------------------------
@@ -70,8 +79,8 @@ run_sim3 <- function(
 
   # Convert effect size to ratio --------------------------------------------
   print("Generating effect size params...\n")
-  effect_ratio <- 1+(num_indivs*effect_size_data$beta_dataS/(seq_sum + 1))
-
+  effect_ratio <- 1 + (num_indivs*effect_size_data$beta_dataS/seq_sum)
+  effect_ratio[seq_sum == 0] <- 1
 
   # Convert ratio to beta-binomial param ------------------------------------
 
@@ -90,23 +99,55 @@ run_sim3 <- function(
   # Generate null and alt datasets ------------------------------------------
 
   print("Generating null and alt datasets...\n")
+
   # Null
-  # Alternatively, do column-wise
-  null_data <- matrix(nrow = num_indivs,ncol = num_bases)
-  for(i in 1:num_bases){
-    null_data[,i] <- rmutil::rbetabinom(n = num_indivs, size = ceiling(seq_sum[i])
-                                           , m = (p1_alpha/(p1_alpha+p1_beta))[i]
-                                           , s = (p1_alpha+p1_beta)[i])
+  null_data_50 <- matrix(nrow = 70,ncol = 1024)
+  for(i in 1:70){
+    for(j in 1:1024){
+      null_data_50[i,j] <- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
+                                              , m = 1/70
+                                              , s = over_disp_mult)
+    }
   }
 
   # Alt
-  # Params should be p2 throughout
-  alt_data <- matrix(nrow = num_indivs,ncol = num_bases)
-  for(i in 1:num_bases){
-    alt_data[,i] <- rmutil::rbetabinom(n = num_indivs, size = ceiling(seq_sum[i])
-                                          , m = (p2_alpha/(p2_alpha+p2_beta))[i]
-                                          , s = (p2_alpha+p2_beta)[i])
+  # For alt dataset, create a 70 X 1024 matrix, based on group membership, assigning p1 or p2, respectively
+  param_mtx <- matrix(nrow = 70,ncol = 1024)
+  n <- 1
+  for(i in group_data){
+    if(i == 1){
+      param_mtx[n,] <- (p2_alpha/(p2_alpha+p2_beta))
+    }else{
+      param_mtx[n,] <- (p1_alpha/(p1_alpha+p1_beta))
+    }
+    n <- n + 1
   }
+
+  alt_data_50 <- matrix(nrow = 70,ncol = 1024)
+  for(i in 1:70){
+    for(j in 1:1024){
+      alt_data_50[i,j] <- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
+                                             , m = param_mtx[i,j]
+                                             , s = over_disp_mult)
+    }
+  }
+  # # Null
+  # # Alternatively, do column-wise
+  # null_data <- matrix(nrow = num_indivs,ncol = num_bases)
+  # for(i in 1:num_bases){
+  #   null_data[,i] <- rmutil::rbetabinom(n = num_indivs, size = ceiling(seq_sum[i])
+  #                                          , m = (p1_alpha/(p1_alpha+p1_beta))[i]
+  #                                          , s = (p1_alpha+p1_beta)[i])
+  # }
+  #
+  # # Alt
+  # # Params should be p2 throughout
+  # alt_data <- matrix(nrow = num_indivs,ncol = num_bases)
+  # for(i in 1:num_bases){
+  #   alt_data[,i] <- rmutil::rbetabinom(n = num_indivs, size = ceiling(seq_sum[i])
+  #                                         , m = (p2_alpha/(p2_alpha+p2_beta))[i]
+  #                                         , s = (p2_alpha+p2_beta)[i])
+  # }
 
 
   # Clean datasets ----------------------------------------------------------
@@ -219,7 +260,8 @@ sim3_50 <- run_sim3(sequencing_sums = seq_sum
                  , Wmat_1024 = Wmat_1024
                  , W2mat_1024 = W2mat_1024
                  , library.read.depth = library.read.depth
-                 , Covariates = Covariates)
+                 , Covariates = Covariates
+                 , group_data = group_data)
 
 sim3_10 <- run_sim3(sequencing_sums = seq_sum
                  , num_indivs = 70
@@ -230,7 +272,8 @@ sim3_10 <- run_sim3(sequencing_sums = seq_sum
                  , Wmat_1024 = Wmat_1024
                  , W2mat_1024 = W2mat_1024
                  , library.read.depth = library.read.depth
-                 , Covariates = Covariates)
+                 , Covariates = Covariates
+                 , group_data = group_data)
 
 sim3_5 <- run_sim3(sequencing_sums = seq_sum
                  , num_indivs = 70
@@ -241,20 +284,5 @@ sim3_5 <- run_sim3(sequencing_sums = seq_sum
                  , Wmat_1024 = Wmat_1024
                  , W2mat_1024 = W2mat_1024
                  , library.read.depth = library.read.depth
-                 , Covariates = Covariates)
-
-
-sim3_50$null_analysis$p
-sim3_50$null_hmt_analysis$p
-sim3_50$alt_analysis$p
-sim3_50$alt_hmt_analysis$p
-
-sim3_10$null_analysis$p
-sim3_10$null_hmt_analysis$p
-sim3_10$alt_analysis$p
-sim3_10$alt_hmt_analysis$p
-
-sim3_5$null_analysis$p
-sim3_5$null_hmt_analysis$p
-sim3_5$alt_analysis$p
-sim3_5$alt_hmt_analysis$p
+                 , Covariates = Covariates
+                 , group_data = group_data)

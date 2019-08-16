@@ -137,7 +137,7 @@ __Notes__:
 
 - Where no count at a given base, $c_t$, assume $e_t = 1$ (ie. no effect). Doesn't make a difference anyway, as, for these bases, we will simulate drawing from 0 sequencing counts, resulting in a 0 simulated total count. Hence, effect or not, the number of counts here will always be 0.
 - We will assume that the effect size ratio = 1 everywhere, outside the required effect window (in a later step)
-- For the null dataset, all groups will be drawn from the same distribution (probability = 1/70)
+- For the null dataset, all groups will be drawn from the same distribution (probability = 1/70) -- see page 170 of the workings of previous work
 
 Here is a methodology sample, without incorporating effect size:
 ```{r}
