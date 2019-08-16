@@ -12,7 +12,7 @@
 <meta name="author" content="Brendan Law" />
 
 
-<title>sim3_hmt_benefits</title>
+<title>sim3_hmt_benefits - v1.1</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -405,19 +405,20 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">sim3_hmt_benefits</h1>
+<h1 class="title toc-ignore">sim3_hmt_benefits - v1.1</h1>
 <h4 class="author"><em>Brendan Law</em></h4>
-<h4 class="date"><em>14/08/2019</em></h4>
+<h4 class="date"><em>15/08/2019</em></h4>
 
 </div>
 
 
+<p>This is v1.1 – builds on ‘sim3_hmt_benefits.Rmd’. Planned refinements: - Better cater for effet sizes - Potentially use simplified effect sizes (flat, large magnitudes, magnitude scaling)</p>
 <div id="waveqtl_hmt-vs-waveqtl" class="section level2">
 <h2>WaveQTL_HMT vs WaveQTL</h2>
 <p>The idea is that the benefits will come from being able to detect signals which are not necessarily strong, and not necessarily broad, but relatively localised. These sorts of signals won’t be captured by WaveQTL as they may be ‘split’ or ‘spread’ across a particular scale, and not propagate strongly enough to lower scales. (???)</p>
 <p>Perhaps see Shim and Stephens figures for some examples. Perhaps some of that matter around the middle of Figure 4 may be able to be better captured using a HMT prior. There is potentially some difference between groups here, but very narrow, inconsistent, and seemingly very spiky signal.</p>
-<div id="read-in-phenotype-sequencing-count-data" class="section level3">
-<h3>Read in phenotype (sequencing count) data</h3>
+<div id="read-in-phenotype-sequencing-count-data-and-other-auxillary-data" class="section level3">
+<h3>Read in phenotype (sequencing count) data, and other auxillary data</h3>
 <p>Here is just a sample codebase. We’re working off the data in the WaveQTL git repo – DNase-seq data at chr17.10160989.10162012 and genotypes at 24 SNPs in 2kb cis-candidate region on 70 individuals.</p>
 <pre class="r"><code>pheno.dat = as.matrix(read.table(paste0(input_data_path, &quot;chr17.10160989.10162012.pheno.dat&quot;)))
 dim(pheno.dat)</code></pre>
@@ -430,13 +431,20 @@ library.read.depth = scan(paste0(input_data_path, &quot;library.read.depth.dat&q
 length(library.read.depth)</code></pre>
 <pre><code>## [1] 70</code></pre>
 <pre class="r"><code>## read Covariates
-Covariates = as.matrix(read.table(paste0(input_data_path, &quot;PC4.dat&quot;)))</code></pre>
+Covariates = as.matrix(read.table(paste0(input_data_path, &quot;PC4.dat&quot;)))
+
+## Read DWT matrix 
+Wmat_1024 = read.table(&quot;~/Cpp/WaveQTL/data/DWT/Wmat_1024&quot;,as.is = TRUE)
+W2mat_1024 = Wmat_1024*Wmat_1024</code></pre>
 <p>Now, summarise the counts, and average:</p>
 <pre class="r"><code># Count summation
 seq_sum &lt;- apply(pheno.dat,MARGIN = 2,sum)
 # Count average
-seq_avg &lt;- apply(pheno.dat,MARGIN = 2,mean)</code></pre>
-<p>These are very small counts over 70 individuals (like 0 - 25).</p>
+seq_avg &lt;- apply(pheno.dat,MARGIN = 2,mean)
+plot(seq_sum, type = &quot;l&quot;)</code></pre>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<pre class="r"><code>plot(seq_avg, type = &quot;l&quot;)</code></pre>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-2-2.png" width="672" /> These are very small counts over 70 individuals (like 0 - 25).</p>
 </div>
 <div id="simulate-effect-sizes-and-effect-locations." class="section level3">
 <h3>Simulate effect sizes and effect locations.</h3>
@@ -446,128 +454,144 @@ seq_avg &lt;- apply(pheno.dat,MARGIN = 2,mean)</code></pre>
 <li>Extend out the effect size simulation script, so can run on all SNPs</li>
 <li>So can estimate effect sizes and locations for all SNPs in our sample dataset</li>
 </ul>
-<p>Running the following code chunk should do everything required to get the simulations.</p>
-<p>Just to verify that we get something similar, here are some plots:</p>
-<p>Plots in WaveQTL style:</p>
+<p>The following extracts effect sizes (in the data space) for this DNase-seq data vs SNP 11, using WaveQTL_HMT.</p>
+<pre class="r"><code>waveqtl_hmt_geno11 &lt;- with_hmt_effect_size(data_path = data_path
+                                           ,dataset = dataset
+                                           ,waveqtl_dataset = paste0(&quot;WaveQTL/&quot;,waveqtl_dataset)
+                                           ,Wmat_1024 = Wmat_1024
+                                           ,geno_select = 11
+                                           ,plot_title = &quot;Posterior mean +/3 posterior standard deviaion - SNP 11&quot;)</code></pre>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
 <p>Looks about right. Most importantly, we have mean effect sizes, and the locations where we have effects:</p>
 <pre class="r"><code># Base-level effect sizes:
-length(sample_mean)</code></pre>
+length(waveqtl_hmt_geno11$beta_dataS)</code></pre>
 <pre><code>## [1] 1024</code></pre>
 <pre class="r"><code># Locations of effects:
-length(col_posi)</code></pre>
+length(waveqtl_hmt_geno11$col_posi)</code></pre>
 <pre><code>## [1] 144</code></pre>
-</div>
-<div id="simulate-realistic-effect-size" class="section level3">
-<h3>Simulate realistic effect size</h3>
-<p>Does it matter if the magnitude of the effect is positive, or negative? Need to find a way to keep the p’s between 0 and 1.</p>
-<p>Generate effect sizes, and corresponding probabilities</p>
-<pre class="r"><code>p1_vector &lt;- 2/70 * (1/(1 + sample_mean))
-p2_vector &lt;- 2/70 * (sample_mean/(1 + sample_mean))
-
-par(mar = c(2,4,4,2))
-plot(1,1,type=&quot;n&quot;
-     , xlab = &quot;position&quot;
-     , ylab = &quot;p parameter&quot;
-     , ylim=c(min(min(p1_vector),min(p2_vector)) * 0.5, max(max(p1_vector),max(p2_vector)) * 1.5)
-     , xlim=c(1, 1024)
-     , main =&quot;Simulation - p1 (null) vs p2 (alt) parameters&quot;
-     , axes=FALSE)
-axis(2)
-axis(1, at = c(1,seq(128,1024,128)))
-
-abline(h = 0, col = &quot;red&quot;)
-lines(p1_vector, col = &quot;blue&quot;)
-lines(p2_vector, col = &quot;blue&quot;)
-box()</code></pre>
-<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
-<pre class="r"><code>plot(p1_vector, type = &quot;l&quot;)</code></pre>
-<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
-<pre class="r"><code>plot(p2_vector, type = &quot;l&quot;)</code></pre>
-<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-4-3.png" width="672" /></p>
-<p>For now, the effect size is a bit weird (has positives and negatives), so just use this for now as a toy example:</p>
-<pre class="r"><code>new_sample_mean &lt;- abs(sample_mean*10e10)
-p1_vector &lt;- 2/70 * (1/(1 + abs(new_sample_mean)))
-p2_vector &lt;- 2/70 * (abs(new_sample_mean)/(1 + abs(new_sample_mean)))
-
-par(mar = c(2,4,4,2))
-plot(1,1,type=&quot;n&quot;
-     , xlab = &quot;position&quot;
-     , ylab = &quot;p parameter&quot;
-     , ylim=c(min(min(p1_vector),min(p2_vector)) * 0.5, max(max(p1_vector),max(p2_vector)) * 1.5)
-     , xlim=c(1, 1024)
-     , main =&quot;Simulation - p1 (null, black) vs p2 (alt, blue) parameters&quot;
-     , axes=FALSE)
-axis(2)
-axis(1, at = c(1,seq(128,1024,128)))
-
-abline(h = 0, col = &quot;red&quot;)
-lines(p1_vector, col = &quot;black&quot;)
-lines(p2_vector, col = &quot;blue&quot;)
-box()</code></pre>
-<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
-<p>Issues to deal with:</p>
-<ul>
-<li>effect sizes changing signs (some positive, some negative)</li>
-<li>the really small magnitude of the effect sizes (ie. 10e-13)</li>
-<li>Sum of counts at some bases are fractional – how to deal with this? Do we just round?</li>
-</ul>
-<p>Set up beta-binomial distribution:</p>
-<pre class="r"><code>library(rmutil) # for beta-binomial distirbution</code></pre>
-<pre><code>## 
-## Attaching package: &#39;rmutil&#39;</code></pre>
-<pre><code>## The following object is masked from &#39;package:stats&#39;:
-## 
-##     nobs</code></pre>
-<pre><code>## The following objects are masked from &#39;package:base&#39;:
-## 
-##     as.data.frame, units</code></pre>
-<pre class="r"><code>over_disp_mult &lt;- 70
-p1_alpha &lt;- over_disp_mult*p1_vector
-p1_beta &lt;- over_disp_mult - p1_alpha
-p2_alpha &lt;- over_disp_mult*p2_vector
-p2_beta &lt;- over_disp_mult - p2_alpha
-
-# Check to see that these alphas and betas generate the desired probabilities
-all.equal(p1_vector, p1_alpha/(p1_alpha + p1_beta))</code></pre>
-<pre><code>## [1] TRUE</code></pre>
-<pre class="r"><code>all.equal(p2_vector, p2_alpha/(p2_alpha + p2_beta))</code></pre>
-<pre><code>## [1] TRUE</code></pre>
+<!-- ### HACK -->
+<!-- Play around with params... -->
+<!-- ```{r} -->
+<!-- waveqtl_hmt_geno11$beta_dataS <- -waveqtl_hmt_geno11$beta_dataS * 100000000 -->
+<!-- seq_sum <- seq_sum*1000 -->
+<!-- ``` -->
 </div>
 <div id="simulate-realistic-effect-lengths" class="section level3">
 <h3>Simulate realistic effect lengths</h3>
 <p>For example, let’s do effect length 5, 10, and 50.</p>
-<p>I want to generate the effects such that they affect consecutive bases (for now), so i’ll randomly pick out a base from the effect area, and create an effect which is centred around that base.</p>
-<p><strong>There’s a slight issue:</strong> this might mean that the effect ‘windows’ we generate go outside the actual effect area of the actual data. I won’t worry about this for now, as I just want some comparison for performance of algorithms at different effect lengths. Ideas to work around this:</p>
+<p>I’ve created some functions which either:</p>
 <ul>
-<li>Restrict where I can pick the start from, to make sure the windows are contained within the actual effect windows</li>
-<li>This would require me to ‘cluster’ my effects together, so i have well defined start and end points of each effect window</li>
+<li>Picks an effect interval which lies within the above effect areas</li>
+<li>If the length of interval we require is longer than any above effect area, pick the longest effect area possible for our interval</li>
 </ul>
-<p>I’ve currently got a lucky seed below which gets me a 50 length window, but this won’t always be the case. I suspect that when I do sims, i’ll opt out of this requirement, and figure it out later.</p>
-<pre class="r"><code>set.seed(6) # Hey look, a lucky seed which gets me a 50 sized window which works!
-# Binary dataset - 1/0 for effect/no effect
-effect_ind &lt;- rep(0,1024)
-effect_ind[col_posi] &lt;- 1
+<pre class="r"><code># Generate table summary of data-space effect areas
+int_table &lt;- summarise_effect_intervals(waveqtl_hmt_geno11$col_posi)
 
-# Length 5
-effect_5_start &lt;- sample(col_posi,size = 1)
-# effect_5 &lt;- (effect_5_start-2):(effect_5_start+2)
-effect_5 &lt;- intersect((effect_5_start-2):(effect_5_start+2),col_posi)
+set.seed(10)
+effect_5 &lt;- effect_length_picker(int_table,5)
+effect_10 &lt;- effect_length_picker(int_table,10)
+effect_50 &lt;- effect_length_picker(int_table,50)
 
-# Length 10
-effect_10_start &lt;- sample(col_posi,size = 1)
-# effect_10 &lt;- (effect_10_start-4):(effect_10_start+5)
-effect_10 &lt;- intersect((effect_10_start-4):(effect_10_start+5),col_posi)
+length(effect_5)</code></pre>
+<pre><code>## [1] 5</code></pre>
+<pre class="r"><code>length(effect_10)</code></pre>
+<pre><code>## [1] 10</code></pre>
+<pre class="r"><code>length(effect_50)</code></pre>
+<pre><code>## [1] 50</code></pre>
+</div>
+<div id="simulate-realistic-effect-size" class="section level3">
+<h3>Simulate realistic effect size</h3>
+<p>Generate effect sizes, and corresponding probabilities. Method is as follows:</p>
+<ol style="list-style-type: decimal">
+<li><p>Convert the mean effect into a proportion of baseline vs with effect (note that the effect can go both ways). We convert an additive effect (as per modelling assumptions) into a multiplicative ratio by: <span class="math display">\[\begin{align}
+  c_t \frac{1}{70} + \alpha &amp;= \frac{1}{70} c_t e_t \\
+  \therefore e_t &amp;= 1 + \frac{70 \alpha}{c_t}
+\end{align}\]</span> where <span class="math inline">\(c_t\)</span> is the total sum of counts at each base, and <span class="math inline">\(e_t\)</span> is the new (ratio’d) effect size. Hence, we’re trying to convert something of arbitrary size to something in <span class="math inline">\((0,\infty)\)</span>, where 1 means 0 effect.</p></li>
+<li><p>We then convert these effect sizes into a <span class="math inline">\(p\)</span> parameter for our beta-binomial sampling. The original idea is to draw, at each base, a number of trials = total sum of counts (from all 70 individuals), with a probability of success around 1/70, so that the mean number of counts at any base should correspond to the sample average number of counts at any base. We need to augment this to have two parameters, <span class="math inline">\(p_1\)</span> and <span class="math inline">\(p_2\)</span>, where <span class="math inline">\(p_2\)</span> reflects the effect size. In order to do this, we assume we draw two sets of data, with total proportion <span class="math inline">\(p_1 + p_2 = \frac{2}{70}\)</span>, and alter the effect sizes according to: <span class="math display">\[\begin{align}
+  p_{1,b} &amp;= \frac{2}{70} \frac{1}{1 + e_b} \\
+  p_{2,b} &amp;= \frac{2}{70} \frac{e_b}{1 + e_b} \\
+\end{align}\]</span> where <span class="math inline">\(p_{1,b}, p_{2,b}\)</span> are the proportions, at base <span class="math inline">\(b\)</span> when there is no effect, and where there is effect, respectively. Note in the final plot, how they are similar where no effect has been observed, but diverge (yet still together sum to $) when there is an effect.</p></li>
+</ol>
+<p>We note that due to the small effect size, the divergence, despite looking large in the plot, is REALLY small in practice. We may need to scale this up and down a little to find the ‘sweet spot’ usefulness of our algo.</p>
+<p><em>Issues</em>:</p>
+<ul>
+<li>currently assuming effect size ratio = 1 everywhere, outside the effect window</li>
+<li><span class="math inline">\(c_t\)</span> is 0 at some bases – currently just adding 1 to all <span class="math inline">\(c_t\)</span> to make sure we don’t divide by 0.</li>
+</ul>
+<p>Here is a methodology sample, without incorporating effect size:</p>
+<pre class="r"><code>plot(waveqtl_hmt_geno11$beta_dataS, type = &quot;l&quot;, main = &quot;waveQTL effect size in data space&quot;)</code></pre>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<pre class="r"><code># Convert effect into ratio
+effect_ratio &lt;- 1+(70*waveqtl_hmt_geno11$beta_dataS/(seq_sum + 1))
+plot(effect_ratio, type = &quot;l&quot;, main= &quot;effect size converted to effect ratio (alt/null)&quot;)</code></pre>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-6-2.png" width="672" /></p>
+<pre class="r"><code># Incorporate ratio into proportion parameter
+p1_vector &lt;- 2/70 * (1/(1 + effect_ratio))
+p2_vector &lt;- 2/70 * (effect_ratio/(1 + effect_ratio))
 
-# Length 50
-effect_50_start &lt;- sample(col_posi,size = 1)
-# effect_50 &lt;- (effect_50_start-24):(effect_50_start+25)
-effect_50 &lt;- intersect((effect_50_start-24):(effect_50_start+25),col_posi)</code></pre>
+par(mar = c(2,4,4,2))
+plot(1,1,type=&quot;n&quot;
+     , xlab = &quot;Base location&quot;
+     , ylab = &quot;p parameter&quot;
+     , ylim=c(min(min(p1_vector),min(p2_vector)), max(max(p1_vector),max(p2_vector)))
+     , xlim=c(1, 1024)
+     , main =&quot;Simulation - p1 (null) vs p2 (alt) parameters - before effect window&quot;
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+abline(h = 0, col = &quot;red&quot;)
+lines(p1_vector, col = &quot;blue&quot;)
+lines(p2_vector, col = &quot;black&quot;)
+legend(&quot;topleft&quot;, legend=c(&quot;p1&quot;, &quot;p2&quot;),
+       col=c(&quot;blue&quot;, &quot;black&quot;), lty=c(1,1), cex=0.8,
+       box.lty=0)
+box()</code></pre>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-6-3.png" width="672" /></p>
+<pre class="r"><code>p &lt;- recordPlot()
+# plot(p1_vector, type = &quot;l&quot;)
+# plot(p2_vector, type = &quot;l&quot;)</code></pre>
+<p>Here is the same thing, now only generating an effect in the designated 50-length effect window:</p>
+<pre class="r"><code># Incorporate ratio into proportion parameter
+# Initialise as 1/70 everywhere for both
+p1_vector &lt;- rep(1/70,1024)
+p2_vector &lt;- rep(1/70,1024)
+
+# Add in effects, where required
+p1_vector[effect_50] &lt;- 2/70 * (1/(1 + effect_ratio[effect_50]))
+p2_vector[effect_50] &lt;- 2/70 * (effect_ratio[effect_50]/(1 + effect_ratio[effect_50]))
+
+y_min &lt;- min(min(p1_vector),min(p2_vector))
+y_max &lt;- max(max(p1_vector),max(p2_vector))
+par(mar = c(2,4,4,2))
+plot(1,1,type=&quot;n&quot;
+     , xlab = &quot;Base location&quot;
+     , ylab = &quot;p parameter&quot;
+     , ylim=c(y_min, y_max)
+     , xlim=c(1, 1024)
+     , main =&quot;Simulation - p1 (null) vs p2 (alt) parameters - after effect window&quot;
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+abline(h = 0, col = &quot;red&quot;)
+if(length(effect_50) &gt; 0){
+  for(j in 1:length(effect_50)){
+    polygon(c(effect_50[j]-0.5, effect_50[j]-0.5, effect_50[j]+0.5, effect_50[j]+0.5), c(y_min-2, y_max+2, y_max+2, y_min-2), col =&quot;pink&quot;, border = NA)
+  }
+}
+lines(p1_vector, col = &quot;blue&quot;)
+lines(p2_vector, col = &quot;black&quot;)
+legend(&quot;topleft&quot;, legend=c(&quot;p1&quot;, &quot;p2&quot;),
+       col=c(&quot;blue&quot;, &quot;black&quot;), lty=c(1,1), cex=0.8,
+       box.lty=0)
+box()</code></pre>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<pre class="r"><code>p &lt;- recordPlot()</code></pre>
 </div>
 <div id="combine-the-two-to-create-simulations" class="section level3">
 <h3>Combine the two to create simulations</h3>
 <p>Have a 1024 length vector where we know:</p>
 <ul>
-<li>Which bases we want an effect for</li>
+<li>Which bases we want an effect for (everywhere else, effect = 1)</li>
 <li>The total sequence counts (# of trials) at each base</li>
 <li>The probability parameter which governs the sequencing count at each base, to mimic the ‘effect size’</li>
 </ul>
@@ -586,28 +610,40 @@ X &amp;\sim Beta-Binomial(n,m,s) \\
 \therefore s &amp;= \alpha + \beta
 \end{align*}\]</span></p>
 <p>We need to generate null and alternative samples. We want to create 70 x 1024 matrices – 70 individuals, 1024 bases. We fill out each column of our matrix by taking 70 samples from a beta-binomial to populate each column. Our beta binomial does the ‘total count at base b’ number of trials, but the parameters have the ‘divide by 70’ inbuilt, so the proportion of any one individual having a count is very low. The mean count for each column corresponds to around sum of counts divide by 70, which is the desired mean (sample mean of counts).</p>
+<p>Set up beta-binomial distribution, with regards to effect area</p>
+<pre class="r"><code>over_disp_mult &lt;- 70
+p1_alpha &lt;- over_disp_mult*p1_vector
+p1_beta &lt;- over_disp_mult - p1_alpha
+p2_alpha &lt;- over_disp_mult*p2_vector
+p2_beta &lt;- over_disp_mult - p2_alpha
+
+# Check to see that these alphas and betas generate the desired probabilities
+all.equal(p1_vector, p1_alpha/(p1_alpha + p1_beta))</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<pre class="r"><code>all.equal(p2_vector, p2_alpha/(p2_alpha + p2_beta))</code></pre>
+<pre><code>## [1] TRUE</code></pre>
 <p>Length 50 sample – generate both null and alt.</p>
+<p><em>Issue</em>:</p>
+<ul>
+<li>Sequencing sum counts aren’t always whole numbers. Draw from ceiling(sum) for now.</li>
+</ul>
 <pre class="r"><code>set.seed(6)
 # Null
 # Alternatively, do column-wise
 null_data_50 &lt;- matrix(nrow = 70,ncol = 1024)
 for(i in 1:1024){
-  null_data_50[,i] &lt;- rmutil::rbetabinom(n = 70, size = ceiling(seq_sum[i]), m = (p1_alpha/(p1_alpha+p1_beta))[i]
+  null_data_50[,i] &lt;- rmutil::rbetabinom(n = 70, size = ceiling(seq_sum[i])
+                                         , m = (p1_alpha/(p1_alpha+p1_beta))[i]
                                          , s = (p1_alpha+p1_beta)[i])
 }
 
 # Alt
-# Params should be p1, except where there is an effect.
-effect50_alpha &lt;- p1_alpha
-effect50_alpha[effect_50] &lt;- p2_alpha[effect_50]
-effect50_beta &lt;- p1_beta
-effect50_beta[effect_50] &lt;- p2_beta[effect_50]
-
+# Params should be p2 throughout
 alt_data_50 &lt;- matrix(nrow = 70,ncol = 1024)
 for(i in 1:1024){
   alt_data_50[,i] &lt;- rmutil::rbetabinom(n = 70, size = ceiling(seq_sum[i])
-                                        , m = (effect50_alpha/(effect50_alpha+effect50_beta))[i]
-                                        , s = (effect50_alpha+effect50_beta)[i])
+                                        , m = (p2_alpha/(p2_alpha+p2_beta))[i]
+                                        , s = (p2_alpha+p2_beta)[i])
 }</code></pre>
 <p>Plot the average of the two together?</p>
 <pre class="r"><code>null_data_50_avg &lt;- apply(null_data_50,2,sum)
@@ -615,7 +651,7 @@ alt_data_50_avg &lt;- apply(alt_data_50,2,sum)
 
 plt_rng_y &lt;- c(min(min(null_data_50_avg),min(alt_data_50_avg)) * 0.5, max(max(null_data_50_avg),max(alt_data_50_avg)) * 1.5)
 
-par(mfrow = c(3,1),mar = c(2,4,4,1))
+par(mfrow = c(4,1),mar = c(2,4,4,1))
 plot(1,1,type=&quot;n&quot;
      , xlab = &quot;position&quot;
      , ylab = &quot;count&quot;
@@ -661,8 +697,26 @@ if(length(effect_50) &gt; 0){
   }
 }
 lines(alt_data_50_avg, col = &quot;red&quot;, lty = &quot;dashed&quot;)
+box()
+
+plt_rng_y_2 &lt;- c(min(alt_data_50_avg - null_data_50_avg) * 0.9999999999999, max(alt_data_50_avg - null_data_50_avg) * 1.000000000000001)
+plot(1,1,type=&quot;n&quot;
+     , xlab = &quot;position&quot;
+     , ylab = &quot;count&quot;
+     , ylim=plt_rng_y_2
+     , xlim=c(1, 1024)
+     , main =&quot;Simulation - difference - effect of length 50&quot;
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+if(length(effect_50) &gt; 0){
+  for(j in 1:length(effect_50)){
+    polygon(c(effect_50[j]-0.5, effect_50[j]-0.5, effect_50[j]+0.5, effect_50[j]+0.5), c(plt_rng_y_2[1], plt_rng_y_2[2], plt_rng_y_2[1], plt_rng_y_2[2]), col =&quot;pink&quot;, border = NA)
+  }
+}
+lines(alt_data_50_avg - null_data_50_avg, col = &quot;black&quot;)
 box()</code></pre>
-<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
 </div>
 <div id="run-a-sample-analyses" class="section level3">
 <h3>Run a sample analyses</h3>
@@ -676,7 +730,6 @@ box()</code></pre>
 <li>Null data through WaveQTL and WaveQTL_HMT</li>
 <li>Alt data through WaveQTL and WaveQTL_HMT</li>
 </ul>
-<p>The cleaning functionality, functionalised up. See ‘code/WaveQTL/R/WaveQTL_preprocess_example.R’ for details of where all this came from.</p>
 <p>Cleaning the Null dataset:</p>
 <pre class="r"><code>wavelet_cleaning_wrapper_function(pheno.dat = null_data_50
                                   ,output.path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/sims/length_50/null_data/&quot;
@@ -686,6 +739,11 @@ box()</code></pre>
 <pre><code>## Warning: package &#39;wavethresh&#39; was built under R version 3.5.3</code></pre>
 <pre><code>## Loading required package: MASS</code></pre>
 <pre><code>## Warning: package &#39;MASS&#39; was built under R version 3.5.3</code></pre>
+<pre><code>## 
+## Attaching package: &#39;MASS&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:dplyr&#39;:
+## 
+##     select</code></pre>
 <pre><code>## WaveThresh: R wavelet software, release 4.6.8, installed</code></pre>
 <pre><code>## Copyright Guy Nason and others 1993-2016</code></pre>
 <pre><code>## Note: nlevels has been renamed to nlevelsWT</code></pre>
@@ -714,10 +772,7 @@ box()</code></pre>
 <div id="analysis---no-hmt" class="section level3">
 <h3>Analysis - no HMT</h3>
 <p>Quick effect size analysis and plotting. No_HMT is easy. Read in some more pre-requisite data (like the inverse wavelet transform):</p>
-<pre class="r"><code>## We&#39;ll look at effect size of 11th SNP in genotype file
-sel_geno_IX = 11
-
-##### Null
+<pre class="r"><code>##### Null
 null_50_data_path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/output/&quot;
 null_50_data_prefix = &quot;sim3_noQT_null&quot;
 null_50 &lt;- no_hmt_effect_size(data_path = null_50_data_path
@@ -725,7 +780,7 @@ null_50 &lt;- no_hmt_effect_size(data_path = null_50_data_path
                               ,Wmat_1024 = Wmat_1024
                               ,W2mat_1024 = W2mat_1024
                               ,sel_geno_IX = 1)</code></pre>
-<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
 <pre class="r"><code>##### Alt
 alt_50_data_path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/output/&quot;
 alt_50_data_prefix = &quot;sim3_noQT_alt&quot;
@@ -734,11 +789,10 @@ alt_50 &lt;- no_hmt_effect_size(data_path = alt_50_data_path
                              ,Wmat_1024 = Wmat_1024
                              ,W2mat_1024 = W2mat_1024
                              ,sel_geno_IX = 1)</code></pre>
-<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-18-2.png" width="672" /></p>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-17-2.png" width="672" /></p>
 </div>
 <div id="analysis---with-hmt" class="section level3">
 <h3>Analysis - with HMT</h3>
-<p>Functionalise it up</p>
 <pre class="r"><code>##### Null
 null_50_data_path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/output/&quot;
 null_50_data_prefix = &quot;sim3_noQT_null&quot;
@@ -747,7 +801,7 @@ null_50_hmt &lt;- with_hmt_effect_size(data_path = null_50_data_path
                                     ,waveqtl_dataset = null_50_data_prefix
                                     ,Wmat_1024 = Wmat_1024
                                     ,geno_select = 1)</code></pre>
-<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-20-1.png" width="672" /></p>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
 <pre class="r"><code>##### Alt
 alt_50_data_path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/output/&quot;
 alt_50_data_prefix = &quot;sim3_noQT_alt&quot;
@@ -756,13 +810,13 @@ alt_50_hmt &lt;- with_hmt_effect_size(data_path = alt_50_data_path
                                    ,waveqtl_dataset = alt_50_data_prefix
                                    ,Wmat_1024 = Wmat_1024
                                    ,geno_select = 1)</code></pre>
-<p><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-20-2.png" width="672" /></p>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-18-2.png" width="672" /></p>
 </div>
 <div id="ad-hoc-plots" class="section level3">
 <h3>Ad hoc plots</h3>
 <p>Two final comparisons, by plot:</p>
-<p>Null case: <img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-21-1.png" width="672" /><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-21-2.png" width="672" /></p>
-<p>Alt case: <img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-22-1.png" width="672" /><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-22-2.png" width="672" /><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-22-3.png" width="672" /><img src="sim3_hmt_benefits_files/figure-html/unnamed-chunk-22-4.png" width="672" /></p>
+<p>Null case: <img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-19-1.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-19-2.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-19-3.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-19-4.png" width="672" /></p>
+<p>Alt case: <img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-20-1.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-20-2.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-20-3.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-20-4.png" width="672" /></p>
 </div>
 </div>
 
