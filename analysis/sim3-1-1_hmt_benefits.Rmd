@@ -49,6 +49,14 @@ Covariates = as.matrix(read.table(paste0(input_data_path, "PC4.dat")))
 ## Read DWT matrix 
 Wmat_1024 = read.table("~/Cpp/WaveQTL/data/DWT/Wmat_1024",as.is = TRUE)
 W2mat_1024 = Wmat_1024*Wmat_1024
+
+## Read in SNPs
+geno_data = read.table("~/Cpp/WaveQTL/data/dsQTL/chr17.10160989.10162012.2kb.cis.geno",as.is = TRUE)
+geno_data = geno_data[11,4:73]
+
+# Group based on midpoint of the data
+med_data <- median(as.numeric(as.vector(geno_data[1,])))
+group_data <- as.numeric(as.numeric(as.vector(geno_data[1,])) >= med_data)
 ```
 
 Now, summarise the counts, and average:
@@ -64,11 +72,6 @@ These are very small counts over 70 individuals (like 0 - 25).
 
 ### Simulate effect sizes and effect locations.
 What we now need is, for each base, $b = 1,\dots,1024$, the estimated (data-space) effect size, as well as the locations where there are effects. A lot of this work was done in 'sim1_waveqtl_hmt_gamma_phi.Rmd'. So what i'll do (for now) is just drop the code in to get an example output for the 11th SNP/genotype, as was done in that markdown.
-
-_To do:_
-
-- Extend out the effect size simulation script, so can run on all SNPs
-- So can estimate effect sizes and locations for all SNPs in our sample dataset
 
 The following extracts effect sizes (in the data space) for this DNase-seq data vs SNP 11, using WaveQTL_HMT.
 ```{r}
@@ -88,13 +91,6 @@ length(waveqtl_hmt_geno11$beta_dataS)
 # Locations of effects:
 length(waveqtl_hmt_geno11$col_posi)
 ```
-
-<!-- ### HACK -->
-<!-- Play around with params... -->
-<!-- ```{r} -->
-<!-- waveqtl_hmt_geno11$beta_dataS <- -waveqtl_hmt_geno11$beta_dataS * 100000000 -->
-<!-- seq_sum <- seq_sum*1000 -->
-<!-- ``` -->
 
 ### Simulate realistic effect lengths
 For example, let's do effect length 5, 10, and 50.
@@ -121,7 +117,7 @@ length(effect_50)
 ### Simulate realistic effect size
 Generate effect sizes, and corresponding probabilities. Method is as follows:
 
-1. Convert the mean effect into a proportion of baseline vs with effect (note that the effect can go both ways). We convert an additive effect (as per modelling assumptions) into a multiplicative ratio by:
+1. Convert the mean effect into a proportion of baseline vs with effect (note that the effect can go both ways). Baseline is a group with no effect, as opposed to the other group, which has an effect at given base. We convert an additive effect (as per modelling assumptions) into a multiplicative ratio by:
 \begin{align}
   c_t \frac{1}{70} + \alpha &= \frac{1}{70} c_t e_t \\
   \therefore e_t &= 1 + \frac{70 \alpha}{c_t}
@@ -137,31 +133,33 @@ where $p_{1,b}, p_{2,b}$ are the proportions, at base $b$ when there is no effec
 
 We note that due to the small effect size, the divergence, despite looking large in the plot, is REALLY small in practice. We may need to scale this up and down a little to find the 'sweet spot' usefulness of our algo.
 
-_Issues_:
+__Notes__:
 
-- currently assuming effect size ratio = 1 everywhere, outside the effect window
-- $c_t$ is 0 at some bases -- currently just adding 1 to all $c_t$ to make sure we don't divide by 0.
-
+- Where no count at a given base, $c_t$, assume $e_t = 1$ (ie. no effect). Doesn't make a difference anyway, as, for these bases, we will simulate drawing from 0 sequencing counts, resulting in a 0 simulated total count. Hence, effect or not, the number of counts here will always be 0.
+- We will assume that the effect size ratio = 1 everywhere, outside the required effect window (in a later step)
+- For the null dataset, all groups will be drawn from the same distribution (probability = 1/70)
 
 Here is a methodology sample, without incorporating effect size:
 ```{r}
 plot(waveqtl_hmt_geno11$beta_dataS, type = "l", main = "waveQTL effect size in data space")
 
 # Convert effect into ratio
-effect_ratio <- 1+(70*waveqtl_hmt_geno11$beta_dataS/(seq_sum + 1))
+effect_ratio <- 1 + (70*waveqtl_hmt_geno11$beta_dataS/seq_sum)
+effect_ratio[seq_sum == 0] <- 1
 plot(effect_ratio, type = "l", main= "effect size converted to effect ratio (alt/null)")
 
 # Incorporate ratio into proportion parameter
 p1_vector <- 2/70 * (1/(1 + effect_ratio))
 p2_vector <- 2/70 * (effect_ratio/(1 + effect_ratio))
 
+# Plot raw p1,p2
 par(mar = c(2,4,4,2))
 plot(1,1,type="n"
      , xlab = "Base location"
      , ylab = "p parameter"
      , ylim=c(min(min(p1_vector),min(p2_vector)), max(max(p1_vector),max(p2_vector)))
      , xlim=c(1, 1024)
-     , main ="Simulation - p1 (null) vs p2 (alt) parameters - before effect window"
+     , main ="Simulation - p1 (no effect) vs p2 (effect) parameters - before effect window"
      , axes=FALSE)
 axis(2)
 axis(1, at = c(1,seq(128,1024,128)))
@@ -173,10 +171,30 @@ legend("topleft", legend=c("p1", "p2"),
        box.lty=0)
 box()
 p <- recordPlot()
-# plot(p1_vector, type = "l")
-# plot(p2_vector, type = "l")
+
+## Now plot the means (multiply by sequencing sums)
+par(mar = c(2,4,4,2))
+plot(1,1,type="n"
+     , xlab = "Base location"
+     , ylab = "p parameter"
+     , ylim=c(min(min(p1_vector*seq_sum),min(p2_vector*seq_sum))
+              , max(max(p1_vector*seq_sum),max(p2_vector*seq_sum)))
+     , xlim=c(1, 1024)
+     , main ="Simulation - mean g1 (no effect) vs mean g2 (effect) parameters - before effect window"
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+abline(h = 0, col = "red")
+lines(p1_vector*seq_sum, col = "blue")
+lines(p2_vector*seq_sum, col = "black")
+legend("topleft", legend=c("p1", "p2"),
+       col=c("blue", "black"), lty=c(1,1), cex=0.8,
+       box.lty=0)
+box()
+p <- recordPlot()
 
 ```
+Can see that the really, really small difference in effect size resuls in very little difference between the mean counts at any base.
 
 Here is the same thing, now only generating an effect in the designated 50-length effect window:
 ```{r}
@@ -250,7 +268,7 @@ We need to generate null and alternative samples. We want to create 70 x 1024 ma
 
 Set up beta-binomial distribution, with regards to effect area
 ```{r}
-over_disp_mult <- 70
+over_disp_mult <- 1/70
 p1_alpha <- over_disp_mult*p1_vector
 p1_beta <- over_disp_mult - p1_alpha
 p2_alpha <- over_disp_mult*p2_vector
@@ -261,29 +279,55 @@ all.equal(p1_vector, p1_alpha/(p1_alpha + p1_beta))
 all.equal(p2_vector, p2_alpha/(p2_alpha + p2_beta))
 ```
 
-Length 50 sample -- generate both null and alt.
-
-_Issue_:
-
-- Sequencing sum counts aren't always whole numbers. Draw from ceiling(sum) for now.
+Length 50 sample -- generate both null and alt. Based on the genotype groups (0 or 1), for the alt, we draw either p1 or p2. For the null dataset, we draw 1/70 for both (no effect). Note that sequencing sum counts aren't always whole numbers. to deal with this, we draw a ceiling(sum) number of trials.
 ```{r}
 set.seed(6)
+# # Null
+# null_data_50 <- matrix(nrow = 70,ncol = 1024)
+# for(i in 1:1024){
+#   null_data_50[,i] <- rmutil::rbetabinom(n = 70, size = ceiling(as.numeric(as.vector(seq_sum[i])))
+#                                          , m = (p1_alpha/(p1_alpha+p1_beta))[i]
+#                                          , s = (p1_alpha+p1_beta)[i])
+# }
+# 
+# # Alt
+# alt_data_50 <- matrix(nrow = 70,ncol = 1024)
+# for(i in 1:1024){
+#   alt_data_50[,i] <- rmutil::rbetabinom(n = 70, size = ceiling(as.numeric(as.vector(seq_sum[i])))
+#                                         , m = (p2_alpha/(p2_alpha+p2_beta))[i]
+#                                         , s = (p2_alpha+p2_beta)[i])
+# }
+
 # Null
-# Alternatively, do column-wise
 null_data_50 <- matrix(nrow = 70,ncol = 1024)
-for(i in 1:1024){
-  null_data_50[,i] <- rmutil::rbetabinom(n = 70, size = ceiling(seq_sum[i])
-                                         , m = (p1_alpha/(p1_alpha+p1_beta))[i]
-                                         , s = (p1_alpha+p1_beta)[i])
+for(i in 1:70){
+  for(j in 1:1024){
+    null_data_50[i,j] <- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
+                                         , m = 1/70
+                                         , s = over_disp_mult)  
+  }
 }
 
 # Alt
-# Params should be p2 throughout
+# For alt dataset, create a 70 X 1024 matrix, based on group membership, assigning p1 or p2, respectively
+param_mtx <- matrix(nrow = 70,ncol = 1024)
+n <- 1
+for(i in group_data){
+  if(i == 1){
+    param_mtx[n,] <- (p2_alpha/(p2_alpha+p2_beta))
+  }else{
+    param_mtx[n,] <- (p1_alpha/(p1_alpha+p1_beta))
+  }
+  n <- n + 1
+}
+
 alt_data_50 <- matrix(nrow = 70,ncol = 1024)
-for(i in 1:1024){
-  alt_data_50[,i] <- rmutil::rbetabinom(n = 70, size = ceiling(seq_sum[i])
-                                        , m = (p2_alpha/(p2_alpha+p2_beta))[i]
-                                        , s = (p2_alpha+p2_beta)[i])
+for(i in 1:70){
+  for(j in 1:1024){
+    alt_data_50[i,j] <- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
+                                         , m = param_mtx[i,j]
+                                         , s = over_disp_mult)  
+  }
 }
 ```
 
