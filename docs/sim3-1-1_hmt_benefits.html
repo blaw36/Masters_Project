@@ -435,7 +435,15 @@ Covariates = as.matrix(read.table(paste0(input_data_path, &quot;PC4.dat&quot;)))
 
 ## Read DWT matrix 
 Wmat_1024 = read.table(&quot;~/Cpp/WaveQTL/data/DWT/Wmat_1024&quot;,as.is = TRUE)
-W2mat_1024 = Wmat_1024*Wmat_1024</code></pre>
+W2mat_1024 = Wmat_1024*Wmat_1024
+
+## Read in SNPs
+geno_data = read.table(&quot;~/Cpp/WaveQTL/data/dsQTL/chr17.10160989.10162012.2kb.cis.geno&quot;,as.is = TRUE)
+geno_data = geno_data[11,4:73]
+
+# Group based on midpoint of the data
+med_data &lt;- median(as.numeric(as.vector(geno_data[1,])))
+group_data &lt;- as.numeric(as.numeric(as.vector(geno_data[1,])) &gt;= med_data)</code></pre>
 <p>Now, summarise the counts, and average:</p>
 <pre class="r"><code># Count summation
 seq_sum &lt;- apply(pheno.dat,MARGIN = 2,sum)
@@ -449,11 +457,6 @@ plot(seq_sum, type = &quot;l&quot;)</code></pre>
 <div id="simulate-effect-sizes-and-effect-locations." class="section level3">
 <h3>Simulate effect sizes and effect locations.</h3>
 <p>What we now need is, for each base, <span class="math inline">\(b = 1,\dots,1024\)</span>, the estimated (data-space) effect size, as well as the locations where there are effects. A lot of this work was done in ‘sim1_waveqtl_hmt_gamma_phi.Rmd’. So what i’ll do (for now) is just drop the code in to get an example output for the 11th SNP/genotype, as was done in that markdown.</p>
-<p><em>To do:</em></p>
-<ul>
-<li>Extend out the effect size simulation script, so can run on all SNPs</li>
-<li>So can estimate effect sizes and locations for all SNPs in our sample dataset</li>
-</ul>
 <p>The following extracts effect sizes (in the data space) for this DNase-seq data vs SNP 11, using WaveQTL_HMT.</p>
 <pre class="r"><code>waveqtl_hmt_geno11 &lt;- with_hmt_effect_size(data_path = data_path
                                            ,dataset = dataset
@@ -469,12 +472,6 @@ length(waveqtl_hmt_geno11$beta_dataS)</code></pre>
 <pre class="r"><code># Locations of effects:
 length(waveqtl_hmt_geno11$col_posi)</code></pre>
 <pre><code>## [1] 144</code></pre>
-<!-- ### HACK -->
-<!-- Play around with params... -->
-<!-- ```{r} -->
-<!-- waveqtl_hmt_geno11$beta_dataS <- -waveqtl_hmt_geno11$beta_dataS * 100000000 -->
-<!-- seq_sum <- seq_sum*1000 -->
-<!-- ``` -->
 </div>
 <div id="simulate-realistic-effect-lengths" class="section level3">
 <h3>Simulate realistic effect lengths</h3>
@@ -503,7 +500,7 @@ length(effect_5)</code></pre>
 <h3>Simulate realistic effect size</h3>
 <p>Generate effect sizes, and corresponding probabilities. Method is as follows:</p>
 <ol style="list-style-type: decimal">
-<li><p>Convert the mean effect into a proportion of baseline vs with effect (note that the effect can go both ways). We convert an additive effect (as per modelling assumptions) into a multiplicative ratio by: <span class="math display">\[\begin{align}
+<li><p>Convert the mean effect into a proportion of baseline vs with effect (note that the effect can go both ways). Baseline is a group with no effect, as opposed to the other group, which has an effect at given base. We convert an additive effect (as per modelling assumptions) into a multiplicative ratio by: <span class="math display">\[\begin{align}
   c_t \frac{1}{70} + \alpha &amp;= \frac{1}{70} c_t e_t \\
   \therefore e_t &amp;= 1 + \frac{70 \alpha}{c_t}
 \end{align}\]</span> where <span class="math inline">\(c_t\)</span> is the total sum of counts at each base, and <span class="math inline">\(e_t\)</span> is the new (ratio’d) effect size. Hence, we’re trying to convert something of arbitrary size to something in <span class="math inline">\((0,\infty)\)</span>, where 1 means 0 effect.</p></li>
@@ -513,29 +510,32 @@ length(effect_5)</code></pre>
 \end{align}\]</span> where <span class="math inline">\(p_{1,b}, p_{2,b}\)</span> are the proportions, at base <span class="math inline">\(b\)</span> when there is no effect, and where there is effect, respectively. Note in the final plot, how they are similar where no effect has been observed, but diverge (yet still together sum to $) when there is an effect.</p></li>
 </ol>
 <p>We note that due to the small effect size, the divergence, despite looking large in the plot, is REALLY small in practice. We may need to scale this up and down a little to find the ‘sweet spot’ usefulness of our algo.</p>
-<p><em>Issues</em>:</p>
+<p><strong>Notes</strong>:</p>
 <ul>
-<li>currently assuming effect size ratio = 1 everywhere, outside the effect window</li>
-<li><span class="math inline">\(c_t\)</span> is 0 at some bases – currently just adding 1 to all <span class="math inline">\(c_t\)</span> to make sure we don’t divide by 0.</li>
+<li>Where no count at a given base, <span class="math inline">\(c_t\)</span>, assume <span class="math inline">\(e_t = 1\)</span> (ie. no effect). Doesn’t make a difference anyway, as, for these bases, we will simulate drawing from 0 sequencing counts, resulting in a 0 simulated total count. Hence, effect or not, the number of counts here will always be 0.</li>
+<li>We will assume that the effect size ratio = 1 everywhere, outside the required effect window (in a later step)</li>
+<li>For the null dataset, all groups will be drawn from the same distribution (probability = 1/70)</li>
 </ul>
 <p>Here is a methodology sample, without incorporating effect size:</p>
 <pre class="r"><code>plot(waveqtl_hmt_geno11$beta_dataS, type = &quot;l&quot;, main = &quot;waveQTL effect size in data space&quot;)</code></pre>
 <p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 <pre class="r"><code># Convert effect into ratio
-effect_ratio &lt;- 1+(70*waveqtl_hmt_geno11$beta_dataS/(seq_sum + 1))
+effect_ratio &lt;- 1 + (70*waveqtl_hmt_geno11$beta_dataS/seq_sum)
+effect_ratio[seq_sum == 0] &lt;- 1
 plot(effect_ratio, type = &quot;l&quot;, main= &quot;effect size converted to effect ratio (alt/null)&quot;)</code></pre>
 <p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-6-2.png" width="672" /></p>
 <pre class="r"><code># Incorporate ratio into proportion parameter
 p1_vector &lt;- 2/70 * (1/(1 + effect_ratio))
 p2_vector &lt;- 2/70 * (effect_ratio/(1 + effect_ratio))
 
+# Plot raw p1,p2
 par(mar = c(2,4,4,2))
 plot(1,1,type=&quot;n&quot;
      , xlab = &quot;Base location&quot;
      , ylab = &quot;p parameter&quot;
      , ylim=c(min(min(p1_vector),min(p2_vector)), max(max(p1_vector),max(p2_vector)))
      , xlim=c(1, 1024)
-     , main =&quot;Simulation - p1 (null) vs p2 (alt) parameters - before effect window&quot;
+     , main =&quot;Simulation - p1 (no effect) vs p2 (effect) parameters - before effect window&quot;
      , axes=FALSE)
 axis(2)
 axis(1, at = c(1,seq(128,1024,128)))
@@ -548,8 +548,29 @@ legend(&quot;topleft&quot;, legend=c(&quot;p1&quot;, &quot;p2&quot;),
 box()</code></pre>
 <p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-6-3.png" width="672" /></p>
 <pre class="r"><code>p &lt;- recordPlot()
-# plot(p1_vector, type = &quot;l&quot;)
-# plot(p2_vector, type = &quot;l&quot;)</code></pre>
+
+## Now plot the means (multiply by sequencing sums)
+par(mar = c(2,4,4,2))
+plot(1,1,type=&quot;n&quot;
+     , xlab = &quot;Base location&quot;
+     , ylab = &quot;p parameter&quot;
+     , ylim=c(min(min(p1_vector*seq_sum),min(p2_vector*seq_sum))
+              , max(max(p1_vector*seq_sum),max(p2_vector*seq_sum)))
+     , xlim=c(1, 1024)
+     , main =&quot;Simulation - mean g1 (no effect) vs mean g2 (effect) parameters - before effect window&quot;
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+abline(h = 0, col = &quot;red&quot;)
+lines(p1_vector*seq_sum, col = &quot;blue&quot;)
+lines(p2_vector*seq_sum, col = &quot;black&quot;)
+legend(&quot;topleft&quot;, legend=c(&quot;p1&quot;, &quot;p2&quot;),
+       col=c(&quot;blue&quot;, &quot;black&quot;), lty=c(1,1), cex=0.8,
+       box.lty=0)
+box()</code></pre>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-6-4.png" width="672" /></p>
+<pre class="r"><code>p &lt;- recordPlot()</code></pre>
+<p>Can see that the really, really small difference in effect size resuls in very little difference between the mean counts at any base.</p>
 <p>Here is the same thing, now only generating an effect in the designated 50-length effect window:</p>
 <pre class="r"><code># Incorporate ratio into proportion parameter
 # Initialise as 1/70 everywhere for both
@@ -611,7 +632,7 @@ X &amp;\sim Beta-Binomial(n,m,s) \\
 \end{align*}\]</span></p>
 <p>We need to generate null and alternative samples. We want to create 70 x 1024 matrices – 70 individuals, 1024 bases. We fill out each column of our matrix by taking 70 samples from a beta-binomial to populate each column. Our beta binomial does the ‘total count at base b’ number of trials, but the parameters have the ‘divide by 70’ inbuilt, so the proportion of any one individual having a count is very low. The mean count for each column corresponds to around sum of counts divide by 70, which is the desired mean (sample mean of counts).</p>
 <p>Set up beta-binomial distribution, with regards to effect area</p>
-<pre class="r"><code>over_disp_mult &lt;- 70
+<pre class="r"><code>over_disp_mult &lt;- 1/70
 p1_alpha &lt;- over_disp_mult*p1_vector
 p1_beta &lt;- over_disp_mult - p1_alpha
 p2_alpha &lt;- over_disp_mult*p2_vector
@@ -622,28 +643,54 @@ all.equal(p1_vector, p1_alpha/(p1_alpha + p1_beta))</code></pre>
 <pre><code>## [1] TRUE</code></pre>
 <pre class="r"><code>all.equal(p2_vector, p2_alpha/(p2_alpha + p2_beta))</code></pre>
 <pre><code>## [1] TRUE</code></pre>
-<p>Length 50 sample – generate both null and alt.</p>
-<p><em>Issue</em>:</p>
-<ul>
-<li>Sequencing sum counts aren’t always whole numbers. Draw from ceiling(sum) for now.</li>
-</ul>
+<p>Length 50 sample – generate both null and alt. Based on the genotype groups (0 or 1), for the alt, we draw either p1 or p2. For the null dataset, we draw 1/70 for both (no effect). Note that sequencing sum counts aren’t always whole numbers. to deal with this, we draw a ceiling(sum) number of trials.</p>
 <pre class="r"><code>set.seed(6)
+# # Null
+# null_data_50 &lt;- matrix(nrow = 70,ncol = 1024)
+# for(i in 1:1024){
+#   null_data_50[,i] &lt;- rmutil::rbetabinom(n = 70, size = ceiling(as.numeric(as.vector(seq_sum[i])))
+#                                          , m = (p1_alpha/(p1_alpha+p1_beta))[i]
+#                                          , s = (p1_alpha+p1_beta)[i])
+# }
+# 
+# # Alt
+# alt_data_50 &lt;- matrix(nrow = 70,ncol = 1024)
+# for(i in 1:1024){
+#   alt_data_50[,i] &lt;- rmutil::rbetabinom(n = 70, size = ceiling(as.numeric(as.vector(seq_sum[i])))
+#                                         , m = (p2_alpha/(p2_alpha+p2_beta))[i]
+#                                         , s = (p2_alpha+p2_beta)[i])
+# }
+
 # Null
-# Alternatively, do column-wise
 null_data_50 &lt;- matrix(nrow = 70,ncol = 1024)
-for(i in 1:1024){
-  null_data_50[,i] &lt;- rmutil::rbetabinom(n = 70, size = ceiling(seq_sum[i])
-                                         , m = (p1_alpha/(p1_alpha+p1_beta))[i]
-                                         , s = (p1_alpha+p1_beta)[i])
+for(i in 1:70){
+  for(j in 1:1024){
+    null_data_50[i,j] &lt;- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
+                                         , m = 1/70
+                                         , s = over_disp_mult)  
+  }
 }
 
 # Alt
-# Params should be p2 throughout
+# For alt dataset, create a 70 X 1024 matrix, based on group membership, assigning p1 or p2, respectively
+param_mtx &lt;- matrix(nrow = 70,ncol = 1024)
+n &lt;- 1
+for(i in group_data){
+  if(i == 1){
+    param_mtx[n,] &lt;- (p2_alpha/(p2_alpha+p2_beta))
+  }else{
+    param_mtx[n,] &lt;- (p1_alpha/(p1_alpha+p1_beta))
+  }
+  n &lt;- n + 1
+}
+
 alt_data_50 &lt;- matrix(nrow = 70,ncol = 1024)
-for(i in 1:1024){
-  alt_data_50[,i] &lt;- rmutil::rbetabinom(n = 70, size = ceiling(seq_sum[i])
-                                        , m = (p2_alpha/(p2_alpha+p2_beta))[i]
-                                        , s = (p2_alpha+p2_beta)[i])
+for(i in 1:70){
+  for(j in 1:1024){
+    alt_data_50[i,j] &lt;- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
+                                         , m = param_mtx[i,j]
+                                         , s = over_disp_mult)  
+  }
 }</code></pre>
 <p>Plot the average of the two together?</p>
 <pre class="r"><code>null_data_50_avg &lt;- apply(null_data_50,2,sum)
