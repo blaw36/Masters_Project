@@ -315,13 +315,13 @@ plot(1,1,type="n"
      , ylab = "p parameter"
      , ylim=c(min(min(p1_vector),min(p2_vector)) * 0.5, max(max(p1_vector),max(p2_vector)) * 1.5)
      , xlim=c(1, 1024)
-     , main ="Simulation - p1 (null) vs p2 (alt) parameters"
+     , main ="Simulation - p1 (null, black) vs p2 (alt, blue) parameters"
      , axes=FALSE)
 axis(2)
 axis(1, at = c(1,seq(128,1024,128)))
 
 abline(h = 0, col = "red")
-lines(p1_vector, col = "blue")
+lines(p1_vector, col = "black")
 lines(p2_vector, col = "blue")
 box()
 ```

@@ -73,6 +73,7 @@ Some writings about the simulations and data analysis exercises we undertook aro
 - Goal here is to simulate the real data, then to demonstrate the benefits of a HMT vs non-HMT approach.
 - V1 method [WIP]
 - V1 results [here](sim3_hmt_benefits.html)
+- V2 results [here](sim3-1-1_hmt_benefits.html)
 
 ***
 
