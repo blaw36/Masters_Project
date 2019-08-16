@@ -242,3 +242,19 @@ sim3_5 <- run_sim3(sequencing_sums = seq_sum
                  , W2mat_1024 = W2mat_1024
                  , library.read.depth = library.read.depth
                  , Covariates = Covariates)
+
+
+sim3_50$null_analysis$p
+sim3_50$null_hmt_analysis$p
+sim3_50$alt_analysis$p
+sim3_50$alt_hmt_analysis$p
+
+sim3_10$null_analysis$p
+sim3_10$null_hmt_analysis$p
+sim3_10$alt_analysis$p
+sim3_10$alt_hmt_analysis$p
+
+sim3_5$null_analysis$p
+sim3_5$null_hmt_analysis$p
+sim3_5$alt_analysis$p
+sim3_5$alt_hmt_analysis$p
