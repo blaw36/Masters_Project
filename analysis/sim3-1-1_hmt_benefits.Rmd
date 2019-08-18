@@ -50,13 +50,18 @@ Covariates = as.matrix(read.table(paste0(input_data_path, "PC4.dat")))
 Wmat_1024 = read.table("~/Cpp/WaveQTL/data/DWT/Wmat_1024",as.is = TRUE)
 W2mat_1024 = Wmat_1024*Wmat_1024
 
-## Read in SNPs
-geno_data = read.table("~/Cpp/WaveQTL/data/dsQTL/chr17.10160989.10162012.2kb.cis.geno",as.is = TRUE)
-geno_data = geno_data[11,4:73]
+# ## Read in SNPs
+# geno_data = read.table("~/Cpp/WaveQTL/data/dsQTL/chr17.10160989.10162012.2kb.cis.geno",as.is = TRUE)
+# geno_data = geno_data[11,4:73]
+#
+# # Group based on midpoint of the data
+# med_data <- median(as.numeric(as.vector(geno_data[1,])))
+# group_data <- as.numeric(as.numeric(as.vector(geno_data[1,])) >= med_data)
+# write.table(t(c("blah","A","A",group_data)), file= paste0("~/Cpp/WaveQTL_HMT/data/dsQTL/", "sim3.cis.geno"), row.names=FALSE, col.names = FALSE, quote=FALSE)
 
-# Group based on midpoint of the data
-med_data <- median(as.numeric(as.vector(geno_data[1,])))
-group_data <- as.numeric(as.numeric(as.vector(geno_data[1,])) >= med_data)
+# Generate own SNPs data
+group_data <- rbinom(n = 70,size = 1,prob = 0.5)
+write.table(t(c("blah","A","A",group_data)), file= paste0("~/Cpp/WaveQTL_HMT/data/dsQTL/", "sim3.cis.geno"), row.names=FALSE, col.names = FALSE, quote=FALSE)
 ```
 
 Now, summarise the counts, and average:
@@ -193,6 +198,27 @@ legend("topleft", legend=c("p1", "p2"),
 box()
 p <- recordPlot()
 
+## Now plot the difference in means (multiply by sequencing sums)
+par(mar = c(2,4,4,2))
+plot(1,1,type="n"
+     , xlab = "Base location"
+     , ylab = "p parameter"
+     , ylim=c(min(min((p1_vector - p2_vector)*seq_sum),min((p1_vector - p2_vector)*seq_sum))
+              , max(max((p1_vector - p2_vector)*seq_sum),max((p1_vector - p2_vector)*seq_sum)))
+     , xlim=c(1, 1024)
+     , main ="Simulation - mean g1 (no effect) vs mean g2 (effect) parameters - before effect window"
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+abline(h = 0, col = "red")
+lines((p1_vector - p2_vector)*seq_sum, col = "blue")
+lines((p1_vector - p2_vector)*seq_sum, col = "black")
+legend("topleft", legend=c("p1", "p2"),
+       col=c("blue", "black"), lty=c(1,1), cex=0.8,
+       box.lty=0)
+box()
+p <- recordPlot()
+
 ```
 Can see that the really, really small difference in effect size resuls in very little difference between the mean counts at any base.
 
@@ -300,12 +326,10 @@ set.seed(6)
 
 # Null
 null_data_50 <- matrix(nrow = 70,ncol = 1024)
-for(i in 1:70){
-  for(j in 1:1024){
-    null_data_50[i,j] <- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
+for(j in 1:1024){
+  null_data_50[,j] <- rmutil::rbetabinom(n = 70, size = as.numeric(as.vector(ceiling(seq_sum[j])))
                                          , m = 1/70
                                          , s = over_disp_mult)  
-  }
 }
 
 # Alt
@@ -322,8 +346,8 @@ for(i in group_data){
 }
 
 alt_data_50 <- matrix(nrow = 70,ncol = 1024)
-for(i in 1:70){
-  for(j in 1:1024){
+for(j in 1:1024){
+  for(i in 1:70){
     alt_data_50[i,j] <- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
                                          , m = param_mtx[i,j]
                                          , s = over_disp_mult)  
@@ -403,7 +427,29 @@ if(length(effect_50) > 0){
 }
 lines(alt_data_50_avg - null_data_50_avg, col = "black")
 box()
-
+```
+```{r}
+## Now plot the difference in means of simulated counts (multiply by sequencing sums)
+g0_mean <- apply(alt_data_50[which(group_data == 0),],2,mean)
+g1_mean <- apply(alt_data_50[which(group_data == 1),],2,mean)
+plot(1,1,type="n"
+     , xlab = "Base location"
+     , ylab = "simulated avg counts"
+     , ylim=c(min(min(g0_mean),min(g1_mean))
+              , max(max(g0_mean),max(g1_mean)))
+     , xlim=c(1, 1024)
+     , main ="Simulated data - average of g0 (no effect) vs g1 (effect)"
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+abline(h = 0, col = "red")
+lines(g0_mean, col = "red")
+lines(g1_mean, col = "green")
+legend("topleft", legend=c("p1", "p2"),
+       col=c("red", "green"), lty=c(1,1), cex=0.8,
+       box.lty=0)
+box()
+p <- recordPlot()
 ```
 
 ### Run a sample analyses
@@ -436,14 +482,14 @@ _SHOULD WE ONLY NEED THE NON-QT version for effect sizes? The QT version is for 
 Run through WaveQTL:
 ```{r, include = FALSE}
 setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
-system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/test_chr17.10161485.cis.geno -p sims/length_50/null_data/WCs.no.QT.txt -u sims/length_50/null_data/use.txt -o sim3_noQT_null -f 1024 -fph 1"
+system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_50/null_data/WCs.no.QT.txt -u sims/length_50/null_data/use.txt -o sim3_noQT_null -f 1024 -fph 1"
        ,show.output.on.console = F)
 setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
 ```
 Run through WaveQTL_HMT:
 ```{r, include = FALSE}
 setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
-system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/test_chr17.10161485.cis.geno -p sims/length_50/null_data/WCs.no.QT.txt -u sims/length_50/null_data/use.txt -o sim3_noQT_null_HMT -f 1024 -hmt 1"
+system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_50/null_data/WCs.no.QT.txt -u sims/length_50/null_data/use.txt -o sim3_noQT_null_HMT -f 1024 -hmt 1"
        ,show.output.on.console = F)
 setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
 ```
@@ -452,14 +498,14 @@ setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
 Run through WaveQTL:
 ```{r, include = FALSE}
 setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
-system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/test_chr17.10161485.cis.geno -p sims/length_50/alt_data/WCs.no.QT.txt -u sims/length_50/alt_data/use.txt -o sim3_noQT_alt -f 1024 -fph 1"
+system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_50/alt_data/WCs.no.QT.txt -u sims/length_50/alt_data/use.txt -o sim3_noQT_alt -f 1024 -fph 1"
        ,show.output.on.console = F)
 setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
 ```
 Run through WaveQTL_HMT:
 ```{r, include = FALSE}
 setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
-system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/test_chr17.10161485.cis.geno -p sims/length_50/alt_data/WCs.no.QT.txt -u sims/length_50/alt_data/use.txt -o sim3_noQT_alt_HMT -f 1024 -hmt 1"
+system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_50/alt_data/WCs.no.QT.txt -u sims/length_50/alt_data/use.txt -o sim3_noQT_alt_HMT -f 1024 -hmt 1"
        ,show.output.on.console = F)
 setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
 ```
