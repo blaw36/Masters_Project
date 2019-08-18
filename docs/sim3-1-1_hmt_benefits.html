@@ -437,13 +437,18 @@ Covariates = as.matrix(read.table(paste0(input_data_path, &quot;PC4.dat&quot;)))
 Wmat_1024 = read.table(&quot;~/Cpp/WaveQTL/data/DWT/Wmat_1024&quot;,as.is = TRUE)
 W2mat_1024 = Wmat_1024*Wmat_1024
 
-## Read in SNPs
-geno_data = read.table(&quot;~/Cpp/WaveQTL/data/dsQTL/chr17.10160989.10162012.2kb.cis.geno&quot;,as.is = TRUE)
-geno_data = geno_data[11,4:73]
+# ## Read in SNPs
+# geno_data = read.table(&quot;~/Cpp/WaveQTL/data/dsQTL/chr17.10160989.10162012.2kb.cis.geno&quot;,as.is = TRUE)
+# geno_data = geno_data[11,4:73]
+#
+# # Group based on midpoint of the data
+# med_data &lt;- median(as.numeric(as.vector(geno_data[1,])))
+# group_data &lt;- as.numeric(as.numeric(as.vector(geno_data[1,])) &gt;= med_data)
+# write.table(t(c(&quot;blah&quot;,&quot;A&quot;,&quot;A&quot;,group_data)), file= paste0(&quot;~/Cpp/WaveQTL_HMT/data/dsQTL/&quot;, &quot;sim3.cis.geno&quot;), row.names=FALSE, col.names = FALSE, quote=FALSE)
 
-# Group based on midpoint of the data
-med_data &lt;- median(as.numeric(as.vector(geno_data[1,])))
-group_data &lt;- as.numeric(as.numeric(as.vector(geno_data[1,])) &gt;= med_data)</code></pre>
+# Generate own SNPs data
+group_data &lt;- rbinom(n = 70,size = 1,prob = 0.5)
+write.table(t(c(&quot;blah&quot;,&quot;A&quot;,&quot;A&quot;,group_data)), file= paste0(&quot;~/Cpp/WaveQTL_HMT/data/dsQTL/&quot;, &quot;sim3.cis.geno&quot;), row.names=FALSE, col.names = FALSE, quote=FALSE)</code></pre>
 <p>Now, summarise the counts, and average:</p>
 <pre class="r"><code># Count summation
 seq_sum &lt;- apply(pheno.dat,MARGIN = 2,sum)
@@ -514,7 +519,7 @@ length(effect_5)</code></pre>
 <ul>
 <li>Where no count at a given base, <span class="math inline">\(c_t\)</span>, assume <span class="math inline">\(e_t = 1\)</span> (ie. no effect). Doesn’t make a difference anyway, as, for these bases, we will simulate drawing from 0 sequencing counts, resulting in a 0 simulated total count. Hence, effect or not, the number of counts here will always be 0.</li>
 <li>We will assume that the effect size ratio = 1 everywhere, outside the required effect window (in a later step)</li>
-<li>For the null dataset, all groups will be drawn from the same distribution (probability = 1/70)</li>
+<li>For the null dataset, all groups will be drawn from the same distribution (probability = 1/70) – see page 170 of the workings of previous work</li>
 </ul>
 <p>Here is a methodology sample, without incorporating effect size:</p>
 <pre class="r"><code>plot(waveqtl_hmt_geno11$beta_dataS, type = &quot;l&quot;, main = &quot;waveQTL effect size in data space&quot;)</code></pre>
@@ -569,6 +574,28 @@ legend(&quot;topleft&quot;, legend=c(&quot;p1&quot;, &quot;p2&quot;),
        box.lty=0)
 box()</code></pre>
 <p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-6-4.png" width="672" /></p>
+<pre class="r"><code>p &lt;- recordPlot()
+
+## Now plot the difference in means (multiply by sequencing sums)
+par(mar = c(2,4,4,2))
+plot(1,1,type=&quot;n&quot;
+     , xlab = &quot;Base location&quot;
+     , ylab = &quot;p parameter&quot;
+     , ylim=c(min(min((p1_vector - p2_vector)*seq_sum),min((p1_vector - p2_vector)*seq_sum))
+              , max(max((p1_vector - p2_vector)*seq_sum),max((p1_vector - p2_vector)*seq_sum)))
+     , xlim=c(1, 1024)
+     , main =&quot;Simulation - mean g1 (no effect) vs mean g2 (effect) parameters - before effect window&quot;
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+abline(h = 0, col = &quot;red&quot;)
+lines((p1_vector - p2_vector)*seq_sum, col = &quot;blue&quot;)
+lines((p1_vector - p2_vector)*seq_sum, col = &quot;black&quot;)
+legend(&quot;topleft&quot;, legend=c(&quot;p1&quot;, &quot;p2&quot;),
+       col=c(&quot;blue&quot;, &quot;black&quot;), lty=c(1,1), cex=0.8,
+       box.lty=0)
+box()</code></pre>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-6-5.png" width="672" /></p>
 <pre class="r"><code>p &lt;- recordPlot()</code></pre>
 <p>Can see that the really, really small difference in effect size resuls in very little difference between the mean counts at any base.</p>
 <p>Here is the same thing, now only generating an effect in the designated 50-length effect window:</p>
@@ -663,12 +690,10 @@ all.equal(p1_vector, p1_alpha/(p1_alpha + p1_beta))</code></pre>
 
 # Null
 null_data_50 &lt;- matrix(nrow = 70,ncol = 1024)
-for(i in 1:70){
-  for(j in 1:1024){
-    null_data_50[i,j] &lt;- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
+for(j in 1:1024){
+  null_data_50[,j] &lt;- rmutil::rbetabinom(n = 70, size = as.numeric(as.vector(ceiling(seq_sum[j])))
                                          , m = 1/70
                                          , s = over_disp_mult)  
-  }
 }
 
 # Alt
@@ -685,8 +710,8 @@ for(i in group_data){
 }
 
 alt_data_50 &lt;- matrix(nrow = 70,ncol = 1024)
-for(i in 1:70){
-  for(j in 1:1024){
+for(j in 1:1024){
+  for(i in 1:70){
     alt_data_50[i,j] &lt;- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
                                          , m = param_mtx[i,j]
                                          , s = over_disp_mult)  
@@ -764,6 +789,28 @@ if(length(effect_50) &gt; 0){
 lines(alt_data_50_avg - null_data_50_avg, col = &quot;black&quot;)
 box()</code></pre>
 <p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<pre class="r"><code>## Now plot the difference in means of simulated counts (multiply by sequencing sums)
+g0_mean &lt;- apply(alt_data_50[which(group_data == 0),],2,mean)
+g1_mean &lt;- apply(alt_data_50[which(group_data == 1),],2,mean)
+plot(1,1,type=&quot;n&quot;
+     , xlab = &quot;Base location&quot;
+     , ylab = &quot;simulated avg counts&quot;
+     , ylim=c(min(min(g0_mean),min(g1_mean))
+              , max(max(g0_mean),max(g1_mean)))
+     , xlim=c(1, 1024)
+     , main =&quot;Simulated data - average of g0 (no effect) vs g1 (effect)&quot;
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+abline(h = 0, col = &quot;red&quot;)
+lines(g0_mean, col = &quot;red&quot;)
+lines(g1_mean, col = &quot;green&quot;)
+legend(&quot;topleft&quot;, legend=c(&quot;p1&quot;, &quot;p2&quot;),
+       col=c(&quot;red&quot;, &quot;green&quot;), lty=c(1,1), cex=0.8,
+       box.lty=0)
+box()</code></pre>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-11-1.png" width="672" /></p>
+<pre class="r"><code>p &lt;- recordPlot()</code></pre>
 </div>
 <div id="run-a-sample-analyses" class="section level3">
 <h3>Run a sample analyses</h3>
@@ -827,7 +874,7 @@ null_50 &lt;- no_hmt_effect_size(data_path = null_50_data_path
                               ,Wmat_1024 = Wmat_1024
                               ,W2mat_1024 = W2mat_1024
                               ,sel_geno_IX = 1)</code></pre>
-<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
 <pre class="r"><code>##### Alt
 alt_50_data_path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/output/&quot;
 alt_50_data_prefix = &quot;sim3_noQT_alt&quot;
@@ -836,7 +883,7 @@ alt_50 &lt;- no_hmt_effect_size(data_path = alt_50_data_path
                              ,Wmat_1024 = Wmat_1024
                              ,W2mat_1024 = W2mat_1024
                              ,sel_geno_IX = 1)</code></pre>
-<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-17-2.png" width="672" /></p>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-18-2.png" width="672" /></p>
 </div>
 <div id="analysis---with-hmt" class="section level3">
 <h3>Analysis - with HMT</h3>
@@ -848,7 +895,7 @@ null_50_hmt &lt;- with_hmt_effect_size(data_path = null_50_data_path
                                     ,waveqtl_dataset = null_50_data_prefix
                                     ,Wmat_1024 = Wmat_1024
                                     ,geno_select = 1)</code></pre>
-<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-18-1.png" width="672" /></p>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
 <pre class="r"><code>##### Alt
 alt_50_data_path = &quot;~/Cpp/WaveQTL_HMT/test/dsQTL/output/&quot;
 alt_50_data_prefix = &quot;sim3_noQT_alt&quot;
@@ -857,13 +904,13 @@ alt_50_hmt &lt;- with_hmt_effect_size(data_path = alt_50_data_path
                                    ,waveqtl_dataset = alt_50_data_prefix
                                    ,Wmat_1024 = Wmat_1024
                                    ,geno_select = 1)</code></pre>
-<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-18-2.png" width="672" /></p>
+<p><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-19-2.png" width="672" /></p>
 </div>
 <div id="ad-hoc-plots" class="section level3">
 <h3>Ad hoc plots</h3>
 <p>Two final comparisons, by plot:</p>
-<p>Null case: <img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-19-1.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-19-2.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-19-3.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-19-4.png" width="672" /></p>
-<p>Alt case: <img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-20-1.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-20-2.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-20-3.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-20-4.png" width="672" /></p>
+<p>Null case: <img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-20-1.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-20-2.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-20-3.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-20-4.png" width="672" /></p>
+<p>Alt case: <img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-21-1.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-21-2.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-21-3.png" width="672" /><img src="sim3-1-1_hmt_benefits_files/figure-html/unnamed-chunk-21-4.png" width="672" /></p>
 </div>
 </div>
 
