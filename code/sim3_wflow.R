@@ -30,13 +30,18 @@ Covariates = as.matrix(read.table(paste0(input_data_path, "PC4.dat")))
 Wmat_1024 = read.table("~/Cpp/WaveQTL/data/DWT/Wmat_1024",as.is = TRUE)
 W2mat_1024 = Wmat_1024*Wmat_1024
 
-## Read in SNPs
-geno_data = read.table("~/Cpp/WaveQTL/data/dsQTL/chr17.10160989.10162012.2kb.cis.geno",as.is = TRUE)
-geno_data = geno_data[11,4:73]
+# ## Read in SNPs
+# geno_data = read.table("~/Cpp/WaveQTL/data/dsQTL/chr17.10160989.10162012.2kb.cis.geno",as.is = TRUE)
+# geno_data = geno_data[11,4:73]
+#
+# # Group based on midpoint of the data
+# med_data <- median(as.numeric(as.vector(geno_data[1,])))
+# group_data <- as.numeric(as.numeric(as.vector(geno_data[1,])) >= med_data)
+# write.table(t(c("blah","A","A",group_data)), file= paste0("~/Cpp/WaveQTL_HMT/data/dsQTL/", "sim3.cis.geno"), row.names=FALSE, col.names = FALSE, quote=FALSE)
 
-# Group based on midpoint of the data
-med_data <- median(as.numeric(as.vector(geno_data[1,])))
-group_data <- as.numeric(as.numeric(as.vector(geno_data[1,])) >= med_data)
+# Generate own SNPs data
+group_data <- rbinom(n = 70,size = 1,prob = 0.5)
+write.table(t(c("blah","A","A",group_data)), file= paste0("~/Cpp/WaveQTL_HMT/data/dsQTL/", "sim3.cis.geno"), row.names=FALSE, col.names = FALSE, quote=FALSE)
 
 # Summarise pheno.data ----------------------------------------------------
 
@@ -54,14 +59,23 @@ waveqtl_hmt_geno11 <- with_hmt_effect_size(data_path = data_path
                                            ,geno_select = 11
                                            ,plot_title = "Posterior mean +/3 posterior standard deviaion - SNP 11")
 
+
+# Generate req'd effect window --------------------------------------------
+int_table <- summarise_effect_intervals(waveqtl_hmt_geno11$col_posi)
+
+set.seed(10)
+effect_length = 50
+effect_interval <- effect_length_picker(int_table,effect_length)
+
 run_sim3 <- function(
   sequencing_sums = seq_sum
   , num_indivs = 70
   , num_bases = 1024
   , effect_length = 50 # must be one of 5, 10, 50
+  , effect_interval
   , effect_size_data
   , use_qt_data = FALSE # Will turn QT on and off, in time. Haven't integrated yet
-  , over_disp_param = 70
+  , over_disp_param = 1/70
   , Wmat_1024 = Wmat_1024
   , W2mat_1024 = W2mat_1024
   , library.read.depth = library.read.depth
@@ -69,16 +83,8 @@ run_sim3 <- function(
   , group_data = group_data
 ){
 
-  # Pick effect bucket ------------------------------------------------------
-  print("Picking effect bucket...\n")
-  int_table <- summarise_effect_intervals(effect_size_data$col_posi)
-
-  set.seed(10)
-  effect_interval <- effect_length_picker(int_table,effect_length)
-
-
   # Convert effect size to ratio --------------------------------------------
-  print("Generating effect size params...\n")
+  print("Generating effect size params...")
   effect_ratio <- 1 + (num_indivs*effect_size_data$beta_dataS/seq_sum)
   effect_ratio[seq_sum == 0] <- 1
 
@@ -98,16 +104,14 @@ run_sim3 <- function(
 
   # Generate null and alt datasets ------------------------------------------
 
-  print("Generating null and alt datasets...\n")
+  print("Generating null and alt datasets...")
 
   # Null
-  null_data_50 <- matrix(nrow = 70,ncol = 1024)
-  for(i in 1:70){
-    for(j in 1:1024){
-      null_data_50[i,j] <- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
-                                              , m = 1/70
-                                              , s = over_disp_mult)
-    }
+  null_data <- matrix(nrow = 70,ncol = 1024)
+  for(j in 1:1024){
+    null_data[,j] <- rmutil::rbetabinom(n = 70, size = as.numeric(as.vector(ceiling(seq_sum[j])))
+                                        , m = 1/70
+                                        , s = over_disp_mult)
   }
 
   # Alt
@@ -123,12 +127,12 @@ run_sim3 <- function(
     n <- n + 1
   }
 
-  alt_data_50 <- matrix(nrow = 70,ncol = 1024)
+  alt_data <- matrix(nrow = 70,ncol = 1024)
   for(i in 1:70){
     for(j in 1:1024){
-      alt_data_50[i,j] <- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
+      alt_data[i,j] <- rmutil::rbetabinom(n = 1, size = as.numeric(as.vector(ceiling(seq_sum[j])))
                                              , m = param_mtx[i,j]
-                                             , s = over_disp_mult)
+                                             , s = over_disp_param)
     }
   }
   # # Null
@@ -152,7 +156,7 @@ run_sim3 <- function(
 
   # Clean datasets ----------------------------------------------------------
 
-  print("Cleaning datasets...\n")
+  print("Cleaning datasets...")
   wavelet_cleaning_wrapper_function_nonRMD(pheno.dat = null_data
                                            ,output.path = paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/sims/length_",effect_length,"/null_data/")
                                            ,library.read.depth = library.read.depth
@@ -167,20 +171,20 @@ run_sim3 <- function(
 
   setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
   #### Run null dataset
-  print("Executing null datasets...\n")
+  print("Executing null datasets...")
   # No HMT
-  system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/test_chr17.10161485.cis.geno -p sims/length_",effect_length,"/null_data/WCs.no.QT.txt -u sims/length_",effect_length,"/null_data/use.txt -o sim3_noQT_null -f ",num_bases," -fph 1")
+  system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_",effect_length,"/null_data/WCs.no.QT.txt -u sims/length_",effect_length,"/null_data/use.txt -o sim3_noQT_null -f ",num_bases," -fph 1")
          ,show.output.on.console = F)
   # HMT
-  system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/test_chr17.10161485.cis.geno -p sims/length_",effect_length,"/null_data/WCs.no.QT.txt -u sims/length_",effect_length,"/null_data/use.txt -o sim3_noQT_null_HMT -f ",num_bases," -hmt 1")
+  system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_",effect_length,"/null_data/WCs.no.QT.txt -u sims/length_",effect_length,"/null_data/use.txt -o sim3_noQT_null_HMT -f ",num_bases," -hmt 1")
          ,show.output.on.console = F)
   #### Run alt dataset
-  print("Executing alt datasets...\n")
+  print("Executing alt datasets...")
   # No HMT
-  system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/test_chr17.10161485.cis.geno -p sims/length_",effect_length,"/alt_data/WCs.no.QT.txt -u sims/length_",effect_length,"/alt_data/use.txt -o sim3_noQT_alt -f ",num_bases," -fph 1")
+  system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_",effect_length,"/alt_data/WCs.no.QT.txt -u sims/length_",effect_length,"/alt_data/use.txt -o sim3_noQT_alt -f ",num_bases," -fph 1")
          ,show.output.on.console = F)
   # HMT
-  system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/test_chr17.10161485.cis.geno -p sims/length_",effect_length,"/alt_data/WCs.no.QT.txt -u sims/length_",effect_length,"/alt_data/use.txt -o sim3_noQT_alt_HMT -f ",num_bases," -hmt 1")
+  system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_",effect_length,"/alt_data/WCs.no.QT.txt -u sims/length_",effect_length,"/alt_data/use.txt -o sim3_noQT_alt_HMT -f ",num_bases," -hmt 1")
          ,show.output.on.console = F)
   setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
 
@@ -188,7 +192,7 @@ run_sim3 <- function(
   # Analysis ----------------------------------------------------------------
 
   ### Analysis - no HMT
-  print("Analysing effect size - no HMT...\n")
+  print("Analysing effect size - no HMT...")
   ##### Null
   null_data_path = "~/Cpp/WaveQTL_HMT/test/dsQTL/output/"
   null_data_prefix = "sim3_noQT_null"
@@ -210,7 +214,7 @@ run_sim3 <- function(
                             ,plot_title = "Posterior mean +/-3 posterior standard deviation - alt")
 
   ### Analysis - with HMT
-  print("Analysing effect size - with HMT...\n")
+  print("Analysing effect size - with HMT...")
   ##### Null
   null_data_path = "~/Cpp/WaveQTL_HMT/test/dsQTL/output/"
   null_data_prefix = "sim3_noQT_null"
@@ -249,40 +253,40 @@ run_sim3 <- function(
 }
 
 
-# Run ---------------------------------------------------------------------
-
-sim3_50 <- run_sim3(sequencing_sums = seq_sum
-                 , num_indivs = 70
-                 , num_bases = 1024
-                 , effect_length = 50 # must be one of 5, 10, 50
-                 , effect_size_data = waveqtl_hmt_geno11
-                 , use_qt_data = FALSE
-                 , Wmat_1024 = Wmat_1024
-                 , W2mat_1024 = W2mat_1024
-                 , library.read.depth = library.read.depth
-                 , Covariates = Covariates
-                 , group_data = group_data)
-
-sim3_10 <- run_sim3(sequencing_sums = seq_sum
-                 , num_indivs = 70
-                 , num_bases = 1024
-                 , effect_length = 10
-                 , effect_size_data = waveqtl_hmt_geno11
-                 , use_qt_data = FALSE
-                 , Wmat_1024 = Wmat_1024
-                 , W2mat_1024 = W2mat_1024
-                 , library.read.depth = library.read.depth
-                 , Covariates = Covariates
-                 , group_data = group_data)
-
-sim3_5 <- run_sim3(sequencing_sums = seq_sum
-                 , num_indivs = 70
-                 , num_bases = 1024
-                 , effect_length = 5 # must be one of 5, 10, 50
-                 , effect_size_data = waveqtl_hmt_geno11
-                 , use_qt_data = FALSE
-                 , Wmat_1024 = Wmat_1024
-                 , W2mat_1024 = W2mat_1024
-                 , library.read.depth = library.read.depth
-                 , Covariates = Covariates
-                 , group_data = group_data)
+# # Run ---------------------------------------------------------------------
+#
+# sim3_50 <- run_sim3(sequencing_sums = seq_sum
+#                  , num_indivs = 70
+#                  , num_bases = 1024
+#                  , effect_length = 50 # must be one of 5, 10, 50
+#                  , effect_size_data = waveqtl_hmt_geno11
+#                  , use_qt_data = FALSE
+#                  , Wmat_1024 = Wmat_1024
+#                  , W2mat_1024 = W2mat_1024
+#                  , library.read.depth = library.read.depth
+#                  , Covariates = Covariates
+#                  , group_data = group_data)
+#
+# sim3_10 <- run_sim3(sequencing_sums = seq_sum
+#                  , num_indivs = 70
+#                  , num_bases = 1024
+#                  , effect_length = 10
+#                  , effect_size_data = waveqtl_hmt_geno11
+#                  , use_qt_data = FALSE
+#                  , Wmat_1024 = Wmat_1024
+#                  , W2mat_1024 = W2mat_1024
+#                  , library.read.depth = library.read.depth
+#                  , Covariates = Covariates
+#                  , group_data = group_data)
+#
+# sim3_5 <- run_sim3(sequencing_sums = seq_sum
+#                  , num_indivs = 70
+#                  , num_bases = 1024
+#                  , effect_length = 5 # must be one of 5, 10, 50
+#                  , effect_size_data = waveqtl_hmt_geno11
+#                  , use_qt_data = FALSE
+#                  , Wmat_1024 = Wmat_1024
+#                  , W2mat_1024 = W2mat_1024
+#                  , library.read.depth = library.read.depth
+#                  , Covariates = Covariates
+#                  , group_data = group_data)

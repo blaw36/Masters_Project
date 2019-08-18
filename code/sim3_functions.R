@@ -246,35 +246,6 @@ no_hmt_effect_size <- function(data_path, data_prefix, Wmat_1024, W2mat_1024, se
   ymin_beta = min(beta_dataS - 3*beta_sd_dataS) - abs(min(beta_dataS - 3*beta_sd_dataS))*0.0000000001
   ymax_beta = max(beta_dataS + 3*beta_sd_dataS) + abs(max(beta_dataS + 3*beta_sd_dataS))*0.0000000001
 
-  # beta_l = beta_dataS - 3*beta_sd_dataS
-  # beta_r = beta_dataS + 3*beta_sd_dataS
-  #
-  # wh_l = which(beta_l > 0)
-  # wh_r = which(beta_r < 0)
-  # high_wh = sort(unique(union(wh_l, wh_r)))
-  #
-  # xval = 1:1024
-  # col_posi = xval[high_wh]
-  #
-  # # pdf("../test/dsQTL/effectSize.pdf", width = 8, height=3)
-  # par(mar = c(2,4,4,2))
-  # plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=c(1, 1024),main ="Posterior mean +/-3 posterior standard deviation", axes=FALSE)
-  # axis(2)
-  # if(length(col_posi) > 0){
-  #   for(j in 1:length(col_posi)){
-  #     polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
-  #   }
-  # }
-  #
-  # abline(h = 0, col = "red")
-  # points(xval, beta_dataS, col = "blue", type="l")
-  # points(xval, beta_l, col = "skyblue", type="l")
-  # points(xval, beta_r, col = "skyblue", type="l")
-  # box()
-  #
-  # # dev.off()
-  # p <- recordPlot()
-
   p <- effect_size_plot(y_min = ymin_beta
                         , y_max = ymax_beta
                         , beta_mean = beta_dataS
@@ -432,34 +403,6 @@ with_hmt_effect_size <- function(data_path, dataset, waveqtl_dataset, Wmat_1024,
 
   ymin_beta = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
   ymax_beta = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
-
-  # beta_l = sample_mean - 3*sample_sd
-  # beta_r = sample_mean + 3*sample_sd
-  #
-  # wh_l = which(beta_l > 0)
-  # wh_r = which(beta_r < 0)
-  # high_wh = sort(unique(union(wh_l, wh_r)))
-  #
-  # xval = 1:1024
-  # col_posi = xval[high_wh]
-  #
-  # # pdf("../test/dsQTL/effectSize.pdf", width = 8, height=3)
-  # par(mar = c(2,4,4,2))
-  # plot(1,1,type="n", xlab = "position", ylab = "Effect size",ylim=c(ymin_beta, ymax_beta),xlim=c(1, 1024),main ="Posterior mean +/-3 posterior standard deviation", axes=FALSE)
-  # axis(2)
-  # if(length(col_posi) > 0){
-  #   for(j in 1:length(col_posi)){
-  #     polygon(c(col_posi[j]-0.5, col_posi[j]-0.5, col_posi[j]+0.5, col_posi[j]+0.5), c(ymin_beta-2, ymax_beta+2, ymax_beta+2, ymin_beta-2), col ="pink", border = NA)
-  #   }
-  # }
-  #
-  # abline(h = 0, col = "red")
-  # points(xval, sample_mean, col = "blue", type="l")
-  # points(xval, beta_l, col = "skyblue", type="l")
-  # points(xval, beta_r, col = "skyblue", type="l")
-  # box()
-  #
-  # p <- recordPlot()
 
   p <- effect_size_plot(y_min = ymin_beta
                         , y_max = ymax_beta
