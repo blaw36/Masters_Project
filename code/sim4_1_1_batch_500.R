@@ -109,7 +109,8 @@ saveRDS(t_64_s3,"../data/20190908_sim4_l64_s3_stepped_500sims.RDS",compress = T)
 # Re-run: 8,16,32
 
 efMult <- 1.2e8
-num_sums <- 500
+num_sums <- 200
+# num_sums <- 500
 
 
 set.seed(1)
