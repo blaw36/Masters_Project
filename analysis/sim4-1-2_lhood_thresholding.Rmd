@@ -190,10 +190,304 @@ l16_manyEfs_200 <- readRDS("../data/20190911_sim4_l16_manyEfs_200sims.RDS")
 l32_manyEfs_200 <- readRDS("../data/20190911_sim4_l32_manyEfs_200sims.RDS")
 l64_manyEfs_200 <- readRDS("../data/20190911_sim4_l64_manyEfs_200sims.RDS")
 
- l8_s4_stepped_50_diags <- lapply( l8_manyEfs_200,waveqtl_diags,plot_indiv_curves = F, num_sims = 200)
-l16_s4_stepped_50_diags <- lapply(l16_manyEfs_200,waveqtl_diags,plot_indiv_curves = F, num_sims = 200)
-l32_s4_stepped_50_diags <- lapply(l32_manyEfs_200,waveqtl_diags,plot_indiv_curves = F, num_sims = 200)
-l64_s4_stepped_50_diags <- lapply(l64_manyEfs_200,waveqtl_diags,plot_indiv_curves = F, num_sims = 200)
+#  l8_s4_stepped_50_diags <- lapply( l8_manyEfs_200,waveqtl_diags,plot_indiv_curves = F, num_sims = 200)
+# l16_s4_stepped_50_diags <- lapply(l16_manyEfs_200,waveqtl_diags,plot_indiv_curves = F, num_sims = 200)
+# l32_s4_stepped_50_diags <- lapply(l32_manyEfs_200,waveqtl_diags,plot_indiv_curves = F, num_sims = 200)
+# l64_s4_stepped_50_diags <- lapply(l64_manyEfs_200,waveqtl_diags,plot_indiv_curves = F, num_sims = 200)
+extract_roc_plot_data <- function(sims_list,num_sims){
+  preds_nohmt <- matrix(c(sims_list$null_waveqtl_lhood
+                          ,sims_list$alt_waveqtl_lhood
+                          ,rep(0,num_sims),rep(1,num_sims))
+                        ,nrow = 2*num_sims,ncol = 2,byrow = F)
+  preds_hmt <- matrix(c(sims_list$null_waveqtl_hmt_lhood
+                        ,sims_list$alt_waveqtl_hmt_lhood
+                        ,rep(0,num_sims),rep(1,num_sims))
+                      ,nrow = 2*num_sims,ncol = 2,byrow = F)
+  
+  perf_nohmt <- performance(prediction(preds_nohmt[,1],preds_nohmt[,2]),measure = "auc")
+  perf_hmt <- performance(prediction(preds_hmt[,1],preds_hmt[,2]),measure = "auc")
+  
+  n = dim(preds_hmt)[1]
+  
+  O1 = order(preds_nohmt[,1], decreasing =TRUE)
+  O2 = order(preds_hmt[,1], decreasing =TRUE)
+  
+  C1  = c(0,cumsum(preds_nohmt[O1,2])) / sum(preds_nohmt[,2]) #True positives proportions or sensitivity
+  C2  = c(0,cumsum(preds_hmt[O2,2])) / sum(preds_hmt[,2])
+  
+  FP1 = c(0,cumsum(1-preds_nohmt[O1,2])) / (n-sum(preds_nohmt[,2])) #false positives proportions based on Model 1.
+  FP2 = c(0,cumsum(1-preds_hmt[O2,2])) / (n-sum(preds_hmt[,2]))  
+  
+  return(list(
+    FP1 = FP1
+    ,C1 = C1
+    ,FP2 = FP2
+    ,C2 = C2
+    ,perf_nohmt = unlist(attr(perf_nohmt,"y.values"))
+    ,perf_hmt = unlist(attr(perf_hmt,"y.values"))
+  ))
+}
+
+# l8
+l8_roc_data <- lapply(l8_manyEfs_200,extract_roc_plot_data,num_sims = 200)
+
+plot(l8_roc_data[[1]]$FP1,l8_roc_data[[1]]$C1, type="l", lwd=1, col="black", lty = 3, xlab="False Positive rate", ylab="True Positive Rate", main = "Length 8")
+lines(l8_roc_data[[1]]$FP2,l8_roc_data[[1]]$C2, lty = 1, col = "black")
+for(i in 2:5){
+  lines(l8_roc_data[[i]]$FP1,l8_roc_data[[i]]$C1, lty = 3, col = i)
+  lines(l8_roc_data[[i]]$FP2,l8_roc_data[[i]]$C2, lty = 1, col = i)
+}
+
+legend(x = 0.7, y = 0.6,
+# legend("bottomright",
+       c(paste0("noHMT 0.6: ",round(l8_roc_data[[1]]$perf_nohmt,4))
+         ,paste0("HMT 0.6: ",round(l8_roc_data[[1]]$perf_hmt,4))
+         ,paste0("noHMT 0.8: ",round(l8_roc_data[[2]]$perf_nohmt,4))
+         ,paste0("HMT 0.8: ",round(l8_roc_data[[2]]$perf_hmt,4))
+         ,paste0("noHMT 1: ",  round(l8_roc_data[[3]]$perf_nohmt,4))
+         ,paste0("HMT 1: ",  round(l8_roc_data[[3]]$perf_hmt,4))
+         ,paste0("noHMT 1.2: ",round(l8_roc_data[[4]]$perf_nohmt,4))
+         ,paste0("HMT 1.2: ",round(l8_roc_data[[4]]$perf_hmt,4))
+         ,paste0("noHMT 1.4: ",round(l8_roc_data[[5]]$perf_nohmt,4))
+         ,paste0("HMT 1.4: ",round(l8_roc_data[[5]]$perf_hmt,4))
+         ),
+       cex = 1,
+       bg = "transparent",
+       bty = "n",
+       lty=rep(c(3,1),5),
+       lwd=rep(c(1,1),5),
+       col=rep(c(1:5),each = 2))
+
+# l16
+l16_roc_data <- lapply(l16_manyEfs_200,extract_roc_plot_data,num_sims = 200)
+
+plot(l16_roc_data[[1]]$FP1,l16_roc_data[[1]]$C1, type="l", lwd=1, col="black", lty = 3, xlab="False Positive rate", ylab="True Positive Rate", main = "Length 16")
+lines(l16_roc_data[[1]]$FP2,l16_roc_data[[1]]$C2, lty = 1, col = "black")
+for(i in 2:5){
+  lines(l16_roc_data[[i]]$FP1,l16_roc_data[[i]]$C1, lty = 3, col = i)
+  lines(l16_roc_data[[i]]$FP2,l16_roc_data[[i]]$C2, lty = 1, col = i)
+}
+
+legend(x = 0.7, y = 0.6,
+       # legend("bottomright",
+       c(paste0("noHMT 0.6: ",round(l16_roc_data[[1]]$perf_nohmt,4))
+         ,paste0("HMT 0.6: ",round(l16_roc_data[[1]]$perf_hmt,4))
+         ,paste0("noHMT 0.8: ",round(l16_roc_data[[2]]$perf_nohmt,4))
+         ,paste0("HMT 0.8: ",round(l16_roc_data[[2]]$perf_hmt,4))
+         ,paste0("noHMT 1: ",  round(l16_roc_data[[3]]$perf_nohmt,4))
+         ,paste0("HMT 1: ",  round(l16_roc_data[[3]]$perf_hmt,4))
+         ,paste0("noHMT 1.2: ",round(l16_roc_data[[4]]$perf_nohmt,4))
+         ,paste0("HMT 1.2: ",round(l16_roc_data[[4]]$perf_hmt,4))
+         ,paste0("noHMT 1.4: ",round(l16_roc_data[[5]]$perf_nohmt,4))
+         ,paste0("HMT 1.4: ",round(l16_roc_data[[5]]$perf_hmt,4))
+       ),
+       cex = 1,
+       bg = "transparent",
+       bty = "n",
+       lty=rep(c(3,1),5),
+       lwd=rep(c(1,1),5),
+       col=rep(c(1:5),each = 2))
+
+# l32
+l32_roc_data <- lapply(l32_manyEfs_200,extract_roc_plot_data,num_sims = 200)
+
+plot(l32_roc_data[[1]]$FP1,l32_roc_data[[1]]$C1, type="l", lwd=1, col="black", lty = 3, xlab="False Positive rate", ylab="True Positive Rate", main = "Length 32")
+lines(l32_roc_data[[1]]$FP2,l32_roc_data[[1]]$C2, lty = 1, col = "black")
+for(i in 2:5){
+  lines(l32_roc_data[[i]]$FP1,l32_roc_data[[i]]$C1, lty = 3, col = i)
+  lines(l32_roc_data[[i]]$FP2,l32_roc_data[[i]]$C2, lty = 1, col = i)
+}
+
+legend(x = 0.7, y = 0.6,
+       # legend("bottomright",
+       c(paste0("noHMT 0.6: ",round(l32_roc_data[[1]]$perf_nohmt,4))
+         ,paste0("HMT 0.6: ",round(l32_roc_data[[1]]$perf_hmt,4))
+         ,paste0("noHMT 0.8: ",round(l32_roc_data[[2]]$perf_nohmt,4))
+         ,paste0("HMT 0.8: ",round(l32_roc_data[[2]]$perf_hmt,4))
+         ,paste0("noHMT 1: ",  round(l32_roc_data[[3]]$perf_nohmt,4))
+         ,paste0("HMT 1: ",  round(l32_roc_data[[3]]$perf_hmt,4))
+         ,paste0("noHMT 1.2: ",round(l32_roc_data[[4]]$perf_nohmt,4))
+         ,paste0("HMT 1.2: ",round(l32_roc_data[[4]]$perf_hmt,4))
+         ,paste0("noHMT 1.4: ",round(l32_roc_data[[5]]$perf_nohmt,4))
+         ,paste0("HMT 1.4: ",round(l32_roc_data[[5]]$perf_hmt,4))
+       ),
+       cex = 1,
+       bg = "transparent",
+       bty = "n",
+       lty=rep(c(3,1),5),
+       lwd=rep(c(1,1),5),
+       col=rep(c(1:5),each = 2))
+
+# l64
+l64_roc_data <- lapply(l64_manyEfs_200,extract_roc_plot_data,num_sims = 200)
+
+plot(l64_roc_data[[1]]$FP1,l64_roc_data[[1]]$C1, type="l", lwd=1, col="black", lty = 3, xlab="False Positive rate", ylab="True Positive Rate", main = "Length 64")
+lines(l64_roc_data[[1]]$FP2,l64_roc_data[[1]]$C2, lty = 1, col = "black")
+for(i in 2:5){
+  lines(l64_roc_data[[i]]$FP1,l64_roc_data[[i]]$C1, lty = 3, col = i)
+  lines(l64_roc_data[[i]]$FP2,l64_roc_data[[i]]$C2, lty = 1, col = i)
+}
+
+legend(x = 0.7, y = 0.6,
+       # legend("bottomright",
+       c(paste0("noHMT 0.6: ",round(l64_roc_data[[1]]$perf_nohmt,4))
+         ,paste0("HMT 0.6: ",round(l64_roc_data[[1]]$perf_hmt,4))
+         ,paste0("noHMT 0.8: ",round(l64_roc_data[[2]]$perf_nohmt,4))
+         ,paste0("HMT 0.8: ",round(l64_roc_data[[2]]$perf_hmt,4))
+         ,paste0("noHMT 1: ",  round(l64_roc_data[[3]]$perf_nohmt,4))
+         ,paste0("HMT 1: ",  round(l64_roc_data[[3]]$perf_hmt,4))
+         ,paste0("noHMT 1.2: ",round(l64_roc_data[[4]]$perf_nohmt,4))
+         ,paste0("HMT 1.2: ",round(l64_roc_data[[4]]$perf_hmt,4))
+         ,paste0("noHMT 1.4: ",round(l64_roc_data[[5]]$perf_nohmt,4))
+         ,paste0("HMT 1.4: ",round(l64_roc_data[[5]]$perf_hmt,4))
+       ),
+       cex = 1,
+       bg = "transparent",
+       bty = "n",
+       lty=rep(c(3,1),5),
+       lwd=rep(c(1,1),5),
+       col=rep(c(1:5),each = 2))
+
+### Cut the other way (by length)
+# 0.6
+indx <- 1
+plot(  l8_roc_data[[indx]]$FP1, l8_roc_data[[indx]]$C1, type="l", lwd=1, col="black", lty = 3, xlab="False Positive rate", ylab="True Positive Rate", main = "Mult 0.6")
+lines( l8_roc_data[[indx]]$FP2, l8_roc_data[[indx]]$C2, lty = 1, col = "black")
+lines(l16_roc_data[[indx]]$FP1,l16_roc_data[[indx]]$C1, lty = 3, col = 2)
+lines(l16_roc_data[[indx]]$FP2,l16_roc_data[[indx]]$C2, lty = 1, col = 2)
+lines(l32_roc_data[[indx]]$FP1,l32_roc_data[[indx]]$C1, lty = 3, col = 3)
+lines(l32_roc_data[[indx]]$FP2,l32_roc_data[[indx]]$C2, lty = 1, col = 3)
+lines(l64_roc_data[[indx]]$FP1,l64_roc_data[[indx]]$C1, lty = 3, col = 4)
+lines(l64_roc_data[[indx]]$FP2,l64_roc_data[[indx]]$C2, lty = 1, col = 4)
+legend(x = 0.7, y = 0.6,
+       # legend("bottomright",
+       c( paste0("noHMT 8: ", round( l8_roc_data[[indx]]$perf_nohmt,4))
+         , paste0( "HMT 8: ", round( l8_roc_data[[indx]]$perf_hmt,4))
+         ,paste0("noHMT 16: ",round(l16_roc_data[[indx]]$perf_nohmt,4))
+         ,paste0(  "HMT 16: ",round(l16_roc_data[[indx]]$perf_hmt,4))
+         ,paste0("noHMT 32: ",round(l32_roc_data[[indx]]$perf_nohmt,4))
+         ,paste0(  "HMT 32: ",round(l32_roc_data[[indx]]$perf_hmt,4))
+         ,paste0("noHMT 64: ",round(l64_roc_data[[indx]]$perf_nohmt,4))
+         ,paste0(  "HMT 64: ",round(l64_roc_data[[indx]]$perf_hmt,4))
+       ),
+       cex = 1,
+       bg = "transparent",
+       bty = "n",
+       lty=rep(c(3,1),4),
+       lwd=rep(c(1,1),4),
+       col=rep(c(1:4),each = 2))
+
+# 0.8
+indx <- 2
+plot(  l8_roc_data[[indx]]$FP1, l8_roc_data[[indx]]$C1, type="l", lwd=1, col="black", lty = 3, xlab="False Positive rate", ylab="True Positive Rate", main = "Mult 0.8")
+lines( l8_roc_data[[indx]]$FP2, l8_roc_data[[indx]]$C2, lty = 1, col = "black")
+lines(l16_roc_data[[indx]]$FP1,l16_roc_data[[indx]]$C1, lty = 3, col = 2)
+lines(l16_roc_data[[indx]]$FP2,l16_roc_data[[indx]]$C2, lty = 1, col = 2)
+lines(l32_roc_data[[indx]]$FP1,l32_roc_data[[indx]]$C1, lty = 3, col = 3)
+lines(l32_roc_data[[indx]]$FP2,l32_roc_data[[indx]]$C2, lty = 1, col = 3)
+lines(l64_roc_data[[indx]]$FP1,l64_roc_data[[indx]]$C1, lty = 3, col = 4)
+lines(l64_roc_data[[indx]]$FP2,l64_roc_data[[indx]]$C2, lty = 1, col = 4)
+legend(x = 0.7, y = 0.6,
+       # legend("bottomright",
+       c( paste0("noHMT 8: ", round( l8_roc_data[[indx]]$perf_nohmt,4))
+          , paste0( "HMT 8: ", round( l8_roc_data[[indx]]$perf_hmt,4))
+          ,paste0("noHMT 16: ",round(l16_roc_data[[indx]]$perf_nohmt,4))
+          ,paste0(  "HMT 16: ",round(l16_roc_data[[indx]]$perf_hmt,4))
+          ,paste0("noHMT 32: ",round(l32_roc_data[[indx]]$perf_nohmt,4))
+          ,paste0(  "HMT 32: ",round(l32_roc_data[[indx]]$perf_hmt,4))
+          ,paste0("noHMT 64: ",round(l64_roc_data[[indx]]$perf_nohmt,4))
+          ,paste0(  "HMT 64: ",round(l64_roc_data[[indx]]$perf_hmt,4))
+       ),
+       cex = 1,
+       bg = "transparent",
+       bty = "n",
+       lty=rep(c(3,1),4),
+       lwd=rep(c(1,1),4),
+       col=rep(c(1:4),each = 2))
+
+# 1
+indx <- 3
+plot(  l8_roc_data[[indx]]$FP1, l8_roc_data[[indx]]$C1, type="l", lwd=1, col="black", lty = 3, xlab="False Positive rate", ylab="True Positive Rate", main = "Mult 1")
+lines( l8_roc_data[[indx]]$FP2, l8_roc_data[[indx]]$C2, lty = 1, col = "black")
+lines(l16_roc_data[[indx]]$FP1,l16_roc_data[[indx]]$C1, lty = 3, col = 2)
+lines(l16_roc_data[[indx]]$FP2,l16_roc_data[[indx]]$C2, lty = 1, col = 2)
+lines(l32_roc_data[[indx]]$FP1,l32_roc_data[[indx]]$C1, lty = 3, col = 3)
+lines(l32_roc_data[[indx]]$FP2,l32_roc_data[[indx]]$C2, lty = 1, col = 3)
+lines(l64_roc_data[[indx]]$FP1,l64_roc_data[[indx]]$C1, lty = 3, col = 4)
+lines(l64_roc_data[[indx]]$FP2,l64_roc_data[[indx]]$C2, lty = 1, col = 4)
+legend(x = 0.7, y = 0.6,
+       # legend("bottomright",
+       c( paste0("noHMT 8: ", round( l8_roc_data[[indx]]$perf_nohmt,4))
+          , paste0( "HMT 8: ", round( l8_roc_data[[indx]]$perf_hmt,4))
+          ,paste0("noHMT 16: ",round(l16_roc_data[[indx]]$perf_nohmt,4))
+          ,paste0(  "HMT 16: ",round(l16_roc_data[[indx]]$perf_hmt,4))
+          ,paste0("noHMT 32: ",round(l32_roc_data[[indx]]$perf_nohmt,4))
+          ,paste0(  "HMT 32: ",round(l32_roc_data[[indx]]$perf_hmt,4))
+          ,paste0("noHMT 64: ",round(l64_roc_data[[indx]]$perf_nohmt,4))
+          ,paste0(  "HMT 64: ",round(l64_roc_data[[indx]]$perf_hmt,4))
+       ),
+       cex = 1,
+       bg = "transparent",
+       bty = "n",
+       lty=rep(c(3,1),4),
+       lwd=rep(c(1,1),4),
+       col=rep(c(1:4),each = 2))
+
+# 1.2
+indx <- 4
+plot(  l8_roc_data[[indx]]$FP1, l8_roc_data[[indx]]$C1, type="l", lwd=1, col="black", lty = 3, xlab="False Positive rate", ylab="True Positive Rate", main = "Mult 1.2")
+lines( l8_roc_data[[indx]]$FP2, l8_roc_data[[indx]]$C2, lty = 1, col = "black")
+lines(l16_roc_data[[indx]]$FP1,l16_roc_data[[indx]]$C1, lty = 3, col = 2)
+lines(l16_roc_data[[indx]]$FP2,l16_roc_data[[indx]]$C2, lty = 1, col = 2)
+lines(l32_roc_data[[indx]]$FP1,l32_roc_data[[indx]]$C1, lty = 3, col = 3)
+lines(l32_roc_data[[indx]]$FP2,l32_roc_data[[indx]]$C2, lty = 1, col = 3)
+lines(l64_roc_data[[indx]]$FP1,l64_roc_data[[indx]]$C1, lty = 3, col = 4)
+lines(l64_roc_data[[indx]]$FP2,l64_roc_data[[indx]]$C2, lty = 1, col = 4)
+legend(x = 0.7, y = 0.6,
+       # legend("bottomright",
+       c( paste0("noHMT 8: ", round( l8_roc_data[[indx]]$perf_nohmt,4))
+          , paste0( "HMT 8: ", round( l8_roc_data[[indx]]$perf_hmt,4))
+          ,paste0("noHMT 16: ",round(l16_roc_data[[indx]]$perf_nohmt,4))
+          ,paste0(  "HMT 16: ",round(l16_roc_data[[indx]]$perf_hmt,4))
+          ,paste0("noHMT 32: ",round(l32_roc_data[[indx]]$perf_nohmt,4))
+          ,paste0(  "HMT 32: ",round(l32_roc_data[[indx]]$perf_hmt,4))
+          ,paste0("noHMT 64: ",round(l64_roc_data[[indx]]$perf_nohmt,4))
+          ,paste0(  "HMT 64: ",round(l64_roc_data[[indx]]$perf_hmt,4))
+       ),
+       cex = 1,
+       bg = "transparent",
+       bty = "n",
+       lty=rep(c(3,1),4),
+       lwd=rep(c(1,1),4),
+       col=rep(c(1:4),each = 2))
+
+# 1.4
+indx <- 5
+plot(  l8_roc_data[[indx]]$FP1, l8_roc_data[[indx]]$C1, type="l", lwd=1, col="black", lty = 3, xlab="False Positive rate", ylab="True Positive Rate", main = "Mult 1.4")
+lines( l8_roc_data[[indx]]$FP2, l8_roc_data[[indx]]$C2, lty = 1, col = "black")
+lines(l16_roc_data[[indx]]$FP1,l16_roc_data[[indx]]$C1, lty = 3, col = 2)
+lines(l16_roc_data[[indx]]$FP2,l16_roc_data[[indx]]$C2, lty = 1, col = 2)
+lines(l32_roc_data[[indx]]$FP1,l32_roc_data[[indx]]$C1, lty = 3, col = 3)
+lines(l32_roc_data[[indx]]$FP2,l32_roc_data[[indx]]$C2, lty = 1, col = 3)
+lines(l64_roc_data[[indx]]$FP1,l64_roc_data[[indx]]$C1, lty = 3, col = 4)
+lines(l64_roc_data[[indx]]$FP2,l64_roc_data[[indx]]$C2, lty = 1, col = 4)
+legend(x = 0.7, y = 0.6,
+       # legend("bottomright",
+       c( paste0("noHMT 8: ", round( l8_roc_data[[indx]]$perf_nohmt,4))
+          , paste0( "HMT 8: ", round( l8_roc_data[[indx]]$perf_hmt,4))
+          ,paste0("noHMT 16: ",round(l16_roc_data[[indx]]$perf_nohmt,4))
+          ,paste0(  "HMT 16: ",round(l16_roc_data[[indx]]$perf_hmt,4))
+          ,paste0("noHMT 32: ",round(l32_roc_data[[indx]]$perf_nohmt,4))
+          ,paste0(  "HMT 32: ",round(l32_roc_data[[indx]]$perf_hmt,4))
+          ,paste0("noHMT 64: ",round(l64_roc_data[[indx]]$perf_nohmt,4))
+          ,paste0(  "HMT 64: ",round(l64_roc_data[[indx]]$perf_hmt,4))
+       ),
+       cex = 1,
+       bg = "transparent",
+       bty = "n",
+       lty=rep(c(3,1),4),
+       lwd=rep(c(1,1),4),
+       col=rep(c(1:4),each = 2))
 ```
 
 
