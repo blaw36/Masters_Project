@@ -132,6 +132,7 @@ l64_s2_stepped_50_diags <- waveqtl_diags(l64_s2_stepped_50,plot_indiv_curves = F
 ```
 
 The same thing, with 100 simulations:
+
 - Effect multiple:
   + L8: 1.5e08
   + L16: 8e07
@@ -176,6 +177,7 @@ l64_s3_stepped_500_diags <- waveqtl_diags(l64_s3_stepped_500,plot_indiv_curves =
 ```
 
 Then, I tried modifying the stepped effect sizes by multiplying each of them by c = (0.6,0.8,1,1.2,1.4) to see what happened. 200 sims:
+
 - Effect multiple:
   + L8: 1.5e08 * c
   + L16: 8e07 * c
