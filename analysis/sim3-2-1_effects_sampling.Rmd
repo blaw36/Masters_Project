@@ -1,0 +1,615 @@
+---
+title: "sim3_effects_sampling - v2.1"
+author: "Brendan Law"
+date: "20/08/2019"
+header-includes:
+   - \usepackage{bm}
+   - \usepackage{amsmath}
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+input_data_path = "~/Cpp/WaveQTL_HMT/data/dsQTL/"
+data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/" # change this when you port it all over to the Masters Git repo
+dataset <- "tree_tie_noQT"
+waveqtl_data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/WaveQTL/"
+waveqtl_dataset <- "test.no.QT"
+geno_select <- 11 # the one used in the demo
+
+library(rmutil) # for beta-binomial distribution
+library(dplyr)
+source("../code/sim3_functions.R")
+```
+A look into sampling sequences of different effect sizes, and what it does to our simulated data.
+
+### Read in phenotype (sequencing count) data, and other auxillary data
+Here is just a sample codebase. We're working off the data in the WaveQTL git repo -- DNase-seq data at chr17.10160989.10162012
+and genotypes at 24 SNPs in 2kb cis-candidate region on 70 individuals. (given as per Shim and Stephens)
+```{r}
+pheno.dat = as.matrix(read.table(paste0(input_data_path, "chr17.10160989.10162012.pheno.dat")))
+dim(pheno.dat)
+#[1]   70 1024
+
+### Is this useful at all? For later on
+## read library read depth
+library.read.depth = scan(paste0(input_data_path, "library.read.depth.dat"))
+length(library.read.depth)
+
+## read Covariates
+Covariates = as.matrix(read.table(paste0(input_data_path, "PC4.dat")))
+
+## Read DWT matrix 
+Wmat_1024 = read.table("~/Cpp/WaveQTL/data/DWT/Wmat_1024",as.is = TRUE)
+W2mat_1024 = Wmat_1024*Wmat_1024
+
+# ## Read in SNPs
+# geno_data = read.table("~/Cpp/WaveQTL/data/dsQTL/chr17.10160989.10162012.2kb.cis.geno",as.is = TRUE)
+# geno_data = geno_data[11,4:73]
+#
+# # Group based on midpoint of the data
+# med_data <- median(as.numeric(as.vector(geno_data[1,])))
+# group_data <- as.numeric(as.numeric(as.vector(geno_data[1,])) >= med_data)
+# write.table(t(c("blah","A","A",group_data)), file= paste0("~/Cpp/WaveQTL_HMT/data/dsQTL/", "sim3.cis.geno"), row.names=FALSE, col.names = FALSE, quote=FALSE)
+
+# Generate own SNPs data
+group_data <- rbinom(n = 70,size = 1,prob = 0.5)
+write.table(t(c("blah","A","A",group_data)), file= paste0("~/Cpp/WaveQTL_HMT/data/dsQTL/", "sim3.cis.geno"), row.names=FALSE, col.names = FALSE, quote=FALSE)
+
+seq_sum <- apply(pheno.dat,MARGIN = 2,sum)
+```
+
+### Simulate effect sizes and effect locations.
+As per previously, simulate the data-space effect size from WaveQTL_HMT, using this sequencing data, regressed against SNP 11 for each individual. This allows us to estimate effects, at each base, and also base locations which have significant effects, allowing us to do a realistic simulation of realistic effect regions and sizes, from this sequencing data. In reality, we can simulate random 1/0 individuals, as long as we distinguish between 1/0s by having 0s: no effect in the selected region, and 1s: have effect in the selected region.
+```{r}
+waveqtl_hmt_geno11 <- with_hmt_effect_size(data_path = data_path
+                                           ,dataset = dataset
+                                           ,waveqtl_dataset = paste0("WaveQTL/",waveqtl_dataset)
+                                           ,Wmat_1024 = Wmat_1024
+                                           ,geno_select = 11
+                                           ,plot_title = "Posterior mean +/3 posterior standard deviaion - SNP 11")
+# Base-level effect sizes:
+length(waveqtl_hmt_geno11$beta_dataS)
+# Locations of effects:
+length(waveqtl_hmt_geno11$col_posi)
+```
+
+### Simulate realistic effect lengths
+Effect lengths (powers of 2): 8, 16, 32, 64.
+
+Select intervals
+```{r}
+# Generate table summary of data-space effect areas
+int_table <- summarise_effect_intervals(waveqtl_hmt_geno11$col_posi)
+
+set.seed(10)
+effect_8 <- effect_length_picker(int_table,8)
+effect_16 <- effect_length_picker(int_table,16)
+effect_32 <- effect_length_picker(int_table,32)
+effect_64 <- effect_length_picker(int_table,64)
+
+length(effect_8)
+length(effect_16)
+length(effect_32)
+length(effect_64)
+```
+
+Looking at a 64-length case for now. Because i'm lazy, and all the code uses 'effect_32' below, assign the 64 length interval to the variable, 'effect_32':
+```{r}
+effect_32 <- effect_64
+```
+
+### Beta binomial
+What's the effect of over-dispersion on beta-binomial versus binomial?
+
+Binomial: n, p
+Beta-binomial: n, p, over-disp
+```{r,eval=F}
+n <- 100
+p <- 1/70
+draws <- 10000
+
+# Binomial
+binom_sims <- c()
+binom_sims <- rbinom(n = draws, size = n, prob = p)
+hist(binom_sims)
+var(binom_sims); n*p*(1-p)
+
+# For n = 1, both are equal:
+print("n = 1")
+# Binomial
+n <- 1
+binom_sims <- c()
+binom_sims <- rbinom(n = draws, size = n, prob = p)
+hist(binom_sims)
+var(binom_sims); n*p*(1-p)
+# Beta Binom
+over_disp <- 100
+nb_sims <- c()
+nb_sims <- rbetabinom(n = draws, size = n, m = p, s = over_disp)
+hist(nb_sims)
+var(nb_sims); n*p*(1-p); n*p*(1-p)*(over_disp+n)/(over_disp+1)
+
+# But as n gets larger, no longer equal:
+print("n = 100")
+# Binomial
+n <- 100
+binom_sims <- c()
+binom_sims <- rbinom(n = draws, size = n, prob = p)
+hist(binom_sims)
+var(binom_sims); n*p*(1-p)
+# Beta Binom
+over_disp <- 100
+nb_sims <- c()
+nb_sims <- rbetabinom(n = draws, size = n, m = p, s = over_disp)
+hist(nb_sims)
+var(nb_sims); n*p*(1-p); n*p*(1-p)*(over_disp+n)/(over_disp+1)
+
+# For this fixed n, what does changing over-disp do?:
+print("n = 100")
+# Binomial
+n <- 100
+binom_sims <- c()
+binom_sims <- rbinom(n = draws, size = n, prob = p)
+hist(binom_sims)
+var(binom_sims); n*p*(1-p)
+# Beta Binom
+over_disp <- 10^seq(-5,5,1)
+nb_sims <- matrix(nrow = length(over_disp), ncol = draws)
+for(i in 1:length(over_disp)){
+  nb_sims[i,] <- rbetabinom(n = draws, size = n, m = p, s = over_disp[i])
+}
+nb_sims_var <- apply(nb_sims,MARGIN = 1,var)
+plot(over_disp, nb_sims_var, type = "l")
+# Increased over_disp -> smaller variance? (closer to binomial variance, as n has less emphasis)
+# Final var:
+rev(nb_sims_var)[1]; n*p*(1-p)*(over_disp[i] + n)/(over_disp[i] + 1)
+```
+Doesn't always preserve the variance decreases, mainly because the gaps in over-disp at the start of the loop are really small
+```{r, eval = FALSE}
+over_disp
+n*p*(1-p)*(over_disp + n)/(over_disp + 1) #neg binomial
+nb_sims_var
+n*p*(1-p) #binomial
+```
+
+### Simulate realistic effect size
+See Sim3-1-1 for effect size simulation.
+```{r}
+# plot(waveqtl_hmt_geno11$beta_dataS, type = "l", main = "waveQTL effect size in data space")
+
+# Convert effect into ratio
+## Sensible effect into ratio
+# effect_ratio <- 1 + (70*waveqtl_hmt_geno11$beta_dataS/seq_sum)
+# effect_ratio[seq_sum == 0] <- 1
+# plot(effect_ratio, type = "l", main= "effect size converted to effect ratio (alt/null)")
+
+## Ridiculous effect into ratio
+ridiculous_effect_size <- 10
+effect_ratio <- rep(ridiculous_effect_size,1024)
+effect_ratio[seq_sum == 0] <- 1
+
+# Incorporate ratio into proportion parameter
+p1_vector <- 2/70 * (1/(1 + effect_ratio))
+p2_vector <- 2/70 * (effect_ratio/(1 + effect_ratio))
+
+# Initialise
+p1_vector <- rep(1/70,1024)
+p2_vector <- rep(1/70,1024)
+
+# Add in effects, where required
+p1_vector[effect_32] <- 2/70 * (1/(1 + effect_ratio[effect_32]))
+p2_vector[effect_32] <- 2/70 * (effect_ratio[effect_32]/(1 + effect_ratio[effect_32]))
+
+y_min <- min(min(p1_vector),min(p2_vector))
+y_max <- max(max(p1_vector),max(p2_vector))
+par(mar = c(2,4,4,2))
+plot(1,1,type="n"
+     , xlab = "Base location"
+     , ylab = "p parameter"
+     , ylim=c(y_min, y_max)
+     , xlim=c(1, 1024)
+     , main ="Simulation - p1 (null) vs p2 (alt) parameters - after effect window"
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+abline(h = 0, col = "red")
+if(length(effect_32) > 0){
+  for(j in 1:length(effect_32)){
+    polygon(c(effect_32[j]-0.5, effect_32[j]-0.5, effect_32[j]+0.5, effect_32[j]+0.5), c(y_min-2, y_max+2, y_max+2, y_min-2), col ="pink", border = NA)
+  }
+}
+lines(p1_vector, col = "blue")
+lines(p2_vector, col = "black")
+legend("topleft", legend=c("p1", "p2"),
+       col=c("blue", "black"), lty=c(1,1), cex=0.8,
+       box.lty=0)
+box()
+p <- recordPlot()
+
+## Set up beta binomial distribution
+# Larger = -> closer to binomial variance (smaller), far less sensitive to n.
+# Traditionally, for beta-binomial, large variation at small n, almost binomial variation
+over_disp_mult <- 7000000
+
+p1_alpha <- over_disp_mult*p1_vector
+p1_beta <- over_disp_mult - p1_alpha
+p2_alpha <- over_disp_mult*p2_vector
+p2_beta <- over_disp_mult - p2_alpha
+
+# Just use my own beta binomial sampling
+# 1) Sample p from rbeta(alpha,beta)
+# 2) Sample from rbinom(n,p)
+set.seed(6)
+# Null
+null_data_50 <- matrix(nrow = 70,ncol = 1024)
+for(i in 1:70){
+  # null_betas <- rbeta(n = 1024,shape1 = p1_alpha,shape2 = p1_beta)
+  null_data_50[i,] <- rbinom(n = 1024
+                             # , size = as.numeric(as.vector(ceiling(seq_sum[j])))
+                             , size = 100
+                             , p = 1/70)
+}
+
+# Alt
+# # For alt dataset, create a 70 X 1024 matrix, based on group membership, assigning p1 or p2, respectively
+# param_mtx <- matrix(nrow = 70,ncol = 1024)
+# n <- 1
+# for(i in group_data){
+#   if(i == 1){
+#     param_mtx[n,] <- p2_vector
+#   }else{
+#     param_mtx[n,] <- p1_vector
+#   }
+#   n <- n + 1
+# }
+alt_data_50 <- matrix(nrow = 70,ncol = 1024)
+for(i in 1:70){
+  if(group_data[i] == 0){
+    alt_beta <- rbeta(n = 1024
+                      ,shape1 = p1_alpha
+                      ,shape2 = p1_beta)  
+  }else{
+    alt_beta <- rbeta(n = 1024
+                      ,shape1 = p2_alpha
+                      ,shape2 = p2_beta)  
+  }
+  alt_data_50[i, ] <- rbinom(n = 1024
+                             # , size = as.numeric(as.vector(ceiling(seq_sum)))
+                             ,size = 100
+                             ,prob = alt_beta)
+}
+
+# set.seed(6)
+# # Null
+# null_data_50 <- matrix(nrow = 70,ncol = 1024)
+# for(j in 1:1024){
+#   null_data_50[,j] <- rmutil::rbetabinom(n = 70
+#                                          # , size = as.numeric(as.vector(ceiling(seq_sum[j])))
+#                                          , size = 100
+#                                          , m = 1/70
+#                                          , s = over_disp_mult)
+# }
+# # for(j in 1:1024){
+# #   null_data_50[,j] <- rmutil::rbetabinom(n = 70
+# #                                          # , size = as.numeric(as.vector(ceiling(seq_sum[j])))
+# #                                          , size = 100
+# #                                          , m = 1/70
+# #                                          , s = over_disp_mult)  
+# # }
+# 
+# # Alt
+# # For alt dataset, create a 70 X 1024 matrix, based on group membership, assigning p1 or p2, respectively
+# param_mtx <- matrix(nrow = 70,ncol = 1024)
+# n <- 1
+# for(i in group_data){
+#   if(i == 1){
+#     param_mtx[n,] <- p2_vector
+#   }else{
+#     param_mtx[n,] <- p1_vector
+#   }
+#   n <- n + 1
+# }
+# 
+# alt_data_50 <- matrix(nrow = 70,ncol = 1024)
+# for(j in 1:1024){
+#   alt_data_50[,j] <- rmutil::rbetabinom(n = 1
+#                                          # , size = as.numeric(as.vector(ceiling(seq_sum[j])))
+#                                          , size = 100
+#                                          , m = param_mtx[,j]
+#                                          , s = over_disp_mult)
+# }
+# # alt_data_50 <- matrix(nrow = 70,ncol = 1024)
+# # for(j in 1:1024){
+# #   for(i in 1:70){
+# #     alt_data_50[i,j] <- rmutil::rbetabinom(n = 1
+# #                                            # , size = as.numeric(as.vector(ceiling(seq_sum[j])))
+# #                                            , size = 100
+# #                                            , m = param_mtx[i,j]
+# #                                            , s = over_disp_mult)  
+# #   }
+# # }
+```
+
+Plot the average of the two together?
+```{r}
+null_data_50_avg <- apply(null_data_50,2,sum)
+alt_data_50_avg <- apply(alt_data_50,2,sum)
+
+g0_mean_n <- apply(null_data_50[which(group_data == 0),],2,mean)
+g1_mean_n <- apply(null_data_50[which(group_data == 1),],2,mean)
+g0_mean_a <- apply(alt_data_50[which(group_data == 0),],2,mean)
+g1_mean_a <- apply(alt_data_50[which(group_data == 1),],2,mean)
+
+y_min <- min(min(g0_mean_n - g1_mean_n),min(g0_mean_a - g1_mean_a))
+y_max <- max(max(g0_mean_n - g1_mean_n),max(g0_mean_a - g1_mean_a))
+plt_rng_y_2 <- c(min(alt_data_50_avg - null_data_50_avg) * 0.9999999999999, max(alt_data_50_avg - null_data_50_avg) * 1.000000000000001)
+
+par(mfrow=c(1,1))
+plot(1,1,type="n"
+     , xlab = "Base location"
+     , ylab = "simulated avg counts"
+     , ylim=c(y_min, y_max)
+     , xlim=c(1, 1024)
+     , main ="Simulated NULL data - average of g0 (no effect) vs g1 (effect)"
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+if(length(effect_32) > 0){
+  for(j in 1:length(effect_32)){
+    polygon(c(effect_32[j]-0.5, effect_32[j]-0.5, effect_32[j]+0.5, effect_32[j]+0.5), c(plt_rng_y_2[1], plt_rng_y_2[2], plt_rng_y_2[1], plt_rng_y_2[2]), col ="pink", border = NA)
+  }
+}
+lines(g0_mean_n - g1_mean_n, col = "red")
+legend("topleft", legend=c("p1", "p2"),
+       col=c("red", "green"), lty=c(1,1), cex=0.8,
+       box.lty=0)
+box()
+
+par(mfrow=c(1,1))
+plot(1,1,type="n"
+     , xlab = "Base location"
+     , ylab = "simulated avg counts"
+     , ylim=c(y_min, y_max)
+     , xlim=c(1, 1024)
+     , main ="Simulated ALT data - average of g0 (no effect) vs g1 (effect)"
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+if(length(effect_32) > 0){
+  for(j in 1:length(effect_32)){
+    polygon(c(effect_32[j]-0.5, effect_32[j]-0.5, effect_32[j]+0.5, effect_32[j]+0.5), c(plt_rng_y_2[1], plt_rng_y_2[2], plt_rng_y_2[1], plt_rng_y_2[2]), col ="pink", border = NA)
+  }
+}
+lines(g0_mean_a - g1_mean_a, col = "red")
+legend("topleft", legend=c("p1", "p2"),
+       col=c("red", "green"), lty=c(1,1), cex=0.8,
+       box.lty=0)
+box()
+```
+
+### Run a sample analyses
+- Clean both Null and Alt data through WC transform R thingy
++ Do we do all the usual bells and whistles (PCA regression, quantile transforms?)
++ What tying level?
++ Same set of covariates, right?
+- Null data through WaveQTL and WaveQTL_HMT
+- Alt data through WaveQTL and WaveQTL_HMT
+
+Cleaning the Null dataset:
+```{r}
+wavelet_cleaning_wrapper_function(pheno.dat = null_data_50
+                                  ,output.path = "~/Cpp/WaveQTL_HMT/test/dsQTL/sims/length_32/null_data/"
+                                  ,library.read.depth = library.read.depth
+                                  ,Covariates = Covariates)
+```
+
+Cleaning the Alt dataset:
+```{r}
+wavelet_cleaning_wrapper_function(pheno.dat = alt_data_50
+                                  ,output.path = "~/Cpp/WaveQTL_HMT/test/dsQTL/sims/length_32/alt_data/"
+                                  ,library.read.depth = library.read.depth
+                                  ,Covariates = Covariates)
+```
+
+_SHOULD WE ONLY NEED THE NON-QT version for effect sizes? The QT version is for likelihood/association testing - is this something we're going to be interested in also? Or just ability to identify effects at certain locations?_
+
+#### Run null dataset
+Run through WaveQTL:
+```{r, include = FALSE}
+setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_32/null_data/WCs.no.QT.txt -u sims/length_32/null_data/use.txt -o sim3_noQT_null -f 1024 -fph 1"
+       ,show.output.on.console = F)
+setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
+```
+Run through WaveQTL_HMT:
+```{r, include = FALSE}
+setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_32/null_data/WCs.no.QT.txt -u sims/length_32/null_data/use.txt -o sim3_noQT_null_HMT -f 1024 -hmt 1"
+       ,show.output.on.console = F)
+setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
+```
+
+#### Run alt dataset
+Run through WaveQTL:
+```{r, include = FALSE}
+setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_32/alt_data/WCs.no.QT.txt -u sims/length_32/alt_data/use.txt -o sim3_noQT_alt -f 1024 -fph 1"
+       ,show.output.on.console = F)
+setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
+```
+Run through WaveQTL_HMT:
+```{r, include = FALSE}
+setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+system("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_32/alt_data/WCs.no.QT.txt -u sims/length_32/alt_data/use.txt -o sim3_noQT_alt_HMT -f 1024 -hmt 1"
+       ,show.output.on.console = F)
+setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
+```
+
+### Analysis - no HMT
+Quick effect size analysis and plotting. No_HMT is easy. Read in some more pre-requisite data (like the inverse wavelet transform):
+
+```{r}
+##### Null
+null_50_data_path = "~/Cpp/WaveQTL_HMT/test/dsQTL/output/"
+null_50_data_prefix = "sim3_noQT_null"
+null_50 <- no_hmt_effect_size(data_path = null_50_data_path
+                              ,data_prefix = null_50_data_prefix
+                              ,Wmat_1024 = Wmat_1024
+                              ,W2mat_1024 = W2mat_1024
+                              ,sel_geno_IX = 1)
+
+##### Alt
+alt_50_data_path = "~/Cpp/WaveQTL_HMT/test/dsQTL/output/"
+alt_50_data_prefix = "sim3_noQT_alt"
+alt_50 <- no_hmt_effect_size(data_path = alt_50_data_path
+                             ,data_prefix = alt_50_data_prefix
+                             ,Wmat_1024 = Wmat_1024
+                             ,W2mat_1024 = W2mat_1024
+                             ,sel_geno_IX = 1)
+```
+
+### Analysis - with HMT
+```{r}
+##### Null
+null_50_data_path = "~/Cpp/WaveQTL_HMT/test/dsQTL/output/"
+null_50_data_prefix = "sim3_noQT_null"
+null_50_hmt <- with_hmt_effect_size(data_path = null_50_data_path
+                                    ,dataset = paste0(null_50_data_prefix,"_HMT")
+                                    ,waveqtl_dataset = null_50_data_prefix
+                                    ,Wmat_1024 = Wmat_1024
+                                    ,geno_select = 1)
+
+##### Alt
+alt_50_data_path = "~/Cpp/WaveQTL_HMT/test/dsQTL/output/"
+alt_50_data_prefix = "sim3_noQT_alt"
+alt_50_hmt <- with_hmt_effect_size(data_path = alt_50_data_path
+                                   ,dataset = paste0(alt_50_data_prefix,"_HMT")
+                                   ,waveqtl_dataset = alt_50_data_prefix
+                                   ,Wmat_1024 = Wmat_1024
+                                   ,geno_select = 1)
+```
+
+### Ad hoc plots
+Two final comparisons, by plot:
+
+Null case:
+```{r, echo = F}
+### Null
+
+# Determine graph boundaries
+# No HMT
+sample_mean <- null_50$beta_dataS
+sample_sd <- null_50$beta_sd_dataS
+ymin_beta_noHMT = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+ymax_beta_noHMT = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+# HMT
+sample_mean <- null_50_hmt$beta_dataS
+sample_sd <- null_50_hmt$beta_sd_dataS
+ymin_beta_HMT = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+ymax_beta_HMT = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+
+ymin_beta = min(ymin_beta_HMT,ymin_beta_noHMT)
+ymax_beta = min(ymax_beta_HMT,ymax_beta_noHMT)
+
+# No HMT
+p_null <- effect_size_plot(
+  y_min = ymin_beta
+  , y_max = ymax_beta
+  , beta_mean = null_50$beta_dataS
+  , beta_sd = null_50$beta_sd_dataS
+  , x_range = c(1,1024)
+  , plot_title = "Posterior mean +/-3 posterior standard deviation - null - no-HMT")
+
+# HMT
+p_null_hmt <- effect_size_plot(
+  y_min = ymin_beta
+  , y_max = ymax_beta
+  , beta_mean = null_50_hmt$beta_dataS
+  , beta_sd = null_50_hmt$beta_sd_dataS
+  , x_range = c(1,1024)
+  , plot_title = "Posterior mean +/-3 posterior standard deviation - null - HMT")
+
+### Zoom in on region of interest - where we generated an effect size
+
+# No HMT
+p_null_zoom <- effect_size_plot(
+  y_min = ymin_beta
+  , y_max = ymax_beta
+  , beta_mean = null_50$beta_dataS
+  , beta_sd = null_50$beta_sd_dataS
+  , x_range = c(effect_32[1], rev(effect_32)[1])
+  , x_ticks = seq(effect_32[1],rev(effect_32)[1],by = 10)
+  , plot_title = "Posterior mean +/-3 posterior standard deviation - null - no-HMT")
+
+# HMT
+p_null_hmt_zoom <- effect_size_plot(
+  y_min = ymin_beta
+  , y_max = ymax_beta
+  , beta_mean = null_50_hmt$beta_dataS
+  , beta_sd = null_50_hmt$beta_sd_dataS
+  , x_range = c(effect_32[1], rev(effect_32)[1])
+  , x_ticks = seq(effect_32[1],rev(effect_32)[1],by = 10)
+  , plot_title = "Posterior mean +/-3 posterior standard deviation - null - HMT")
+```
+
+Alt case:
+```{r, echo = F}
+### Alt
+
+# Determine graph boundaries
+# No HMT
+sample_mean <- alt_50$beta_dataS
+sample_sd <- alt_50$beta_sd_dataS
+ymin_beta_noHMT = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+ymax_beta_noHMT = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+# HMT
+sample_mean <- alt_50_hmt$beta_dataS
+sample_sd <- alt_50_hmt$beta_sd_dataS
+ymin_beta_HMT = min(sample_mean - 3*sample_sd) - abs(min(sample_mean - 3*sample_sd))*0.0000000001
+ymax_beta_HMT = max(sample_mean + 3*sample_sd) + abs(max(sample_mean + 3*sample_sd))*0.0000000001
+
+ymin_beta = min(ymin_beta_HMT,ymin_beta_noHMT)
+ymax_beta = min(ymax_beta_HMT,ymax_beta_noHMT)
+
+# No HMT
+p_alt <- effect_size_plot(
+  y_min = ymin_beta
+  , y_max = ymax_beta
+  , beta_mean = alt_50$beta_dataS
+  , beta_sd = alt_50$beta_sd_dataS
+  , x_range = c(1,1024)
+  , plot_title = "Posterior mean +/-3 posterior standard deviation - alt - no-HMT")
+
+# HMT
+p_alt_hmt <- effect_size_plot(
+  y_min = ymin_beta
+  , y_max = ymax_beta
+  , beta_mean = alt_50_hmt$beta_dataS
+  , beta_sd = alt_50_hmt$beta_sd_dataS
+  , x_range = c(1,1024)
+  , plot_title = "Posterior mean +/-3 posterior standard deviation - alt - HMT")
+
+### Zoom in on region of interest - where we generated an effect size
+
+# No HMT
+p_alt_zoom <- effect_size_plot(
+  y_min = ymin_beta
+  , y_max = ymax_beta
+  , beta_mean = alt_50$beta_dataS
+  , beta_sd = alt_50$beta_sd_dataS
+  , x_range = c(effect_32[1], rev(effect_32)[1])
+  , x_ticks = seq(effect_32[1],rev(effect_32)[1],by = 10)
+  , plot_title = "Posterior mean +/-3 posterior standard deviation - alt - no-HMT")
+
+# HMT
+p_alt_hmt_zoom <- effect_size_plot(
+  y_min = ymin_beta
+  , y_max = ymax_beta
+  , beta_mean = alt_50_hmt$beta_dataS
+  , beta_sd = alt_50_hmt$beta_sd_dataS
+  , x_range = c(effect_32[1], rev(effect_32)[1])
+  , x_ticks = seq(effect_32[1],rev(effect_32)[1],by = 10)
+  , plot_title = "Posterior mean +/-3 posterior standard deviation - alt - HMT")
+
+```

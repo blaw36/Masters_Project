@@ -1,0 +1,1020 @@
+---
+title: "sim4_lhood_thresholding - v1.1"
+author: "Brendan Law"
+date: "06/09/2019"
+header-includes:
+   - \usepackage{bm}
+   - \usepackage{amsmath}
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+input_data_path = "~/Cpp/WaveQTL_HMT/data/dsQTL/"
+data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/" # change this when you port it all over to the Masters Git repo
+dataset <- "tree_tie_noQT"
+waveqtl_data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/WaveQTL/"
+waveqtl_dataset <- "test.no.QT"
+geno_select <- 11 # the one used in the demo
+
+library(rmutil) # for beta-binomial distribution
+library(dplyr)
+library(ROCR)
+source("../code/sim3_functions.R")
+source("../code/sim4_functions.R")
+# source("../code/sim3_wflow.R")
+```
+
+The goal here is to produce a likelihood/ratio based ROC curve (and to measure auROC) as a diagnostic for whether HMT is able to identify more associations, across many datasets, when altering many of the variables, such as:
+
+- Effect length
+- Effect location
+- Effect size ratio
+- Overdispersion
+- Count multiples
+
+This is a more quantitative way of evaluation, than the rather qualitative way we had before.
+
+### Methodology:
+1. Simulate, say, 50 datasets, from each of alt and null, for a given set of parameters (set effect length, location, size, overdisp, count multiple)
+2. Clean the data (WC cleaning)
+3. Run through WaveQTL and WaveQTL_HMT
+4. Important data to assess is likelihood ratio
+5. Collect, then construct auROC curve.
+  + true negatives; null dataset, no effect (0 outcome)
+  + false positives; null dataset, effect (1 outcome)
+  + true positives; alt dataset, effect (1 outcome)
+  + false negatives; alt dataset, no effect (0 outcome)
+
+### Read in phenotype (sequencing count) data, and other auxillary data
+Here is just a sample codebase. We're working off the data in the WaveQTL git repo -- DNase-seq data at chr17.10160989.10162012
+and genotypes at 24 SNPs in 2kb cis-candidate region on 70 individuals. (given as per Shim and Stephens)
+```{r}
+
+effect_size_and_data <- read_in_gen_eff_size(geno_select = 11)
+
+# pheno.dat = as.matrix(read.table(paste0(input_data_path, "chr17.10160989.10162012.pheno.dat")))
+# dim(pheno.dat)
+# #[1]   70 1024
+# 
+# ### Is this useful at all? For later on
+# ## read library read depth
+# library.read.depth = scan(paste0(input_data_path, "library.read.depth.dat"))
+# length(library.read.depth)
+# 
+# ## read Covariates
+# Covariates = as.matrix(read.table(paste0(input_data_path, "PC4.dat")))
+# 
+# ## Read DWT matrix 
+# Wmat_1024 = read.table("~/Cpp/WaveQTL/data/DWT/Wmat_1024",as.is = TRUE)
+# W2mat_1024 = Wmat_1024*Wmat_1024
+# 
+# # ## Read in SNPs
+# # geno_data = read.table("~/Cpp/WaveQTL/data/dsQTL/chr17.10160989.10162012.2kb.cis.geno",as.is = TRUE)
+# # geno_data = geno_data[11,4:73]
+# #
+# # # Group based on midpoint of the data
+# # med_data <- median(as.numeric(as.vector(geno_data[1,])))
+# # group_data <- as.numeric(as.numeric(as.vector(geno_data[1,])) >= med_data)
+# # write.table(t(c("blah","A","A",group_data)), file= paste0("~/Cpp/WaveQTL_HMT/data/dsQTL/", "sim3.cis.geno"), row.names=FALSE, col.names = FALSE, quote=FALSE)
+# 
+# # Generate own SNPs data
+# group_data <- rbinom(n = 70,size = 1,prob = 0.5)
+# write.table(t(c("blah","A","A",group_data)), file= paste0("~/Cpp/WaveQTL_HMT/data/dsQTL/", "sim3.cis.geno"), row.names=FALSE, col.names = FALSE, quote=FALSE)
+# 
+# seq_sum <- apply(pheno.dat,MARGIN = 2,sum)
+```
+
+### Pick an effect size
+Ideally, without the issue of having too many 0 counts in the region
+
+```{r}
+# int_table <- summarise_effect_intervals(waveqtl_hmt_geno11$col_posi)
+
+# # Generate effect sizes
+# set.seed(10)
+# effect_interval_8 <- effect_length_picker(int_table,8)
+# effect_interval_16 <- effect_length_picker(int_table,16)
+# effect_interval_32 <- effect_length_picker(int_table,32)
+# effect_interval_64 <- effect_length_picker(int_table,64)
+
+# Pick effect sizes:
+effect_interval_8 <- 519:526
+effect_interval_16 <- 450:465
+effect_interval_32 <- 437:468
+effect_interval_64 <- 417:480
+```
+
+Altered workflow - adapted from sim3_wflow.R, but designed to only return the likelihood statistic. Now in sim4_wflow.R.
+
+Ordinary obs (lots more variance):
+```{r, echo = F}
+set.seed(1)
+t_8_s1 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 8
+  , effect_interval = effect_interval_8
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 70
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 1.5e8
+  , trials_multiple = 10
+  , number_sims = 50
+  , verbose = F
+)
+t_8_s1_diags <- waveqtl_diags(t_8_s1,50)
+```
+```{r}
+set.seed(1)
+t_16_s1 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 16
+  , effect_interval = effect_interval_16
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 70
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 1.5e8
+  , trials_multiple = 10
+  , number_sims = 50
+  , verbose = F
+)
+t_16_s1_diags <- waveqtl_diags(t_16_s1,50)
+set.seed(1)
+t_32_s1 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 32
+  , effect_interval = effect_interval_32
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 70
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 1.5e8
+  , trials_multiple = 10
+  , number_sims = 50
+  , verbose = F
+)
+t_32_s1_diags <- waveqtl_diags(t_32_s1,50)
+set.seed(1)
+t_64_s1 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 64
+  , effect_interval = effect_interval_64
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 70
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 1.5e8
+  , trials_multiple = 10
+  , number_sims = 50
+  , verbose = F
+)
+t_64_s1_diags <- waveqtl_diags(t_64_s1,50)
+```
+
+At this large effect size, can see the graduation between larger effect sizes, and (probably) the diminished impact of HMT
+```{r}
+t_16_s1_diags$roc_plot
+t_32_s1_diags$roc_plot
+t_64_s1_diags$roc_plot
+```
+save data:
+```{r}
+saveRDS(t_8_s1,"../data/20190906_sim4_l8_s1.RDS",compress = T)
+saveRDS(t_16_s1,"../data/20190906_sim4_l16_s1.RDS",compress = T)
+saveRDS(t_32_s1,"../data/20190906_sim4_l32_s1.RDS",compress = T)
+saveRDS(t_64_s1,"../data/20190906_sim4_l64_s1.RDS",compress = T)
+```
+
+After a little big of playing around with params, we try two approaches:
+
+### Approach 1 - different effect sizes
+First is to do with trying to have an effect size where we have potentially measurable difference under each length. This involves reducing the effect size as we increase the length, otherwise the signal is too strong for longer effects, and does not encourage differences between the two approaches. Stepped down effect sizes:
+
+- 1.5e8, 8e7, 4e7, 2.5e7
+
+100 sims, 30 OD - didn't show the graduation [don't save]
+```{r}
+number_sims <- 100
+set.seed(1)
+t_8_s1 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 8
+  , effect_interval = effect_interval_8
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 30
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 1.5e8
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_8_s1_diags <- waveqtl_diags(t_8_s1,number_sims)
+
+set.seed(1)
+t_16_s1 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 16
+  , effect_interval = effect_interval_16
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 30
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 8e7
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_16_s1_diags <- waveqtl_diags(t_16_s1,number_sims)
+
+set.seed(1)
+t_32_s1 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 32
+  , effect_interval = effect_interval_32
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 30
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 4e7
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_32_s1_diags <- waveqtl_diags(t_32_s1,number_sims)
+
+set.seed(1)
+t_64_s1 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 64
+  , effect_interval = effect_interval_64
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 30
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 2.5e7
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_64_s1_diags <- waveqtl_diags(t_64_s1,number_sims)
+```
+
+But the 50 sims, 70 OD seems to. [SAVE]
+```{r}
+number_sims <- 50
+od <- 70
+set.seed(1)
+t_8_s2 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 8
+  , effect_interval = effect_interval_8
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 1.5e8
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_8_s2_diags <- waveqtl_diags(t_8_s2,number_sims)
+
+set.seed(1)
+t_16_s2 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 16
+  , effect_interval = effect_interval_16
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 8e7
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_16_s2_diags <- waveqtl_diags(t_16_s2,number_sims)
+
+set.seed(1)
+t_32_s2 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 32
+  , effect_interval = effect_interval_32
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 4e7
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_32_s2_diags <- waveqtl_diags(t_32_s2,number_sims)
+
+set.seed(1)
+t_64_s2 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 64
+  , effect_interval = effect_interval_64
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 2e7
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_64_s2_diags <- waveqtl_diags(t_64_s2,number_sims)
+```
+```{r}
+saveRDS(test_8, "../data/20190908_sim4_l8_s2_stepped_v2.RDS",compress = T)
+saveRDS(t_8_s2, "../data/20190908_sim4_l8_s2_stepped.RDS",compress = T)
+saveRDS(t_16_s2,"../data/20190908_sim4_l16_s2_stepped.RDS",compress = T)
+saveRDS(t_32_s2,"../data/20190908_sim4_l32_s2_stepped.RDS",compress = T)
+saveRDS(t_64_s2,"../data/20190908_sim4_l64_s2_stepped.RDS",compress = T)
+```
+
+
+Step it up to 100 sims, 70 OD: [SAVE]
+```{r}
+number_sims <- 100
+od <- 70
+set.seed(1)
+t_8_s3 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 8
+  , effect_interval = effect_interval_8
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 1.5e8
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_8_s3_diags <- waveqtl_diags(t_8_s3,number_sims)
+
+set.seed(1)
+t_16_s3 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 16
+  , effect_interval = effect_interval_16
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 8e7
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_16_s3_diags <- waveqtl_diags(t_16_s3,number_sims)
+
+set.seed(1)
+t_32_s3 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 32
+  , effect_interval = effect_interval_32
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 4e7
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_32_s3_diags <- waveqtl_diags(t_32_s3,number_sims)
+
+set.seed(1)
+t_64_s3 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 64
+  , effect_interval = effect_interval_64
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 2e7
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_64_s3_diags <- waveqtl_diags(t_64_s3,number_sims)
+```
+Again, fairly nice graduation, so save:
+```{r}
+saveRDS( t_8_s3, "../data/20190908_sim4_l8_s3_stepped_100sims.RDS",compress = T)
+saveRDS(t_16_s3,"../data/20190908_sim4_l16_s3_stepped_100sims.RDS",compress = T)
+saveRDS(t_32_s3,"../data/20190908_sim4_l32_s3_stepped_100sims.RDS",compress = T)
+saveRDS(t_64_s3,"../data/20190908_sim4_l64_s3_stepped_100sims.RDS",compress = T)
+```
+
+Nicely effect sizes which are consistently double of each other...so make first one 1.6e8. Not so good. Stick with 1.5e8
+```{r}
+# number_sims = 50 worked nicely...
+number_sims <- 100
+od <- 70
+set.seed(1)
+t_8_s4 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 8
+  , effect_interval = effect_interval_8
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 1.6e8
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_8_s4_diags <- waveqtl_diags(t_8_s4,number_sims)
+```
+
+Just like we do below, we try for a lower variance, and lower effect size approach.
+```{r}
+number_sims <- 50
+od <- 700000
+set.seed(1)
+t_8_s4 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 8
+  , effect_interval = effect_interval_8
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 6e7
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_8_s4_diags <- waveqtl_diags(t_8_s4,number_sims)
+
+set.seed(1)
+t_16_s4 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 16
+  , effect_interval = effect_interval_16
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 3e7
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_16_s4_diags <- waveqtl_diags(t_16_s4,number_sims)
+
+set.seed(1)
+t_32_s4 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 32
+  , effect_interval = effect_interval_32
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 1.5e7
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_32_s4_diags <- waveqtl_diags(t_32_s4,number_sims)
+
+set.seed(1)
+t_64_s4 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 64
+  , effect_interval = effect_interval_64
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = 7e6
+  , trials_multiple = 10
+  , number_sims = number_sims
+  , verbose = F
+  , outputAlias = "sim4"
+)
+t_64_s4_diags <- waveqtl_diags(t_64_s4,number_sims)
+```
+```{r}
+saveRDS( t_8_s4, "../data/20190908_sim4_l8_s4_stepped_50sims.RDS",compress = T)
+saveRDS(t_16_s4,"../data/20190908_sim4_l16_s4_stepped_50sims.RDS",compress = T)
+saveRDS(t_32_s4,"../data/20190908_sim4_l32_s4_stepped_50sims.RDS",compress = T)
+saveRDS(t_64_s4,"../data/20190908_sim4_l64_s4_stepped_50sims.RDS",compress = T)
+```
+
+### Approach 2 - same effect sizes
+The second approach takes the previous approach (same parameters), but trying to find an effect size small enough that is large enough to be detectable in the 8-length effect, but not overpowering for the 64-length effect. This, I suspect, is a difficult task.
+
+Effect size currently 1e8, OD 70.
+
+Sims at 100 - effect size too small for difference, it seems. [DON'T SAVE]
+```{r, echo = F}
+efMult <- 1e8
+num_sums <- 100
+set.seed(1)
+t_8_s1 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 8
+  , effect_interval = effect_interval_8
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 70
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_8_s1_diags <- waveqtl_diags(t_8_s1,num_sums)
+set.seed(1)
+t_16_s1 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 16
+  , effect_interval = effect_interval_16
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 70
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_16_s1_diags <- waveqtl_diags(t_16_s1,num_sums)
+set.seed(1)
+t_32_s1 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 32
+  , effect_interval = effect_interval_32
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 70
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_32_s1_diags <- waveqtl_diags(t_32_s1,num_sums)
+set.seed(1)
+t_64_s1 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 64
+  , effect_interval = effect_interval_64
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 70
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_64_s1_diags <- waveqtl_diags(t_64_s1,num_sums)
+```
+
+Sims down to 50 - seems to work fine. [SAVE]
+```{r, echo = F}
+efMult <- 1e8
+num_sums <- 50
+set.seed(1)
+t_8_s2 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 8
+  , effect_interval = effect_interval_8
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 70
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_8_s2_diags <- waveqtl_diags(t_8_s2,num_sums)
+set.seed(1)
+t_16_s2 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 16
+  , effect_interval = effect_interval_16
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 70
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_16_s2_diags <- waveqtl_diags(t_16_s2,num_sums)
+set.seed(1)
+t_32_s2 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 32
+  , effect_interval = effect_interval_32
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 70
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_32_s2_diags <- waveqtl_diags(t_32_s2,num_sums)
+set.seed(1)
+t_64_s2 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 64
+  , effect_interval = effect_interval_64
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = FALSE
+  , over_disp_param = 70
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_64_s2_diags <- waveqtl_diags(t_64_s2,num_sums)
+```
+```{r}
+saveRDS(t_8_s2,"../data/20190908_sim4_l8_s2_same_50sims.RDS", compress = T)
+saveRDS(t_16_s2,"../data/20190908_sim4_l16_s2_same_50sims.RDS", compress = T)
+saveRDS(t_32_s2,"../data/20190908_sim4_l32_s2_same_50sims.RDS", compress = T)
+saveRDS(t_64_s2,"../data/20190908_sim4_l64_s2_same_50sims.RDS", compress = T)
+```
+
+
+Try turning quantile data on - not very successful, doesn't seem to work for this parameter set. [DON'T SAVE]
+```{r, echo = F}
+efMult <- 1e8
+num_sums <- 50
+od <- 70
+use_qt <- TRUE
+set.seed(1)
+t_8_s3 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 8
+  , effect_interval = effect_interval_8
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = use_qt
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_8_s3_diags <- waveqtl_diags(t_8_s3,num_sums)
+set.seed(1)
+t_16_s3 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 16
+  , effect_interval = effect_interval_16
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = use_qt
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_16_s3_diags <- waveqtl_diags(t_16_s3,num_sums)
+set.seed(1)
+t_32_s3 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 32
+  , effect_interval = effect_interval_32
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = use_qt
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_32_s3_diags <- waveqtl_diags(t_32_s3,num_sums)
+set.seed(1)
+t_64_s3 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 64
+  , effect_interval = effect_interval_64
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = use_qt
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_64_s3_diags <- waveqtl_diags(t_64_s3,num_sums)
+```
+
+Turn quantile data back off. Try and decrease variance and decrease effect size. Seemed to work ok [SAVE]
+```{r, echo = F}
+# Tried: (8e7,700), 50 sims
+efMult <- 6e7
+num_sums <- 50
+od <- 700000
+use_qt <- FALSE
+set.seed(1)
+t_8_s4 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 8
+  , effect_interval = effect_interval_8
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = use_qt
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_8_s4_diags <- waveqtl_diags(t_8_s4,num_sums)
+set.seed(1)
+t_16_s4 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 16
+  , effect_interval = effect_interval_16
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = use_qt
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_16_s4_diags <- waveqtl_diags(t_16_s4,num_sums)
+set.seed(1)
+t_32_s4 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 32
+  , effect_interval = effect_interval_32
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = use_qt
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_32_s4_diags <- waveqtl_diags(t_32_s4,num_sums)
+set.seed(1)
+t_64_s4 <- run_sim4(
+  sequencing_sums = effect_size_and_data$seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 64
+  , effect_interval = effect_interval_64
+  , effect_size_data = effect_size_and_data$effect_size
+  , use_qt_data = use_qt
+  , over_disp_param = od
+  , Wmat_1024 = effect_size_and_data$Wmat_1024
+  , W2mat_1024 = effect_size_and_data$W2mat_1024
+  , library.read.depth = effect_size_and_data$library.read.depth
+  , Covariates = effect_size_and_data$Covariates
+  , effect_multiple = efMult
+  , trials_multiple = 10
+  , number_sims = num_sums
+  , verbose = F
+  , outputAlias = "sim3"
+)
+t_64_s4_diags <- waveqtl_diags(t_64_s4,num_sums)
+```
+```{r}
+ saveRDS(t_8_s4 ,"../data/20190908_sim4_l8_s4_same_50sims.RDS", compress = T)
+saveRDS(t_16_s4,"../data/20190908_sim4_l16_s4_same_50sims.RDS", compress = T)
+saveRDS(t_32_s4,"../data/20190908_sim4_l32_s4_same_50sims.RDS", compress = T)
+saveRDS(t_64_s4,"../data/20190908_sim4_l64_s4_same_50sims.RDS", compress = T)
+```
+
+

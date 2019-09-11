@@ -61,7 +61,7 @@ wavelet_cleaning_wrapper_function <- function(pheno.dat, output.path, meanR.thre
   # data.path = "../code/WaveQTL/data/dsQTL/"
 
   ## set seed
-  set.seed(1)
+  # set.seed(1)
 
   # ## read library read depth
   # library.read.depth = scan(paste0(data.path, "library.read.depth.dat"))
@@ -81,7 +81,7 @@ wavelet_cleaning_wrapper_function <- function(pheno.dat, output.path, meanR.thre
   cat(group.info, file = paste0(output.path, "group.txt"))
 
   ## for effect size estimation, we need WCs without QT.
-  set.seed(1)
+  # set.seed(1)
   res.noQT = WaveQTL_preprocess(Data = pheno.dat, library.read.depth=library.read.depth , Covariates = Covariates, meanR.thresh = meanR.thresh, no.QT = TRUE)
 
   write.table(res.noQT$WCs, file= paste0(output.path, "WCs.no.QT.txt"), row.names=FALSE, col.names = FALSE, quote=FALSE)
@@ -96,7 +96,7 @@ wavelet_cleaning_wrapper_function_nonRMD <- function(pheno.dat, output.path, mea
   # data.path = "../code/WaveQTL/data/dsQTL/"
 
   ## set seed
-  set.seed(1)
+  # set.seed(1)
 
   # ## read library read depth
   # library.read.depth = scan(paste0(data.path, "library.read.depth.dat"))
@@ -116,7 +116,7 @@ wavelet_cleaning_wrapper_function_nonRMD <- function(pheno.dat, output.path, mea
   cat(group.info, file = paste0(output.path, "group.txt"))
 
   ## for effect size estimation, we need WCs without QT.
-  set.seed(1)
+  # set.seed(1)
   res.noQT = WaveQTL_preprocess(Data = pheno.dat, library.read.depth=library.read.depth , Covariates = Covariates, meanR.thresh = meanR.thresh, no.QT = TRUE)
 
   write.table(res.noQT$WCs, file= paste0(output.path, "WCs.no.QT.txt"), row.names=FALSE, col.names = FALSE, quote=FALSE)
@@ -285,7 +285,7 @@ with_hmt_effect_size <- function(data_path, dataset, waveqtl_dataset, Wmat_1024,
   # Now, let's simulate a sequence of gammas:
   gamma_seq <- numeric()
   post_prob_seq <- numeric()
-  set.seed(10)
+  # set.seed(10)
   rand_seq <- runif(1024)
 
   # Scaling coefficient
@@ -351,7 +351,7 @@ with_hmt_effect_size <- function(data_path, dataset, waveqtl_dataset, Wmat_1024,
 
   ### Now, run simulations
   num_samples <- num_sims
-  set.seed(10)
+  # set.seed(10)
   beta_data_samples <- matrix(nrow = num_samples,ncol = num_pheno)
 
   for(j in 1:num_samples){

@@ -430,26 +430,81 @@ box()
 ```
 ```{r}
 ## Now plot the difference in means of simulated counts (multiply by sequencing sums)
-g0_mean <- apply(alt_data_50[which(group_data == 0),],2,mean)
-g1_mean <- apply(alt_data_50[which(group_data == 1),],2,mean)
+# g0_mean <- apply(alt_data_50[which(group_data == 0),],2,mean)
+# g1_mean <- apply(alt_data_50[which(group_data == 1),],2,mean)
+# plot(1,1,type="n"
+#      , xlab = "Base location"
+#      , ylab = "simulated avg counts"
+#      , ylim=c(min(min(g0_mean),min(g1_mean))
+#               , max(max(g0_mean),max(g1_mean)))
+#      , xlim=c(1, 1024)
+#      , main ="Simulated data - average of g0 (no effect) vs g1 (effect)"
+#      , axes=FALSE)
+# axis(2)
+# axis(1, at = c(1,seq(128,1024,128)))
+# if(length(effect_50) > 0){
+#   for(j in 1:length(effect_50)){
+#     polygon(c(effect_50[j]-0.5, effect_50[j]-0.5, effect_50[j]+0.5, effect_50[j]+0.5), c(plt_rng_y_2[1], plt_rng_y_2[2], plt_rng_y_2[1], plt_rng_y_2[2]), col ="pink", border = NA)
+#   }
+# }
+# lines(g0_mean, col = "red")
+# lines(g1_mean, col = "green")
+# legend("topleft", legend=c("p1", "p2"),
+#        col=c("red", "green"), lty=c(1,1), cex=0.8,
+#        box.lty=0)
+# box()
+# p <- recordPlot()
+
+g0_mean_n <- apply(null_data_50[which(group_data == 0),],2,mean)
+g1_mean_n <- apply(null_data_50[which(group_data == 1),],2,mean)
+g0_mean_a <- apply(alt_data_50[which(group_data == 0),],2,mean)
+g1_mean_a <- apply(alt_data_50[which(group_data == 1),],2,mean)
+
+
+y_min <- min(min(g0_mean_n - g1_mean_n),min(g0_mean_a - g1_mean_a))
+y_max <- max(max(g0_mean_n - g1_mean_n),max(g0_mean_a - g1_mean_a))
+
+
 plot(1,1,type="n"
      , xlab = "Base location"
      , ylab = "simulated avg counts"
-     , ylim=c(min(min(g0_mean),min(g1_mean))
-              , max(max(g0_mean),max(g1_mean)))
+     , ylim=c(y_min, y_max)
      , xlim=c(1, 1024)
-     , main ="Simulated data - average of g0 (no effect) vs g1 (effect)"
+     , main ="Simulated NULL data - average of g0 (no effect) vs g1 (effect)"
      , axes=FALSE)
 axis(2)
 axis(1, at = c(1,seq(128,1024,128)))
-abline(h = 0, col = "red")
-lines(g0_mean, col = "red")
-lines(g1_mean, col = "green")
+if(length(effect_50) > 0){
+  for(j in 1:length(effect_50)){
+    polygon(c(effect_50[j]-0.5, effect_50[j]-0.5, effect_50[j]+0.5, effect_50[j]+0.5), c(plt_rng_y_2[1], plt_rng_y_2[2], plt_rng_y_2[1], plt_rng_y_2[2]), col ="pink", border = NA)
+  }
+}
+lines(g0_mean_n - g1_mean_n, col = "red")
 legend("topleft", legend=c("p1", "p2"),
        col=c("red", "green"), lty=c(1,1), cex=0.8,
        box.lty=0)
 box()
-p <- recordPlot()
+
+
+plot(1,1,type="n"
+     , xlab = "Base location"
+     , ylab = "simulated avg counts"
+     , ylim=c(y_min, y_max)
+     , xlim=c(1, 1024)
+     , main ="Simulated ALT data - average of g0 (no effect) vs g1 (effect)"
+     , axes=FALSE)
+axis(2)
+axis(1, at = c(1,seq(128,1024,128)))
+if(length(effect_50) > 0){
+  for(j in 1:length(effect_50)){
+    polygon(c(effect_50[j]-0.5, effect_50[j]-0.5, effect_50[j]+0.5, effect_50[j]+0.5), c(plt_rng_y_2[1], plt_rng_y_2[2], plt_rng_y_2[1], plt_rng_y_2[2]), col ="pink", border = NA)
+  }
+}
+lines(g0_mean_a - g1_mean_a, col = "red")
+legend("topleft", legend=c("p1", "p2"),
+       col=c("red", "green"), lty=c(1,1), cex=0.8,
+       box.lty=0)
+box()
 ```
 
 ### Run a sample analyses
