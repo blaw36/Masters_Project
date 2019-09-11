@@ -50,7 +50,7 @@ Free params as follows:
 - Over-dispersion: 70
 - Number simulations: 50
 
-```{r}
+```{r, echo = F}
 test_8 <- readRDS("../data/20190906_sim4_l8_s1.RDS")
 test_16 <- readRDS("../data/20190906_sim4_l16_s1.RDS")
 test_32 <- readRDS("../data/20190906_sim4_l32_s1.RDS")
@@ -72,7 +72,7 @@ Tried to tune the effect size down so it's a bit less strong at effect length 8,
 - Over-dispersion: 70
 - Number simulations: 50
 
-```{r}
+```{r, echo = F}
  l8_s2_same_50 <- readRDS("../data/20190908_sim4_l8_s2_same_50sims.RDS")
 l16_s2_same_50 <- readRDS("../data/20190908_sim4_l16_s2_same_50sims.RDS")
 l32_s2_same_50 <- readRDS("../data/20190908_sim4_l32_s2_same_50sims.RDS")
@@ -91,7 +91,7 @@ Tried a less noisy situation, increase overdispersion parameter by a lot, and de
 - Over-dispersion: 700000
 - Number simulations: 50
 
-```{r}
+```{r, echo = F}
  l8_s4_same_50 <- readRDS("../data/20190908_sim4_l8_s4_same_50sims.RDS")
 l16_s4_same_50 <- readRDS("../data/20190908_sim4_l16_s4_same_50sims.RDS")
 l32_s4_same_50 <- readRDS("../data/20190908_sim4_l32_s4_same_50sims.RDS")
@@ -119,7 +119,7 @@ The way I've done it is (almost) halving the effect size multiple (rather arbitr
 - Over-dispersion: 70
 - Number simulations: 50
 
-```{r}
+```{r, echo = F}
  l8_s2_stepped_50 <- readRDS("../data/20190908_sim4_l8_s2_stepped_v2.RDS")
 l16_s2_stepped_50 <- readRDS("../data/20190908_sim4_l16_s2_stepped.RDS")
 l32_s2_stepped_50 <- readRDS("../data/20190908_sim4_l32_s2_stepped.RDS")
@@ -140,7 +140,7 @@ The same thing, with 100 simulations:
 - Over-dispersion: 70
 - Number simulations: 100
 
-```{r}
+```{r, echo = F}
  l8_s3_stepped_100 <- readRDS( "../data/20190908_sim4_l8_s3_stepped_100sims.RDS")
 l16_s3_stepped_100 <- readRDS("../data/20190908_sim4_l16_s3_stepped_100sims.RDS")
 l32_s3_stepped_100 <- readRDS("../data/20190908_sim4_l32_s3_stepped_100sims.RDS")
@@ -163,7 +163,7 @@ The same thing, with 500 simulations:
 
 Far smoother looking curves:
 
-```{r}
+```{r, echo = F}
  l8_s3_stepped_500 <- readRDS( "../data/20190908_sim4_l8_s3_stepped_500sims.RDS")
 l16_s3_stepped_500 <- readRDS("../data/20190908_sim4_l16_s3_stepped_500sims.RDS")
 l32_s3_stepped_500 <- readRDS("../data/20190908_sim4_l32_s3_stepped_500sims.RDS")
@@ -184,7 +184,7 @@ Then, I tried modifying the stepped effect sizes by multiplying each of them by 
 - Over-dispersion: 70
 - Number simulations: 200
 
-```{r}
+```{r, echo = F}
  l8_manyEfs_200 <- readRDS( "../data/20190911_sim4_l8_manyEfs_200sims.RDS")
 l16_manyEfs_200 <- readRDS("../data/20190911_sim4_l16_manyEfs_200sims.RDS")
 l32_manyEfs_200 <- readRDS("../data/20190911_sim4_l32_manyEfs_200sims.RDS")
@@ -504,7 +504,7 @@ Again, tried the increased effect size, decreased variance approach:
 
 Seems to capture what we're after, could try and increase the multiple to 8e07, for slightly less noise in the system.
 
-```{r}
+```{r, echo = F}
  l8_s4_stepped_50 <- readRDS( "../data/20190908_sim4_l8_s4_stepped_50sims.RDS")
 l16_s4_stepped_50 <- readRDS("../data/20190908_sim4_l16_s4_stepped_50sims.RDS")
 l32_s4_stepped_50 <- readRDS("../data/20190908_sim4_l32_s4_stepped_50sims.RDS")
