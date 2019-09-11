@@ -74,6 +74,7 @@ Some writings about the simulations and data analysis exercises we undertook aro
 - V1 method [WIP]
 - V1 results [here](sim3_hmt_benefits.html)
 - V2 results [here](sim3-1-1_hmt_benefits.html)
+- More formalised classification exercise [here](sim4-1-2_lhood_thresholding.Rmd)
 
 ***
 
