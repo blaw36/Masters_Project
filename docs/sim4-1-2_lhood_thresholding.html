@@ -455,18 +455,7 @@ div.tocify {
 <li>Over-dispersion: 70</li>
 <li>Number simulations: 50</li>
 </ul>
-<pre class="r"><code>test_8 &lt;- readRDS(&quot;../data/20190906_sim4_l8_s1.RDS&quot;)
-test_16 &lt;- readRDS(&quot;../data/20190906_sim4_l16_s1.RDS&quot;)
-test_32 &lt;- readRDS(&quot;../data/20190906_sim4_l32_s1.RDS&quot;)
-test_64 &lt;- readRDS(&quot;../data/20190906_sim4_l64_s1.RDS&quot;)
-
-test_8_diag &lt;- waveqtl_diags(test_8,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-1-1.png" width="672" /></p>
-<pre class="r"><code>test_16_diag &lt;- waveqtl_diags(test_16,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-1-2.png" width="672" /></p>
-<pre class="r"><code>test_32_diag &lt;- waveqtl_diags(test_32,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-1-3.png" width="672" /></p>
-<pre class="r"><code>test_64_diag &lt;- waveqtl_diags(test_64,plot_indiv_curves = F, num_sims = 50)</code></pre>
+<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-1-1.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-1-2.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-1-3.png" width="672" /></p>
 </div>
 <div id="method-1---same-effect-size" class="section level3">
 <h3>Method 1 - same effect size</h3>
@@ -479,19 +468,7 @@ test_8_diag &lt;- waveqtl_diags(test_8,plot_indiv_curves = F, num_sims = 50)</co
 <li>Over-dispersion: 70</li>
 <li>Number simulations: 50</li>
 </ul>
-<pre class="r"><code> l8_s2_same_50 &lt;- readRDS(&quot;../data/20190908_sim4_l8_s2_same_50sims.RDS&quot;)
-l16_s2_same_50 &lt;- readRDS(&quot;../data/20190908_sim4_l16_s2_same_50sims.RDS&quot;)
-l32_s2_same_50 &lt;- readRDS(&quot;../data/20190908_sim4_l32_s2_same_50sims.RDS&quot;)
-l64_s2_same_50 &lt;- readRDS(&quot;../data/20190908_sim4_l64_s2_same_50sims.RDS&quot;)
-
- l8_s2_same_50_diags &lt;- waveqtl_diags( l8_s2_same_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
-<pre class="r"><code>l16_s2_same_50_diags &lt;- waveqtl_diags(l16_s2_same_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-2-2.png" width="672" /></p>
-<pre class="r"><code>l32_s2_same_50_diags &lt;- waveqtl_diags(l32_s2_same_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-2-3.png" width="672" /></p>
-<pre class="r"><code>l64_s2_same_50_diags &lt;- waveqtl_diags(l64_s2_same_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-2-4.png" width="672" /></p>
+<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-2-1.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-2-2.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-2-3.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-2-4.png" width="672" /></p>
 </div>
 <div id="second-parameter-set" class="section level4">
 <h4>Second parameter set:</h4>
@@ -501,19 +478,7 @@ l64_s2_same_50 &lt;- readRDS(&quot;../data/20190908_sim4_l64_s2_same_50sims.RDS&
 <li>Over-dispersion: 700000</li>
 <li>Number simulations: 50</li>
 </ul>
-<pre class="r"><code> l8_s4_same_50 &lt;- readRDS(&quot;../data/20190908_sim4_l8_s4_same_50sims.RDS&quot;)
-l16_s4_same_50 &lt;- readRDS(&quot;../data/20190908_sim4_l16_s4_same_50sims.RDS&quot;)
-l32_s4_same_50 &lt;- readRDS(&quot;../data/20190908_sim4_l32_s4_same_50sims.RDS&quot;)
-l64_s4_same_50 &lt;- readRDS(&quot;../data/20190908_sim4_l64_s4_same_50sims.RDS&quot;)
-
- l8_s4_same_50_diags &lt;- waveqtl_diags( l8_s4_same_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
-<pre class="r"><code>l16_s4_same_50_diags &lt;- waveqtl_diags(l16_s4_same_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-3-2.png" width="672" /></p>
-<pre class="r"><code>l32_s4_same_50_diags &lt;- waveqtl_diags(l32_s4_same_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-3-3.png" width="672" /></p>
-<pre class="r"><code>l64_s4_same_50_diags &lt;- waveqtl_diags(l64_s4_same_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-3-4.png" width="672" /></p>
+<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-3-1.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-3-2.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-3-3.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-3-4.png" width="672" /></p>
 </div>
 </div>
 <div id="method-2---stepped-effect-size" class="section level3">
@@ -533,353 +498,14 @@ l64_s4_same_50 &lt;- readRDS(&quot;../data/20190908_sim4_l64_s4_same_50sims.RDS&
 <li>Over-dispersion: 70</li>
 <li>Number simulations: 50</li>
 </ul>
-<pre class="r"><code> l8_s2_stepped_50 &lt;- readRDS(&quot;../data/20190908_sim4_l8_s2_stepped_v2.RDS&quot;)
-l16_s2_stepped_50 &lt;- readRDS(&quot;../data/20190908_sim4_l16_s2_stepped.RDS&quot;)
-l32_s2_stepped_50 &lt;- readRDS(&quot;../data/20190908_sim4_l32_s2_stepped.RDS&quot;)
-l64_s2_stepped_50 &lt;- readRDS(&quot;../data/20190908_sim4_l64_s2_stepped.RDS&quot;)
-
- l8_s2_stepped_50_diags &lt;- waveqtl_diags( l8_s2_stepped_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
-<pre class="r"><code>l16_s2_stepped_50_diags &lt;- waveqtl_diags(l16_s2_stepped_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-4-2.png" width="672" /></p>
-<pre class="r"><code>l32_s2_stepped_50_diags &lt;- waveqtl_diags(l32_s2_stepped_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-4-3.png" width="672" /></p>
-<pre class="r"><code>l64_s2_stepped_50_diags &lt;- waveqtl_diags(l64_s2_stepped_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-4-4.png" width="672" /></p>
+<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-4-1.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-4-2.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-4-3.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-4-4.png" width="672" /></p>
 <p>The same thing, with 100 simulations: - Effect multiple: + L8: 1.5e08 + L16: 8e07 + L32: 4e07 + L64: 2e07 - Over-dispersion: 70 - Number simulations: 100</p>
-<pre class="r"><code> l8_s3_stepped_100 &lt;- readRDS( &quot;../data/20190908_sim4_l8_s3_stepped_100sims.RDS&quot;)
-l16_s3_stepped_100 &lt;- readRDS(&quot;../data/20190908_sim4_l16_s3_stepped_100sims.RDS&quot;)
-l32_s3_stepped_100 &lt;- readRDS(&quot;../data/20190908_sim4_l32_s3_stepped_100sims.RDS&quot;)
-l64_s3_stepped_100 &lt;- readRDS(&quot;../data/20190908_sim4_l64_s3_stepped_100sims.RDS&quot;)
-
- l8_s3_stepped_100_diags &lt;- waveqtl_diags( l8_s3_stepped_100,plot_indiv_curves = F, num_sims = 100)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
-<pre class="r"><code>l16_s3_stepped_100_diags &lt;- waveqtl_diags(l16_s3_stepped_100,plot_indiv_curves = F, num_sims = 100)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-5-2.png" width="672" /></p>
-<pre class="r"><code>l32_s3_stepped_100_diags &lt;- waveqtl_diags(l32_s3_stepped_100,plot_indiv_curves = F, num_sims = 100)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-5-3.png" width="672" /></p>
-<pre class="r"><code>l64_s3_stepped_100_diags &lt;- waveqtl_diags(l64_s3_stepped_100,plot_indiv_curves = F, num_sims = 100)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-5-4.png" width="672" /></p>
+<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-5-1.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-5-2.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-5-3.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-5-4.png" width="672" /></p>
 <p>The same thing, with 500 simulations: - Effect multiple: + L8: 1.5e08 + L16: 8e07 + L32: 4e07 + L64: 2e07 - Over-dispersion: 70 - Number simulations: 500</p>
 <p>Far smoother looking curves:</p>
-<pre class="r"><code> l8_s3_stepped_500 &lt;- readRDS( &quot;../data/20190908_sim4_l8_s3_stepped_500sims.RDS&quot;)
-l16_s3_stepped_500 &lt;- readRDS(&quot;../data/20190908_sim4_l16_s3_stepped_500sims.RDS&quot;)
-l32_s3_stepped_500 &lt;- readRDS(&quot;../data/20190908_sim4_l32_s3_stepped_500sims.RDS&quot;)
-l64_s3_stepped_500 &lt;- readRDS(&quot;../data/20190908_sim4_l64_s3_stepped_500sims.RDS&quot;)
-
- l8_s3_stepped_500_diags &lt;- waveqtl_diags( l8_s3_stepped_500,plot_indiv_curves = F, num_sims = 500)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
-<pre class="r"><code>l16_s3_stepped_500_diags &lt;- waveqtl_diags(l16_s3_stepped_500,plot_indiv_curves = F, num_sims = 500)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-6-2.png" width="672" /></p>
-<pre class="r"><code>l32_s3_stepped_500_diags &lt;- waveqtl_diags(l32_s3_stepped_500,plot_indiv_curves = F, num_sims = 500)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-6-3.png" width="672" /></p>
-<pre class="r"><code>l64_s3_stepped_500_diags &lt;- waveqtl_diags(l64_s3_stepped_500,plot_indiv_curves = F, num_sims = 500)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-6-4.png" width="672" /></p>
+<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-6-1.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-6-2.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-6-3.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-6-4.png" width="672" /></p>
 <p>Then, I tried modifying the stepped effect sizes by multiplying each of them by c = (0.6,0.8,1,1.2,1.4) to see what happened. 200 sims: - Effect multiple: + L8: 1.5e08 * c + L16: 8e07 * c + L32: 4e07 * c + L64: 2e07 * c - Over-dispersion: 70 - Number simulations: 200</p>
-<pre class="r"><code> l8_manyEfs_200 &lt;- readRDS( &quot;../data/20190911_sim4_l8_manyEfs_200sims.RDS&quot;)
-l16_manyEfs_200 &lt;- readRDS(&quot;../data/20190911_sim4_l16_manyEfs_200sims.RDS&quot;)
-l32_manyEfs_200 &lt;- readRDS(&quot;../data/20190911_sim4_l32_manyEfs_200sims.RDS&quot;)
-l64_manyEfs_200 &lt;- readRDS(&quot;../data/20190911_sim4_l64_manyEfs_200sims.RDS&quot;)
-
-#  l8_s4_stepped_50_diags &lt;- lapply( l8_manyEfs_200,waveqtl_diags,plot_indiv_curves = F, num_sims = 200)
-# l16_s4_stepped_50_diags &lt;- lapply(l16_manyEfs_200,waveqtl_diags,plot_indiv_curves = F, num_sims = 200)
-# l32_s4_stepped_50_diags &lt;- lapply(l32_manyEfs_200,waveqtl_diags,plot_indiv_curves = F, num_sims = 200)
-# l64_s4_stepped_50_diags &lt;- lapply(l64_manyEfs_200,waveqtl_diags,plot_indiv_curves = F, num_sims = 200)
-extract_roc_plot_data &lt;- function(sims_list,num_sims){
-  preds_nohmt &lt;- matrix(c(sims_list$null_waveqtl_lhood
-                          ,sims_list$alt_waveqtl_lhood
-                          ,rep(0,num_sims),rep(1,num_sims))
-                        ,nrow = 2*num_sims,ncol = 2,byrow = F)
-  preds_hmt &lt;- matrix(c(sims_list$null_waveqtl_hmt_lhood
-                        ,sims_list$alt_waveqtl_hmt_lhood
-                        ,rep(0,num_sims),rep(1,num_sims))
-                      ,nrow = 2*num_sims,ncol = 2,byrow = F)
-  
-  perf_nohmt &lt;- performance(prediction(preds_nohmt[,1],preds_nohmt[,2]),measure = &quot;auc&quot;)
-  perf_hmt &lt;- performance(prediction(preds_hmt[,1],preds_hmt[,2]),measure = &quot;auc&quot;)
-  
-  n = dim(preds_hmt)[1]
-  
-  O1 = order(preds_nohmt[,1], decreasing =TRUE)
-  O2 = order(preds_hmt[,1], decreasing =TRUE)
-  
-  C1  = c(0,cumsum(preds_nohmt[O1,2])) / sum(preds_nohmt[,2]) #True positives proportions or sensitivity
-  C2  = c(0,cumsum(preds_hmt[O2,2])) / sum(preds_hmt[,2])
-  
-  FP1 = c(0,cumsum(1-preds_nohmt[O1,2])) / (n-sum(preds_nohmt[,2])) #false positives proportions based on Model 1.
-  FP2 = c(0,cumsum(1-preds_hmt[O2,2])) / (n-sum(preds_hmt[,2]))  
-  
-  return(list(
-    FP1 = FP1
-    ,C1 = C1
-    ,FP2 = FP2
-    ,C2 = C2
-    ,perf_nohmt = unlist(attr(perf_nohmt,&quot;y.values&quot;))
-    ,perf_hmt = unlist(attr(perf_hmt,&quot;y.values&quot;))
-  ))
-}
-
-# l8
-l8_roc_data &lt;- lapply(l8_manyEfs_200,extract_roc_plot_data,num_sims = 200)
-
-plot(l8_roc_data[[1]]$FP1,l8_roc_data[[1]]$C1, type=&quot;l&quot;, lwd=1, col=&quot;black&quot;, lty = 3, xlab=&quot;False Positive rate&quot;, ylab=&quot;True Positive Rate&quot;, main = &quot;Length 8&quot;)
-lines(l8_roc_data[[1]]$FP2,l8_roc_data[[1]]$C2, lty = 1, col = &quot;black&quot;)
-for(i in 2:5){
-  lines(l8_roc_data[[i]]$FP1,l8_roc_data[[i]]$C1, lty = 3, col = i)
-  lines(l8_roc_data[[i]]$FP2,l8_roc_data[[i]]$C2, lty = 1, col = i)
-}
-
-legend(x = 0.7, y = 0.6,
-# legend(&quot;bottomright&quot;,
-       c(paste0(&quot;noHMT 0.6: &quot;,round(l8_roc_data[[1]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 0.6: &quot;,round(l8_roc_data[[1]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 0.8: &quot;,round(l8_roc_data[[2]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 0.8: &quot;,round(l8_roc_data[[2]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 1: &quot;,  round(l8_roc_data[[3]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 1: &quot;,  round(l8_roc_data[[3]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 1.2: &quot;,round(l8_roc_data[[4]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 1.2: &quot;,round(l8_roc_data[[4]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 1.4: &quot;,round(l8_roc_data[[5]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 1.4: &quot;,round(l8_roc_data[[5]]$perf_hmt,4))
-         ),
-       cex = 1,
-       bg = &quot;transparent&quot;,
-       bty = &quot;n&quot;,
-       lty=rep(c(3,1),5),
-       lwd=rep(c(1,1),5),
-       col=rep(c(1:5),each = 2))</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
-<pre class="r"><code># l16
-l16_roc_data &lt;- lapply(l16_manyEfs_200,extract_roc_plot_data,num_sims = 200)
-
-plot(l16_roc_data[[1]]$FP1,l16_roc_data[[1]]$C1, type=&quot;l&quot;, lwd=1, col=&quot;black&quot;, lty = 3, xlab=&quot;False Positive rate&quot;, ylab=&quot;True Positive Rate&quot;, main = &quot;Length 16&quot;)
-lines(l16_roc_data[[1]]$FP2,l16_roc_data[[1]]$C2, lty = 1, col = &quot;black&quot;)
-for(i in 2:5){
-  lines(l16_roc_data[[i]]$FP1,l16_roc_data[[i]]$C1, lty = 3, col = i)
-  lines(l16_roc_data[[i]]$FP2,l16_roc_data[[i]]$C2, lty = 1, col = i)
-}
-
-legend(x = 0.7, y = 0.6,
-       # legend(&quot;bottomright&quot;,
-       c(paste0(&quot;noHMT 0.6: &quot;,round(l16_roc_data[[1]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 0.6: &quot;,round(l16_roc_data[[1]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 0.8: &quot;,round(l16_roc_data[[2]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 0.8: &quot;,round(l16_roc_data[[2]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 1: &quot;,  round(l16_roc_data[[3]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 1: &quot;,  round(l16_roc_data[[3]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 1.2: &quot;,round(l16_roc_data[[4]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 1.2: &quot;,round(l16_roc_data[[4]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 1.4: &quot;,round(l16_roc_data[[5]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 1.4: &quot;,round(l16_roc_data[[5]]$perf_hmt,4))
-       ),
-       cex = 1,
-       bg = &quot;transparent&quot;,
-       bty = &quot;n&quot;,
-       lty=rep(c(3,1),5),
-       lwd=rep(c(1,1),5),
-       col=rep(c(1:5),each = 2))</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-2.png" width="672" /></p>
-<pre class="r"><code># l32
-l32_roc_data &lt;- lapply(l32_manyEfs_200,extract_roc_plot_data,num_sims = 200)
-
-plot(l32_roc_data[[1]]$FP1,l32_roc_data[[1]]$C1, type=&quot;l&quot;, lwd=1, col=&quot;black&quot;, lty = 3, xlab=&quot;False Positive rate&quot;, ylab=&quot;True Positive Rate&quot;, main = &quot;Length 32&quot;)
-lines(l32_roc_data[[1]]$FP2,l32_roc_data[[1]]$C2, lty = 1, col = &quot;black&quot;)
-for(i in 2:5){
-  lines(l32_roc_data[[i]]$FP1,l32_roc_data[[i]]$C1, lty = 3, col = i)
-  lines(l32_roc_data[[i]]$FP2,l32_roc_data[[i]]$C2, lty = 1, col = i)
-}
-
-legend(x = 0.7, y = 0.6,
-       # legend(&quot;bottomright&quot;,
-       c(paste0(&quot;noHMT 0.6: &quot;,round(l32_roc_data[[1]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 0.6: &quot;,round(l32_roc_data[[1]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 0.8: &quot;,round(l32_roc_data[[2]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 0.8: &quot;,round(l32_roc_data[[2]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 1: &quot;,  round(l32_roc_data[[3]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 1: &quot;,  round(l32_roc_data[[3]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 1.2: &quot;,round(l32_roc_data[[4]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 1.2: &quot;,round(l32_roc_data[[4]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 1.4: &quot;,round(l32_roc_data[[5]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 1.4: &quot;,round(l32_roc_data[[5]]$perf_hmt,4))
-       ),
-       cex = 1,
-       bg = &quot;transparent&quot;,
-       bty = &quot;n&quot;,
-       lty=rep(c(3,1),5),
-       lwd=rep(c(1,1),5),
-       col=rep(c(1:5),each = 2))</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-3.png" width="672" /></p>
-<pre class="r"><code># l64
-l64_roc_data &lt;- lapply(l64_manyEfs_200,extract_roc_plot_data,num_sims = 200)
-
-plot(l64_roc_data[[1]]$FP1,l64_roc_data[[1]]$C1, type=&quot;l&quot;, lwd=1, col=&quot;black&quot;, lty = 3, xlab=&quot;False Positive rate&quot;, ylab=&quot;True Positive Rate&quot;, main = &quot;Length 64&quot;)
-lines(l64_roc_data[[1]]$FP2,l64_roc_data[[1]]$C2, lty = 1, col = &quot;black&quot;)
-for(i in 2:5){
-  lines(l64_roc_data[[i]]$FP1,l64_roc_data[[i]]$C1, lty = 3, col = i)
-  lines(l64_roc_data[[i]]$FP2,l64_roc_data[[i]]$C2, lty = 1, col = i)
-}
-
-legend(x = 0.7, y = 0.6,
-       # legend(&quot;bottomright&quot;,
-       c(paste0(&quot;noHMT 0.6: &quot;,round(l64_roc_data[[1]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 0.6: &quot;,round(l64_roc_data[[1]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 0.8: &quot;,round(l64_roc_data[[2]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 0.8: &quot;,round(l64_roc_data[[2]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 1: &quot;,  round(l64_roc_data[[3]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 1: &quot;,  round(l64_roc_data[[3]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 1.2: &quot;,round(l64_roc_data[[4]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 1.2: &quot;,round(l64_roc_data[[4]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 1.4: &quot;,round(l64_roc_data[[5]]$perf_nohmt,4))
-         ,paste0(&quot;HMT 1.4: &quot;,round(l64_roc_data[[5]]$perf_hmt,4))
-       ),
-       cex = 1,
-       bg = &quot;transparent&quot;,
-       bty = &quot;n&quot;,
-       lty=rep(c(3,1),5),
-       lwd=rep(c(1,1),5),
-       col=rep(c(1:5),each = 2))</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-4.png" width="672" /></p>
-<pre class="r"><code>### Cut the other way (by length)
-# 0.6
-indx &lt;- 1
-plot(  l8_roc_data[[indx]]$FP1, l8_roc_data[[indx]]$C1, type=&quot;l&quot;, lwd=1, col=&quot;black&quot;, lty = 3, xlab=&quot;False Positive rate&quot;, ylab=&quot;True Positive Rate&quot;, main = &quot;Mult 0.6&quot;)
-lines( l8_roc_data[[indx]]$FP2, l8_roc_data[[indx]]$C2, lty = 1, col = &quot;black&quot;)
-lines(l16_roc_data[[indx]]$FP1,l16_roc_data[[indx]]$C1, lty = 3, col = 2)
-lines(l16_roc_data[[indx]]$FP2,l16_roc_data[[indx]]$C2, lty = 1, col = 2)
-lines(l32_roc_data[[indx]]$FP1,l32_roc_data[[indx]]$C1, lty = 3, col = 3)
-lines(l32_roc_data[[indx]]$FP2,l32_roc_data[[indx]]$C2, lty = 1, col = 3)
-lines(l64_roc_data[[indx]]$FP1,l64_roc_data[[indx]]$C1, lty = 3, col = 4)
-lines(l64_roc_data[[indx]]$FP2,l64_roc_data[[indx]]$C2, lty = 1, col = 4)
-legend(x = 0.7, y = 0.6,
-       # legend(&quot;bottomright&quot;,
-       c( paste0(&quot;noHMT 8: &quot;, round( l8_roc_data[[indx]]$perf_nohmt,4))
-         , paste0( &quot;HMT 8: &quot;, round( l8_roc_data[[indx]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 16: &quot;,round(l16_roc_data[[indx]]$perf_nohmt,4))
-         ,paste0(  &quot;HMT 16: &quot;,round(l16_roc_data[[indx]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 32: &quot;,round(l32_roc_data[[indx]]$perf_nohmt,4))
-         ,paste0(  &quot;HMT 32: &quot;,round(l32_roc_data[[indx]]$perf_hmt,4))
-         ,paste0(&quot;noHMT 64: &quot;,round(l64_roc_data[[indx]]$perf_nohmt,4))
-         ,paste0(  &quot;HMT 64: &quot;,round(l64_roc_data[[indx]]$perf_hmt,4))
-       ),
-       cex = 1,
-       bg = &quot;transparent&quot;,
-       bty = &quot;n&quot;,
-       lty=rep(c(3,1),4),
-       lwd=rep(c(1,1),4),
-       col=rep(c(1:4),each = 2))</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-5.png" width="672" /></p>
-<pre class="r"><code># 0.8
-indx &lt;- 2
-plot(  l8_roc_data[[indx]]$FP1, l8_roc_data[[indx]]$C1, type=&quot;l&quot;, lwd=1, col=&quot;black&quot;, lty = 3, xlab=&quot;False Positive rate&quot;, ylab=&quot;True Positive Rate&quot;, main = &quot;Mult 0.8&quot;)
-lines( l8_roc_data[[indx]]$FP2, l8_roc_data[[indx]]$C2, lty = 1, col = &quot;black&quot;)
-lines(l16_roc_data[[indx]]$FP1,l16_roc_data[[indx]]$C1, lty = 3, col = 2)
-lines(l16_roc_data[[indx]]$FP2,l16_roc_data[[indx]]$C2, lty = 1, col = 2)
-lines(l32_roc_data[[indx]]$FP1,l32_roc_data[[indx]]$C1, lty = 3, col = 3)
-lines(l32_roc_data[[indx]]$FP2,l32_roc_data[[indx]]$C2, lty = 1, col = 3)
-lines(l64_roc_data[[indx]]$FP1,l64_roc_data[[indx]]$C1, lty = 3, col = 4)
-lines(l64_roc_data[[indx]]$FP2,l64_roc_data[[indx]]$C2, lty = 1, col = 4)
-legend(x = 0.7, y = 0.6,
-       # legend(&quot;bottomright&quot;,
-       c( paste0(&quot;noHMT 8: &quot;, round( l8_roc_data[[indx]]$perf_nohmt,4))
-          , paste0( &quot;HMT 8: &quot;, round( l8_roc_data[[indx]]$perf_hmt,4))
-          ,paste0(&quot;noHMT 16: &quot;,round(l16_roc_data[[indx]]$perf_nohmt,4))
-          ,paste0(  &quot;HMT 16: &quot;,round(l16_roc_data[[indx]]$perf_hmt,4))
-          ,paste0(&quot;noHMT 32: &quot;,round(l32_roc_data[[indx]]$perf_nohmt,4))
-          ,paste0(  &quot;HMT 32: &quot;,round(l32_roc_data[[indx]]$perf_hmt,4))
-          ,paste0(&quot;noHMT 64: &quot;,round(l64_roc_data[[indx]]$perf_nohmt,4))
-          ,paste0(  &quot;HMT 64: &quot;,round(l64_roc_data[[indx]]$perf_hmt,4))
-       ),
-       cex = 1,
-       bg = &quot;transparent&quot;,
-       bty = &quot;n&quot;,
-       lty=rep(c(3,1),4),
-       lwd=rep(c(1,1),4),
-       col=rep(c(1:4),each = 2))</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-6.png" width="672" /></p>
-<pre class="r"><code># 1
-indx &lt;- 3
-plot(  l8_roc_data[[indx]]$FP1, l8_roc_data[[indx]]$C1, type=&quot;l&quot;, lwd=1, col=&quot;black&quot;, lty = 3, xlab=&quot;False Positive rate&quot;, ylab=&quot;True Positive Rate&quot;, main = &quot;Mult 1&quot;)
-lines( l8_roc_data[[indx]]$FP2, l8_roc_data[[indx]]$C2, lty = 1, col = &quot;black&quot;)
-lines(l16_roc_data[[indx]]$FP1,l16_roc_data[[indx]]$C1, lty = 3, col = 2)
-lines(l16_roc_data[[indx]]$FP2,l16_roc_data[[indx]]$C2, lty = 1, col = 2)
-lines(l32_roc_data[[indx]]$FP1,l32_roc_data[[indx]]$C1, lty = 3, col = 3)
-lines(l32_roc_data[[indx]]$FP2,l32_roc_data[[indx]]$C2, lty = 1, col = 3)
-lines(l64_roc_data[[indx]]$FP1,l64_roc_data[[indx]]$C1, lty = 3, col = 4)
-lines(l64_roc_data[[indx]]$FP2,l64_roc_data[[indx]]$C2, lty = 1, col = 4)
-legend(x = 0.7, y = 0.6,
-       # legend(&quot;bottomright&quot;,
-       c( paste0(&quot;noHMT 8: &quot;, round( l8_roc_data[[indx]]$perf_nohmt,4))
-          , paste0( &quot;HMT 8: &quot;, round( l8_roc_data[[indx]]$perf_hmt,4))
-          ,paste0(&quot;noHMT 16: &quot;,round(l16_roc_data[[indx]]$perf_nohmt,4))
-          ,paste0(  &quot;HMT 16: &quot;,round(l16_roc_data[[indx]]$perf_hmt,4))
-          ,paste0(&quot;noHMT 32: &quot;,round(l32_roc_data[[indx]]$perf_nohmt,4))
-          ,paste0(  &quot;HMT 32: &quot;,round(l32_roc_data[[indx]]$perf_hmt,4))
-          ,paste0(&quot;noHMT 64: &quot;,round(l64_roc_data[[indx]]$perf_nohmt,4))
-          ,paste0(  &quot;HMT 64: &quot;,round(l64_roc_data[[indx]]$perf_hmt,4))
-       ),
-       cex = 1,
-       bg = &quot;transparent&quot;,
-       bty = &quot;n&quot;,
-       lty=rep(c(3,1),4),
-       lwd=rep(c(1,1),4),
-       col=rep(c(1:4),each = 2))</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-7.png" width="672" /></p>
-<pre class="r"><code># 1.2
-indx &lt;- 4
-plot(  l8_roc_data[[indx]]$FP1, l8_roc_data[[indx]]$C1, type=&quot;l&quot;, lwd=1, col=&quot;black&quot;, lty = 3, xlab=&quot;False Positive rate&quot;, ylab=&quot;True Positive Rate&quot;, main = &quot;Mult 1.2&quot;)
-lines( l8_roc_data[[indx]]$FP2, l8_roc_data[[indx]]$C2, lty = 1, col = &quot;black&quot;)
-lines(l16_roc_data[[indx]]$FP1,l16_roc_data[[indx]]$C1, lty = 3, col = 2)
-lines(l16_roc_data[[indx]]$FP2,l16_roc_data[[indx]]$C2, lty = 1, col = 2)
-lines(l32_roc_data[[indx]]$FP1,l32_roc_data[[indx]]$C1, lty = 3, col = 3)
-lines(l32_roc_data[[indx]]$FP2,l32_roc_data[[indx]]$C2, lty = 1, col = 3)
-lines(l64_roc_data[[indx]]$FP1,l64_roc_data[[indx]]$C1, lty = 3, col = 4)
-lines(l64_roc_data[[indx]]$FP2,l64_roc_data[[indx]]$C2, lty = 1, col = 4)
-legend(x = 0.7, y = 0.6,
-       # legend(&quot;bottomright&quot;,
-       c( paste0(&quot;noHMT 8: &quot;, round( l8_roc_data[[indx]]$perf_nohmt,4))
-          , paste0( &quot;HMT 8: &quot;, round( l8_roc_data[[indx]]$perf_hmt,4))
-          ,paste0(&quot;noHMT 16: &quot;,round(l16_roc_data[[indx]]$perf_nohmt,4))
-          ,paste0(  &quot;HMT 16: &quot;,round(l16_roc_data[[indx]]$perf_hmt,4))
-          ,paste0(&quot;noHMT 32: &quot;,round(l32_roc_data[[indx]]$perf_nohmt,4))
-          ,paste0(  &quot;HMT 32: &quot;,round(l32_roc_data[[indx]]$perf_hmt,4))
-          ,paste0(&quot;noHMT 64: &quot;,round(l64_roc_data[[indx]]$perf_nohmt,4))
-          ,paste0(  &quot;HMT 64: &quot;,round(l64_roc_data[[indx]]$perf_hmt,4))
-       ),
-       cex = 1,
-       bg = &quot;transparent&quot;,
-       bty = &quot;n&quot;,
-       lty=rep(c(3,1),4),
-       lwd=rep(c(1,1),4),
-       col=rep(c(1:4),each = 2))</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-8.png" width="672" /></p>
-<pre class="r"><code># 1.4
-indx &lt;- 5
-plot(  l8_roc_data[[indx]]$FP1, l8_roc_data[[indx]]$C1, type=&quot;l&quot;, lwd=1, col=&quot;black&quot;, lty = 3, xlab=&quot;False Positive rate&quot;, ylab=&quot;True Positive Rate&quot;, main = &quot;Mult 1.4&quot;)
-lines( l8_roc_data[[indx]]$FP2, l8_roc_data[[indx]]$C2, lty = 1, col = &quot;black&quot;)
-lines(l16_roc_data[[indx]]$FP1,l16_roc_data[[indx]]$C1, lty = 3, col = 2)
-lines(l16_roc_data[[indx]]$FP2,l16_roc_data[[indx]]$C2, lty = 1, col = 2)
-lines(l32_roc_data[[indx]]$FP1,l32_roc_data[[indx]]$C1, lty = 3, col = 3)
-lines(l32_roc_data[[indx]]$FP2,l32_roc_data[[indx]]$C2, lty = 1, col = 3)
-lines(l64_roc_data[[indx]]$FP1,l64_roc_data[[indx]]$C1, lty = 3, col = 4)
-lines(l64_roc_data[[indx]]$FP2,l64_roc_data[[indx]]$C2, lty = 1, col = 4)
-legend(x = 0.7, y = 0.6,
-       # legend(&quot;bottomright&quot;,
-       c( paste0(&quot;noHMT 8: &quot;, round( l8_roc_data[[indx]]$perf_nohmt,4))
-          , paste0( &quot;HMT 8: &quot;, round( l8_roc_data[[indx]]$perf_hmt,4))
-          ,paste0(&quot;noHMT 16: &quot;,round(l16_roc_data[[indx]]$perf_nohmt,4))
-          ,paste0(  &quot;HMT 16: &quot;,round(l16_roc_data[[indx]]$perf_hmt,4))
-          ,paste0(&quot;noHMT 32: &quot;,round(l32_roc_data[[indx]]$perf_nohmt,4))
-          ,paste0(  &quot;HMT 32: &quot;,round(l32_roc_data[[indx]]$perf_hmt,4))
-          ,paste0(&quot;noHMT 64: &quot;,round(l64_roc_data[[indx]]$perf_nohmt,4))
-          ,paste0(  &quot;HMT 64: &quot;,round(l64_roc_data[[indx]]$perf_hmt,4))
-       ),
-       cex = 1,
-       bg = &quot;transparent&quot;,
-       bty = &quot;n&quot;,
-       lty=rep(c(3,1),4),
-       lwd=rep(c(1,1),4),
-       col=rep(c(1:4),each = 2))</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-9.png" width="672" /></p>
+<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-1.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-2.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-3.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-4.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-5.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-6.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-7.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-8.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-7-9.png" width="672" /></p>
 </div>
 <div id="second-parameter-set-1" class="section level4">
 <h4>Second parameter set:</h4>
@@ -896,19 +522,7 @@ legend(x = 0.7, y = 0.6,
 <li>Number simulations: 50</li>
 </ul>
 <p>Seems to capture what we’re after, could try and increase the multiple to 8e07, for slightly less noise in the system.</p>
-<pre class="r"><code> l8_s4_stepped_50 &lt;- readRDS( &quot;../data/20190908_sim4_l8_s4_stepped_50sims.RDS&quot;)
-l16_s4_stepped_50 &lt;- readRDS(&quot;../data/20190908_sim4_l16_s4_stepped_50sims.RDS&quot;)
-l32_s4_stepped_50 &lt;- readRDS(&quot;../data/20190908_sim4_l32_s4_stepped_50sims.RDS&quot;)
-l64_s4_stepped_50 &lt;- readRDS(&quot;../data/20190908_sim4_l64_s4_stepped_50sims.RDS&quot;)
-
- l8_s4_stepped_50_diags &lt;- waveqtl_diags( l8_s4_stepped_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
-<pre class="r"><code>l16_s4_stepped_50_diags &lt;- waveqtl_diags(l16_s4_stepped_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-8-2.png" width="672" /></p>
-<pre class="r"><code>l32_s4_stepped_50_diags &lt;- waveqtl_diags(l32_s4_stepped_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-8-3.png" width="672" /></p>
-<pre class="r"><code>l64_s4_stepped_50_diags &lt;- waveqtl_diags(l64_s4_stepped_50,plot_indiv_curves = F, num_sims = 50)</code></pre>
-<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-8-4.png" width="672" /></p>
+<p><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-8-1.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-8-2.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-8-3.png" width="672" /><img src="sim4-1-2_lhood_thresholding_files/figure-html/unnamed-chunk-8-4.png" width="672" /></p>
 </div>
 </div>
 </div>
