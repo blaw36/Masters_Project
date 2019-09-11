@@ -87,6 +87,8 @@ _Most of the readings and resources I've used._
 - [Kolaczyk (1999) - Bayesian Multiscale Models for Poisson](https://www.tandfonline.com/doi/abs/10.1080/01621459.1999.10474197)
 - [Xing (2016) - Extends Shim/Stephens (2015) to Poisson](https://search.proquest.com/openview/2b17b34545bbb5c3eab53b48983d41c8/1?pq-origsite=gscholar&cbl=18750&diss=y)
 - [Servin and Stephens (2007) - original closed form Bayesian association model](https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.0030114)
+- [Stephens (2016) - False Discovery Rates: a new deal](https://academic.oup.com/biostatistics/article/18/2/275/2557030)
+- [Xing, Carbonetto, Stephens (in prep) - Flexible signal denoising via flexible empirical Bayes shrinkage](https://arxiv.org/abs/1605.07787)
 
 ### Wavelets
 - [Morris and Carroll (2006) - data to wavelet space](https://rss.onlinelibrary.wiley.com/doi/abs/10.1111/j.1467-9868.2006.00539.x)
@@ -105,3 +107,7 @@ _Most of the readings and resources I've used._
 ### Bayesian regression
 - [Reich - Bayesian regression](https://www4.stat.ncsu.edu/~reich/ABA/notes/BLR.pdf)
 - [Statlect - Bayesian regression](https://www.statlect.com/fundamentals-of-statistics/Bayesian-regression)
+
+### Other
+- [Wakefield (2009) - Bayes factors for genome-wide association studies: comparison with P-values](https://www.ncbi.nlm.nih.gov/pubmed/18642345)
+- [Kass and Raftery (1995) - Bayes Factors](https://www.stat.washington.edu/raftery/Research/PDF/kass1995.pdf)
