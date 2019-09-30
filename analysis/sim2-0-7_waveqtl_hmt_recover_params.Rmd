@@ -1,0 +1,83 @@
+---
+title: "WaveQTL with HMT - Simulation 2.0.7 - Algorithm check: recover parameters - put it to bed!"
+author: "Brendan Law"
+date: "22/09/2019"
+output: html_document
+---
+
+Cutting the details now, and just doing another simulation. Documenting it all here. 
+See "code/sim2_script.R" for the functionalised simulation script. Here are some results:
+
+```{r batch_params}
+# Clear environment and do some fresh simulations
+rm(list = ls());gc();cat("\014");
+# For when running this script in batch, you can use this to override some global parameters
+batch_num_sims = NULL
+# batch_num_sims = 100
+library(data.table)
+source("../code/sim2_script.R")
+```
+
+Params:
+- Beta = 2
+- Sigma_beta = 1 (not much noise)
+- Sigma_a = 10
+- Tie the first few groups together
+
+More tying
+```{r}
+p_n_ind = 70
+p_n_pheno = 1024
+# p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+p_tying_grp = c(1,2,33,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = rep(0.9,length(p_tying_grp))
+p_grped_eps_10 = rep(0.1,length(p_tying_grp))
+p_coeff_mu = 0
+p_coeff_beta = 2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 1
+p_num_sims = 200
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+```
+
+```{r run_sims, include=FALSE}
+params_to_try = data.frame(eps11 = c(0.9,0.75,0.5,0.9,0.75)
+                           ,eps10 = c(0.1,0.25,0.5,0.9,0.75))
+res_list = list()
+for(i in 1:nrow(params_to_try)){
+  p_grped_eps_11 = rep(params_to_try[i,1],length(p_tying_grp))
+  p_grped_eps_10 = rep(params_to_try[i,2],length(p_tying_grp))
+  
+  res_list[[i]] <- run_sim2_custom(
+    n_ind = p_n_ind
+    ,n_pheno = p_n_pheno
+    ,tying_grp = p_tying_grp
+    ,param_pi_00 = p_param_pi_00
+    ,param_pi_11 = p_param_pi_11
+    ,grped_eps_11 = p_grped_eps_11
+    ,grped_eps_10 = p_grped_eps_10
+    ,coeff_mu = p_coeff_mu
+    ,coeff_beta = p_coeff_beta
+    ,param_gi_prob = p_param_gi_prob
+    ,param_sigma_beta = p_param_sigma_beta
+    ,num_sims = p_num_sims
+    ,seed = p_seed
+    ,sigma_prior = 10)
+}
+```
+
+Analysis:
+```{r}
+analysis_list <- list()
+for(i in 1:length(res_list)){
+  analysis_list[[i]] <- sim_analysis(res_list[[i]]
+                                     ,num_sims = p_num_sims
+                                     ,num_pheno = p_n_pheno)
+}
+```

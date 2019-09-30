@@ -9397,9 +9397,8 @@ if(!outfile_pp_joint_01.is_open()){
   // ---- Initial E-step ---- //
   // 'Zero-th' up-down algorithm using all individuals
 
-  // All quantities will be calculated in logs (and kept this way when writing to file).
-  // All quantities are log base e. logBF will be converted to log10 in the end, consistent
-  // with nonHMT.
+  // All quantities will be calculated in logs, converted
+  // (exponentiated) at the end, upon writing to file.
 
   // This pi now only represents the 1 node at the coarsest scale (1,1)
   // Probably easier to have pi logged for underflow reasons.

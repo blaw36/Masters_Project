@@ -1,0 +1,634 @@
+---
+title: "WaveQTL with HMT - Simulation 2.0.6 - Algorithm check: recover parameters - almost final attempt"
+author: "Brendan Law"
+date: "22/09/2019"
+output: html_document
+---
+
+Cutting the details now, and just doing another simulation. Documenting it all here. 
+See "code/sim2_script.R" for the functionalised simulation script. Here are some results:
+
+```{r batch_params}
+# Clear environment and do some fresh simulations
+rm(list = ls());gc();cat("\014");
+# For when running this script in batch, you can use this to override some global parameters
+batch_num_sims = NULL
+# batch_num_sims = 100
+```
+
+
+Try and get some nice parameter retrieval sims here. Cognisant of a few facts:
+- No quantile transforms applied to our simulated data
+- Sigma_a priors are very small (0.05,0.1,0.2,0.4)
+
+# Attempt 1
+
+Epsilons:
+- 0.9/0.1
+- 0.75/0.25
+- 0.5/0.5
+- 0.9/0.9
+- 0.75/0.75
+
+Other tidbits (to try later):
+- Ordinary tree tying
+- Beta: 0.02
+- Variance: 0.1 
+
+```{r}
+library(data.table)
+source("../code/sim2_script.R")
+
+p_n_ind = 70
+p_n_pheno = 1024
+p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+# p_grped_eps_11 = c(rep(0.5,(length(p_tying_grp)-1)),0)
+# p_grped_eps_10 = c(rep(0.5,(length(p_tying_grp)-1)),0)
+p_grped_eps_11 = rep(0.9,length(p_tying_grp))
+p_grped_eps_10 = rep(0.1,length(p_tying_grp))
+p_coeff_mu = 0
+# p_coeff_beta = 2
+p_coeff_beta = 2e-2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.1
+# p_num_sims = 100
+p_num_sims = 200
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+```
+
+
+```{r run_sims, include=FALSE}
+params_to_try = data.frame(eps11 = c(0.9,0.75,0.5,0.9,0.75)
+                           ,eps10 = c(0.1,0.25,0.5,0.9,0.75))
+res_list = list()
+for(i in 1:nrow(params_to_try)){
+  p_grped_eps_11 = rep(params_to_try[i,1],length(p_tying_grp))
+  p_grped_eps_10 = rep(params_to_try[i,2],length(p_tying_grp))
+  
+  res_list[[i]] <- run_sim2(
+    n_ind = p_n_ind
+    ,n_pheno = p_n_pheno
+    ,tying_grp = p_tying_grp
+    ,param_pi_00 = p_param_pi_00
+    ,param_pi_11 = p_param_pi_11
+    ,grped_eps_11 = p_grped_eps_11
+    ,grped_eps_10 = p_grped_eps_10
+    ,coeff_mu = p_coeff_mu
+    ,coeff_beta = p_coeff_beta
+    ,param_gi_prob = p_param_gi_prob
+    ,param_sigma_beta = p_param_sigma_beta
+    ,num_sims = p_num_sims
+    ,seed = p_seed)
+}
+```
+
+Analysis:
+```{r}
+analysis_list <- list()
+for(i in 1:length(res_list)){
+  analysis_list[[i]] <- sim_analysis(res_list[[i]]
+                                     ,num_sims = p_num_sims
+                                     ,num_pheno = p_n_pheno)
+}
+```
+
+Save results:
+```{r}
+# saveRDS(analysis_list,"../data/20190922_sim2_baseline.RDS", compress = T)
+```
+
+# Attempt 2
+All subsequent analysis only on 0.75/0.25
+Change up the tree tying a little. Tie first couple of levels:
+
+```{r}
+p_n_ind = 70
+p_n_pheno = 1024
+# p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+p_tying_grp = c(1,2,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = rep(0.75,length(p_tying_grp))
+p_grped_eps_10 = rep(0.25,length(p_tying_grp))
+p_coeff_mu = 0
+p_coeff_beta = 2e-2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.1
+p_num_sims = 200
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+```
+
+```{r run_sims, include=FALSE}
+results_tree_tie <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+```
+
+Analysis:
+```{r}
+analysis_tree_tie <- sim_analysis(results_tree_tie
+                                  ,num_sims = p_num_sims
+                                  ,num_pheno = p_n_pheno)
+```
+
+# Attempt 3
+All subsequent analysis only on 0.75/0.25
+Change beta's
+
+```{r}
+p_n_ind = 70
+p_n_pheno = 1024
+p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = rep(0.75,length(p_tying_grp))
+p_grped_eps_10 = rep(0.25,length(p_tying_grp))
+p_coeff_mu = 0
+p_coeff_beta = 2e-2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.1
+p_num_sims = 100
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+```
+
+### Go upwards
+```{r run_sims, include=FALSE}
+beta_to_try = seq(0.02,0.2,length.out = 6)
+n <- 1
+res_list_up = list()
+for(i in beta_to_try[-1]){
+  res_list_up[[n]] <- run_sim2(
+    n_ind = p_n_ind
+    ,n_pheno = p_n_pheno
+    ,tying_grp = p_tying_grp
+    ,param_pi_00 = p_param_pi_00
+    ,param_pi_11 = p_param_pi_11
+    ,grped_eps_11 = p_grped_eps_11
+    ,grped_eps_10 = p_grped_eps_10
+    ,coeff_mu = p_coeff_mu
+    ,coeff_beta = i
+    ,param_gi_prob = p_param_gi_prob
+    ,param_sigma_beta = p_param_sigma_beta
+    ,num_sims = p_num_sims
+    ,seed = p_seed)
+  n <- n+1
+}
+```
+
+Analysis:
+```{r}
+analysis_list_up <- list()
+for(i in 1:length(res_list_up)){
+  analysis_list_up[[i]] <- sim_analysis(res_list_up[[i]]
+                                        ,num_sims = p_num_sims
+                                        ,num_pheno = p_n_pheno)
+}
+```
+
+### Go downwards
+```{r run_sims, include=FALSE}
+beta_to_try = seq(0.002,0.02,length.out = 6)
+n <- 1
+res_list_down = list()
+for(i in beta_to_try[-1]){
+  res_list_down[[n]] <- run_sim2(
+    n_ind = p_n_ind
+    ,n_pheno = p_n_pheno
+    ,tying_grp = p_tying_grp
+    ,param_pi_00 = p_param_pi_00
+    ,param_pi_11 = p_param_pi_11
+    ,grped_eps_11 = p_grped_eps_11
+    ,grped_eps_10 = p_grped_eps_10
+    ,coeff_mu = p_coeff_mu
+    ,coeff_beta = i
+    ,param_gi_prob = p_param_gi_prob
+    ,param_sigma_beta = p_param_sigma_beta
+    ,num_sims = p_num_sims
+    ,seed = p_seed)
+  n <- n+1
+}
+```
+
+Analysis:
+```{r}
+analysis_list_down <- list()
+for(i in 1:length(res_list_down)){
+  analysis_list_down[[i]] <- sim_analysis(res_list_down[[i]]
+                                          ,num_sims = p_num_sims
+                                          ,num_pheno = p_n_pheno)
+}
+```
+
+It's very sensitive. Try a far smaller range centred on 0.02?
+### Go around
+```{r run_sims, include=FALSE}
+beta_to_try = seq(0.8,1.2, by = 0.05)*0.02
+n <- 1
+res_list_centre = list()
+for(i in beta_to_try){
+  res_list_centre[[n]] <- run_sim2(
+    n_ind = p_n_ind
+    ,n_pheno = p_n_pheno
+    ,tying_grp = p_tying_grp
+    ,param_pi_00 = p_param_pi_00
+    ,param_pi_11 = p_param_pi_11
+    ,grped_eps_11 = p_grped_eps_11
+    ,grped_eps_10 = p_grped_eps_10
+    ,coeff_mu = p_coeff_mu
+    ,coeff_beta = i
+    ,param_gi_prob = p_param_gi_prob
+    ,param_sigma_beta = p_param_sigma_beta
+    ,num_sims = p_num_sims
+    ,seed = p_seed)
+  n <- n+1
+}
+```
+
+Analysis:
+```{r}
+analysis_list_centre <- list()
+for(i in 1:length(res_list_centre)){
+  analysis_list_centre[[i]] <- sim_analysis(res_list_centre[[i]]
+                                            ,num_sims = p_num_sims
+                                            ,num_pheno = p_n_pheno)
+}
+```
+
+# Attempt 4
+What happens when we change sigma beta at beta = 0.02?
+```{r run_sims, include=FALSE}
+sigma_to_try = seq(0.4,1.4, by = 0.2)*p_param_sigma_beta
+n <- 1
+res_list_centre_sigma = list()
+for(i in sigma_to_try){
+  res_list_centre_sigma[[n]] <- run_sim2(
+    n_ind = p_n_ind
+    ,n_pheno = p_n_pheno
+    ,tying_grp = p_tying_grp
+    ,param_pi_00 = p_param_pi_00
+    ,param_pi_11 = p_param_pi_11
+    ,grped_eps_11 = p_grped_eps_11
+    ,grped_eps_10 = p_grped_eps_10
+    ,coeff_mu = p_coeff_mu
+    ,coeff_beta = p_coeff_beta
+    ,param_gi_prob = p_param_gi_prob
+    ,param_sigma_beta = i
+    ,num_sims = p_num_sims
+    ,seed = p_seed)
+  n <- n+1
+}
+```
+
+Analysis:
+```{r}
+analysis_list_centre_sigma <- list()
+for(i in 1:length(res_list_centre_sigma)){
+  analysis_list_centre_sigma[[i]] <- sim_analysis(res_list_centre_sigma[[i]]
+                                                  ,num_sims = p_num_sims
+                                                  ,num_pheno = p_n_pheno)
+}
+```
+
+So, smaller sigma gives us the equivalent of a far larger effect size (effect size relative to noise is way larger), and larger sigma gives us the equivalent of a far smaller effect size (effect size relative to noise is way smaller). Therefore, we can achieve this for larger effect sizes, but probably only if we maintain a fixed relationship between effect size and sigma.
+
+# Attempt 5
+Increased beta, increased sigma
+```{r run_sims, include=FALSE}
+ratio <- p_param_sigma_beta/p_coeff_beta
+beta_to_try <- 2*(10^(-1:3))
+sigma_to_try <- beta_to_try*ratio
+n <- 1
+res_list_scaled = list()
+for(i in 1:length(sigma_to_try)){
+  res_list_scaled[[n]] <- run_sim2(
+    n_ind = p_n_ind
+    ,n_pheno = p_n_pheno
+    ,tying_grp = p_tying_grp
+    ,param_pi_00 = p_param_pi_00
+    ,param_pi_11 = p_param_pi_11
+    ,grped_eps_11 = p_grped_eps_11
+    ,grped_eps_10 = p_grped_eps_10
+    ,coeff_mu = p_coeff_mu
+    ,coeff_beta = beta_to_try[i]
+    ,param_gi_prob = p_param_gi_prob
+    ,param_sigma_beta = sigma_to_try[i]
+    ,num_sims = p_num_sims
+    ,seed = p_seed)
+  n <- n+1
+}
+```
+
+Analysis:
+```{r}
+analysis_list_scaled <- list()
+for(i in 1:length(res_list_scaled)){
+  analysis_list_scaled[[i]] <- sim_analysis(res_list_scaled[[i]]
+                                            ,num_sims = p_num_sims
+                                            ,num_pheno = p_n_pheno)
+}
+```
+
+All good, very consistent! What exactly is governing this 'magic' ratio of 5?
+
+# Attempt 6
+Anyway, then, what happens if we change the WaveQTL such that we provide it a sigma_a? Will that change anything for our default setting of 0.02,0.1?
+
+```{r}
+p_n_ind = 70
+p_n_pheno = 1024
+p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = rep(0.75,length(p_tying_grp))
+p_grped_eps_10 = rep(0.24,length(p_tying_grp))
+p_coeff_mu = 0
+p_coeff_beta = 2e-2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.1
+p_num_sims = 1
+p_seed = 20
+
+if(!is.null(batch_num_sims)){
+  p_num_sims = batch_num_sims
+}
+```
+
+Run it once to generate a dataset, see what the effect is below.
+```{r run_sims, include=FALSE}
+result_sigma_a <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+```
+
+Analysis of changing the priors ($\sigma_d = \sigma_a/4$ here, as per the defaults.)
+```{r}
+setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+for(sigma in 2*(10^seq(-1,5,by=1))){
+  command <- paste0("../../WaveQTL -gmode 1"
+                    ," -group sim_grouping.txt -a ",sigma
+                    ," -d ",sigma/4
+                    ," -g ../../data/dsQTL/sim2.cis.geno -p sim2_WCs.txt -u use_all.txt -o sim2_noQT -f ",p_n_pheno," -hmt 1")
+  print(command)
+  system(command,show.output.on.console = F)
+  print(summary(as.numeric(read.table("~/Cpp/WaveQTL_HMT/test/dsQTL/output/sim2_noQT.fph.logLR.txt")[,3:1026])))
+}
+setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
+```
+So as sigma increases, more 'variance' in the priors means we can accept a wider range of values for our beta. This means that, for our current value (very small, 0.02), for very small sigmas, our alternative hypothesis has a very narrow (around 0) normal distribution, and so 0.02 is likely to be able to be distinguished from a point mass at 0, with some confidence, therefore the logBFs span from -0.19 to 1.92. As we increase sigma, to the extreme (2000000), 0.02 is very indistinguishable from 0, supporting the null hypothesis (that gamma is 0 and we have a point mass at 0), and hence the logBFs are all far less than 0.
+
+We can see here that if we increase the sigmas very dramatically, a lot of the transitions look like they are between 0 states, something which isn't correct at all!
+```{r run_sims, include=FALSE}
+p_n_ind = 70
+p_n_pheno = 1024
+p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = rep(0.75,length(p_tying_grp))
+p_grped_eps_10 = rep(0.24,length(p_tying_grp))
+p_coeff_mu = 0
+p_coeff_beta = 2e-2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.1
+p_num_sims = 50
+p_seed = 20
+
+sigma_a_to_try <- seq(0.1,5,length.out = 6)
+n <- 1
+res_list_sigma_a = list()
+for(i in 1:length(sigma_a_to_try)){
+  res_list_sigma_a[[n]] <- run_sim2_custom(
+    n_ind = p_n_ind
+    ,n_pheno = p_n_pheno
+    ,tying_grp = p_tying_grp
+    ,param_pi_00 = p_param_pi_00
+    ,param_pi_11 = p_param_pi_11
+    ,grped_eps_11 = p_grped_eps_11
+    ,grped_eps_10 = p_grped_eps_10
+    ,coeff_mu = p_coeff_mu
+    ,coeff_beta = p_coeff_beta
+    ,param_gi_prob = p_param_gi_prob
+    ,param_sigma_beta = p_param_sigma_beta
+    ,num_sims = p_num_sims
+    ,seed = p_seed
+    ,sigma_prior = sigma_a_to_try[i])
+  n <- n+1
+}
+```
+
+Analysis:
+```{r}
+analysis_list_sigma_a <- list()
+for(i in 1:length(res_list_sigma_a)){
+  analysis_list_sigma_a[[i]] <- sim_analysis(res_list_sigma_a[[i]]
+                                             ,num_sims = p_num_sims
+                                             ,num_pheno = p_n_pheno)
+}
+```
+
+Here is a more gradual illustration:
+```{r run_sims, include=FALSE}
+p_n_ind = 70
+p_n_pheno = 1024
+p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = rep(0.75,length(p_tying_grp))
+p_grped_eps_10 = rep(0.24,length(p_tying_grp))
+p_coeff_mu = 0
+p_coeff_beta = 2e-2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.1
+p_num_sims = 50
+p_seed = 20
+
+sigma_a_to_try <- seq(0.1,0.5,length.out = 6)
+n <- 1
+res_list_sigma_a = list()
+for(i in 1:length(sigma_a_to_try)){
+  res_list_sigma_a[[n]] <- run_sim2_custom(
+    n_ind = p_n_ind
+    ,n_pheno = p_n_pheno
+    ,tying_grp = p_tying_grp
+    ,param_pi_00 = p_param_pi_00
+    ,param_pi_11 = p_param_pi_11
+    ,grped_eps_11 = p_grped_eps_11
+    ,grped_eps_10 = p_grped_eps_10
+    ,coeff_mu = p_coeff_mu
+    ,coeff_beta = p_coeff_beta
+    ,param_gi_prob = p_param_gi_prob
+    ,param_sigma_beta = p_param_sigma_beta
+    ,num_sims = p_num_sims
+    ,seed = p_seed
+    ,sigma_prior = sigma_a_to_try[i])
+  n <- n+1
+}
+```
+
+Analysis:
+```{r}
+analysis_list_sigma_a <- list()
+for(i in 1:length(res_list_sigma_a)){
+  analysis_list_sigma_a[[i]] <- sim_analysis(res_list_sigma_a[[i]]
+                                             ,num_sims = p_num_sims
+                                             ,num_pheno = p_n_pheno)
+}
+```
+
+If we simulate data with magnitudes of effects which are poorly adapted to the default priors, it will not attribute the logBFs in a sufficient way - it may be confused between what is and is not a signal, altering the probabilities. Ie, if our prior distributions have variances ~ 0.1, then even non-signals of 1/2 may be considered as a signal, if not distinguished enough from real signals, distorting our simulation's ability to pick up parameters. So we must either: 1) simulate data which matches the prior magnitudes (which we may have found above) or 2) tune our priors to make sure they are of the same magnitude as our priors (which was our first issue, and what we were not considering; our betas were 5, and noise was about normal(0,0.5) meaning that we could easily get 'signals' that were just noise.)
+
+So the current beta and variance probably work with these priors, to show the algorithmic efficacy. But hopefully, if we change the priors, we can get other effect sizes to work too (without changing the amount of noise we put in the system). If this works, then we can note that the simulated data effect size shows efficacy, and that others will, if our models are attuned to such priors.
+
+Going back to our very first attempts, we had the following. We can now try and tweak $\sigma_a$ priors such that it'd be suitable to detecting such effects.
+# Original attempt - redone
+```{r run_sims, include=FALSE}
+p_n_ind = 70
+p_n_pheno = 1024
+p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = rep(0.75,length(p_tying_grp))
+p_grped_eps_10 = rep(0.24,length(p_tying_grp))
+p_coeff_mu = 0
+p_coeff_beta = 2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.5
+p_num_sims = 50
+p_seed = 20
+
+sigma_a_to_try <- seq(1,30,length.out = 6)
+n <- 1
+res_list_sigma_a = list()
+for(i in 1:length(sigma_a_to_try)){
+  res_list_sigma_a[[n]] <- run_sim2_custom(
+    n_ind = p_n_ind
+    ,n_pheno = p_n_pheno
+    ,tying_grp = p_tying_grp
+    ,param_pi_00 = p_param_pi_00
+    ,param_pi_11 = p_param_pi_11
+    ,grped_eps_11 = p_grped_eps_11
+    ,grped_eps_10 = p_grped_eps_10
+    ,coeff_mu = p_coeff_mu
+    ,coeff_beta = p_coeff_beta
+    ,param_gi_prob = p_param_gi_prob
+    ,param_sigma_beta = p_param_sigma_beta
+    ,num_sims = p_num_sims
+    ,seed = p_seed
+    ,sigma_prior = sigma_a_to_try[i])
+  n <- n+1
+}
+```
+
+Analysis:
+```{r}
+analysis_list_sigma_a <- list()
+for(i in 1:length(res_list_sigma_a)){
+  analysis_list_sigma_a[[i]] <- sim_analysis(res_list_sigma_a[[i]]
+                                             ,num_sims = p_num_sims
+                                             ,num_pheno = p_n_pheno)
+}
+```
+It's perfect!!! Versus the default:
+```{r}
+default_res <- run_sim2(
+  n_ind = p_n_ind
+  ,n_pheno = p_n_pheno
+  ,tying_grp = p_tying_grp
+  ,param_pi_00 = p_param_pi_00
+  ,param_pi_11 = p_param_pi_11
+  ,grped_eps_11 = p_grped_eps_11
+  ,grped_eps_10 = p_grped_eps_10
+  ,coeff_mu = p_coeff_mu
+  ,coeff_beta = p_coeff_beta
+  ,param_gi_prob = p_param_gi_prob
+  ,param_sigma_beta = p_param_sigma_beta
+  ,num_sims = p_num_sims
+  ,seed = p_seed)
+default_analysis <- sim_analysis(default_res
+                                 ,num_sims = p_num_sims
+                                 ,num_pheno = p_n_pheno)
+```
+
+# Original attempt - more variation
+```{r run_sims, include=FALSE}
+p_n_ind = 70
+p_n_pheno = 1024
+p_tying_grp = c(1,2,3,5,9,17,33,65,129,257,513)
+p_param_pi_00 = 0
+p_param_pi_11 = 1
+p_grped_eps_11 = rep(0.75,length(p_tying_grp))
+p_grped_eps_10 = rep(0.24,length(p_tying_grp))
+p_coeff_mu = 0
+p_coeff_beta = 2
+p_param_gi_prob = 0.4
+p_param_sigma_beta = 0.5
+p_num_sims = 50
+p_seed = 20
+
+sigma_beta <- seq(0.5,5,by = 1)
+n <- 1
+res_list_orig_morevar = list()
+for(i in 1:length(sigma_beta)){
+  res_list_orig_morevar[[n]] <- run_sim2_custom(
+    n_ind = p_n_ind
+    ,n_pheno = p_n_pheno
+    ,tying_grp = p_tying_grp
+    ,param_pi_00 = p_param_pi_00
+    ,param_pi_11 = p_param_pi_11
+    ,grped_eps_11 = p_grped_eps_11
+    ,grped_eps_10 = p_grped_eps_10
+    ,coeff_mu = p_coeff_mu
+    ,coeff_beta = p_coeff_beta
+    ,param_gi_prob = p_param_gi_prob
+    ,param_sigma_beta = sigma_beta[i]
+    ,num_sims = p_num_sims
+    ,seed = p_seed
+    ,sigma_prior = 10)
+  n <- n+1
+}
+```
+
+Analysis:
+```{r}
+analysis_list_orig_morevar <- list()
+for(i in 1:length(res_list_orig_morevar)){
+  analysis_list_orig_morevar[[i]] <- sim_analysis(res_list_orig_morevar[[i]]
+                                             ,num_sims = p_num_sims
+                                             ,num_pheno = p_n_pheno)
+}
+```

@@ -1,0 +1,155 @@
+---
+title: "sim4_lhood_thresholding - v1.3"
+author: "Brendan Law"
+date: "11/09/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+input_data_path = "~/Cpp/WaveQTL_HMT/data/dsQTL/"
+data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/" # change this when you port it all over to the Masters Git repo
+dataset <- "tree_tie_noQT"
+waveqtl_data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/WaveQTL/"
+waveqtl_dataset <- "test.no.QT"
+geno_select <- 11 # the one used in the demo
+
+library(dplyr)
+library(ROCR)
+source("../code/sim3_functions.R")
+source("../code/sim4_functions.R")
+```
+
+## Simulation 4 - likelihood auROC testing - HMT vs no HMT
+Got some more guidance, and the idea is to produce some metrics for:
+
+- Same signal, different length
+- Same length, different signal
+- ROCs are nice, but condense auROC into something like a line plot (easier to see)
+
+## Grid of testing:
+OD: 70
+Effect multiples: 1e8,1.2e8,1.4e8,1.6e8,1.8e8,2e8
+Effect lengths: 8,16,24,32,40 (as long as possible in the same area)
+
+### Read in phenotype (sequencing count) data, and other auxillary data
+Here is just a sample codebase. We're working off the data in the WaveQTL git repo -- DNase-seq data at chr17.10160989.10162012
+and genotypes at 24 SNPs in 2kb cis-candidate region on 70 individuals. (given as per Shim and Stephens)
+
+```{r}
+effect_size_and_data <- read_in_gen_eff_size(geno_select = 11)
+```
+
+### Pick an effect size
+
+```{r}
+# int_table <- summarise_effect_intervals(effect_size_and_data$effect_size$col_posi)
+
+# # Generate effect sizes
+# set.seed(10)
+# effect_interval_8 <- effect_length_picker(int_table,8)
+# effect_interval_16 <- effect_length_picker(int_table,16)
+# effect_interval_24 <- effect_length_picker(int_table,24)
+# effect_interval_32 <- effect_length_picker(int_table,32)
+# effect_interval_40 <- effect_length_picker(int_table,40)
+# effect_interval_48 <- effect_length_picker(int_table,48)
+# effect_interval_56 <- effect_length_picker(int_table,56)
+# effect_interval_64 <- effect_length_picker(int_table,64)
+
+# Pick effect sizes:
+effect_interval_8 <- 519:526
+effect_interval_16 <- 450:465
+effect_interval_32 <- 437:468
+effect_interval_64 <- 417:480
+
+effect_interval_24 <- 442:465
+effect_interval_40 <- 433:472
+effect_interval_48 <- 500:547
+effect_interval_56 <- 417:472
+
+# ef_mult <- seq(1e8,2e8,2e7)
+# num_sims <- 50
+od <- 70
+ef_mult <- seq(7e7,1.4e8,by = 1e7)
+num_sims <- 200
+
+proc1_label <- "sim3"
+proc2_label <- "sim4"
+
+proc1_lengths <- seq(8,32,8)
+proc2_lengths <- seq(40,64,8)
+```
+
+### Processor 1:
+8,16,24,32
+```{r, echo = F}
+for(len in proc1_lengths){
+  print(len)
+  # tmp <- list()
+  tmp <- vector("list",length(ef_mult))
+  n <- 1
+  for(ef_size in ef_mult){
+    print(ef_size)
+    set.seed(1)
+    tmp[[n]] <- run_sim4(
+      sequencing_sums = effect_size_and_data$seq_sum
+      , num_indivs = 70
+      , num_bases = 1024
+      , effect_length = len
+      , effect_interval = get(paste0("effect_interval_",len))
+      , effect_size_data = effect_size_and_data$effect_size
+      , use_qt_data = FALSE
+      , over_disp_param = od
+      , Wmat_1024 = effect_size_and_data$Wmat_1024
+      , W2mat_1024 = effect_size_and_data$W2mat_1024
+      , library.read.depth = effect_size_and_data$library.read.depth
+      , Covariates = effect_size_and_data$Covariates
+      , effect_multiple = ef_size
+      , trials_multiple = 10
+      , number_sims = num_sims
+      , verbose = F
+      , rMarkdownMode = T
+      , outputAlias = proc1_label
+    )
+    n <- n+1
+  }
+  assign(paste0("l",len,"_res"),tmp)
+}
+```
+
+### Processor 2:
+40,48,56,64
+```{r, echo = F}
+for(len in proc2_lengths){
+  print(len)
+  # tmp <- list()
+  tmp <- vector("list",length(ef_mult))
+  n <- 1
+  for(ef_size in ef_mult){
+    print(ef_size)
+    set.seed(1)
+    tmp[[n]] <- run_sim4(
+      sequencing_sums = effect_size_and_data$seq_sum
+      , num_indivs = 70
+      , num_bases = 1024
+      , effect_length = len
+      , effect_interval = get(paste0("effect_interval_",len))
+      , effect_size_data = effect_size_and_data$effect_size
+      , use_qt_data = FALSE
+      , over_disp_param = od
+      , Wmat_1024 = effect_size_and_data$Wmat_1024
+      , W2mat_1024 = effect_size_and_data$W2mat_1024
+      , library.read.depth = effect_size_and_data$library.read.depth
+      , Covariates = effect_size_and_data$Covariates
+      , effect_multiple = ef_size
+      , trials_multiple = 10
+      , number_sims = num_sims
+      , verbose = F
+      , rMarkdownMode = T
+      , outputAlias = proc2_label
+    )
+    n <- n+1
+  }
+  assign(paste0("l",len,"_res"),tmp)
+}
+```

@@ -400,6 +400,304 @@ run_sim4 <- function(
 }
 
 
+# Test sim function -------------------------------------------------------
+### V2
+### Amended to include the likelihood of the scaling coefficient
+
+run_sim4_v2 <- function(
+  sequencing_sums = seq_sum
+  , num_indivs = 70
+  , num_bases = 1024
+  , effect_length = 32 # must be one of 8, 16, 32, 64
+  , effect_interval
+  , effect_size_data
+  , no.QT = FALSE # turn off/on QT data
+  , over_disp_param = 70000
+  , Wmat_1024 = Wmat_1024
+  , W2mat_1024 = W2mat_1024
+  , library.read.depth = library.read.depth
+  , Covariates = Covariates
+  # , group_data = group_data
+  , effect_size = 10 # 'square' effect size, if effect_multiple null
+  , effect_multiple = NULL # turn on/off the square effect size. NULL = off, number = data-driven effect size scaling constant
+  , num_trials = NULL # uniform number of trials across all bases, if not null. else...
+  , trials_multiple = 1 # if above is null, then scale up the data-driven number of trials by a constant
+  , number_sims = 50
+  , verbose = T
+  , rMarkdownMode = T # TRUE if running in RMD, else False
+  , outputAlias = "sim3"
+){
+
+  # Assign folders/paths for simulation -------------------------------------
+
+  output_folder <- paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/sims/",outputAlias)
+  if(!dir.exists(output_folder)){
+    dir.create(output_folder)
+  }
+
+  ## Add in at start
+  output_folder_null <- paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/sims/",outputAlias,"/null/")
+  output_folder_alt <- paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/sims/",outputAlias,"/alt/")
+  if(!dir.exists(output_folder_null)){
+    dir.create(output_folder_null)
+  }
+  if(!dir.exists(output_folder_alt)){
+    dir.create(output_folder_alt)
+  }
+
+  # Create SNP file ---------------------------------------------------------
+
+  # Generate own SNPs data
+  group_data <- rbinom(n = 70,size = 1,prob = 0.5)
+  write.table(t(c("blah","A","A",group_data)), file= paste0("~/Cpp/WaveQTL_HMT/data/dsQTL/",outputAlias,".cis.geno"), row.names=FALSE, col.names = FALSE, quote=FALSE)
+
+  # Convert effect size to ratio --------------------------------------------
+  if(verbose){print("Generating effect size params...")}
+
+  if(is.null(effect_multiple)){
+    ### Here's a ridulous effect size
+    effect_ratio <- rep(effect_size, num_bases)
+    effect_ratio[sequencing_sums == 0] <- 1
+  }else{
+    ### Here's a sensible effect size
+    #### HACK: currently doing absolute of effect size to prevent negatives...
+    effect_ratio <- 1 + (num_indivs*abs(effect_size_data$beta_dataS)*effect_multiple/sequencing_sums)
+    effect_ratio[sequencing_sums == 0] <- 1
+  }
+
+  # Convert ratio to beta-binomial param ------------------------------------
+
+  p1_vector <- rep(1/num_indivs,num_bases)
+  p2_vector <- rep(1/num_indivs,num_bases)
+
+  # Add in effects, where required
+  p1_vector[effect_interval] <- 2/num_indivs * (1/(1 + effect_ratio[effect_interval]))
+  p2_vector[effect_interval] <- 2/num_indivs * (effect_ratio[effect_interval]/(1 + effect_ratio[effect_interval]))
+
+  p1_alpha <- over_disp_param*p1_vector
+  p1_beta <- over_disp_param - p1_alpha
+  p2_alpha <- over_disp_param*p2_vector
+  p2_beta <- over_disp_param - p2_alpha
+
+  # Generate null and alt datasets ------------------------------------------
+
+  if(verbose){print("Generating null and alt datasets...")}
+
+  if(!is.null(num_trials)){
+    # Use a generic number, uniform across all bases
+    trials_vect <- rep(num_trials,num_bases)
+  }else{
+    # Use the sequencing counts
+    trials_vect <- as.numeric(as.vector(ceiling(sequencing_sums)))
+    # Scale them up, as desired
+    trials_vect <- trials_vect*trials_multiple
+  }
+
+
+  # Simulate many times -----------------------------------------------------
+
+  # Set up likelihood results vector
+  null_waveqtl_lhood <- c()
+  alt_waveqtl_lhood <- c()
+  null_waveqtl_hmt_lhood <- c()
+  alt_waveqtl_hmt_lhood <- c()
+
+  for(lhood_vect_it in 1:number_sims){
+
+    print(paste("Simulation:",lhood_vect_it))
+
+    # set.seed(6)
+    # Null
+    null_data <- matrix(nrow = num_indivs,ncol = num_bases)
+    for(i in 1:num_indivs){
+      # Everyone uses same beta
+      null_beta <- rbeta(n = num_bases
+                         ,shape1 = over_disp_param*1/num_indivs
+                         ,shape2 = over_disp_param - (over_disp_param*1/num_indivs))
+      null_data[i,] <- rbinom(n = num_bases
+                              , size = trials_vect
+                              , prob = null_beta)
+    }
+
+    # Alt
+    alt_data <- matrix(nrow = num_indivs,ncol = num_bases)
+    for(i in 1:num_indivs){
+      if(group_data[i] == 0){
+        alt_beta <- rbeta(n = num_bases
+                          ,shape1 = p1_alpha
+                          ,shape2 = p1_beta)
+      }else{
+        alt_beta <- rbeta(n = num_bases
+                          ,shape1 = p2_alpha
+                          ,shape2 = p2_beta)
+      }
+      alt_data[i, ] <- rbinom(n = num_bases
+                              ,size = trials_vect
+                              ,prob = alt_beta)
+    }
+
+    # Clean datasets ----------------------------------------------------------
+
+    if(verbose){print("Cleaning datasets...")}
+    if(rMarkdownMode){
+      wavelet_cleaning_wrapper_function(pheno.dat = null_data
+                                        ,output.path = output_folder_null
+                                        ,library.read.depth = library.read.depth
+                                        ,Covariates = Covariates
+                                        ,no.QT = no.QT)
+      wavelet_cleaning_wrapper_function(pheno.dat = alt_data
+                                        ,output.path = output_folder_alt
+                                        ,library.read.depth = library.read.depth
+                                        ,Covariates = Covariates
+                                        ,no.QT = no.QT)
+    }else{
+      wavelet_cleaning_wrapper_function_nonRMD(pheno.dat = null_data
+                                               ,output.path = output_folder_null
+                                               ,library.read.depth = library.read.depth
+                                               ,Covariates = Covariates
+                                               ,no.QT = no.QT)
+      wavelet_cleaning_wrapper_function_nonRMD(pheno.dat = alt_data
+                                               ,output.path = output_folder_alt
+                                               ,library.read.depth = library.read.depth
+                                               ,Covariates = Covariates
+                                               ,no.QT = no.QT)
+    }
+
+    # Execute WaveQTL and WAveQTL_HMT scripts ---------------------------------
+
+    if(no.QT){
+      setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+      #### Run null dataset
+      if(verbose){print("Executing null datasets...")}
+
+      if(verbose){print("Executing null datasets...")}
+      # No HMT
+      system(paste0("../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/null/WCs.no.QT.txt -u sims/",outputAlias,"/null/use.txt -o ",outputAlias,"_null -f ",num_bases," -fph 1")
+             ,show.output.on.console = F)
+      # HMT
+      system(paste0("../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/null/WCs.no.QT.txt -u sims/",outputAlias,"/null/use.txt -o ",outputAlias,"_null_HMT -f ",num_bases," -hmt 1")
+             ,show.output.on.console = F)
+      #### Run alt dataset
+      if(verbose){print("Executing alt datasets...")}
+      # No HMT
+      system(paste0("../../WaveQTL -gmode 1-group g15_1024.txt -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/alt/WCs.no.QT.txt -u sims/",outputAlias,"/alt/use.txt -o ",outputAlias,"_alt -f ",num_bases," -fph 1")
+             ,show.output.on.console = F)
+      # HMT
+      system(paste0("../../WaveQTL -gmode 1-group g15_1024.txt -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/alt/WCs.no.QT.txt -u sims/",outputAlias,"/alt/use.txt -o ",outputAlias,"_alt_HMT -f ",num_bases," -hmt 1")
+             ,show.output.on.console = F)
+
+      if(rMarkdownMode){
+        setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/analysis")
+      }else{
+        setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git")
+      }
+
+    }else{
+      setwd("~/Cpp/WaveQTL_HMT/test/dsQTL/")
+      #### Run null dataset
+      if(verbose){print("Executing null datasets...")}
+      # No HMT
+      system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/null/WCs.txt -u sims/",outputAlias,"/null/use.txt -o ",outputAlias,"_null -f ",num_bases," -fph 1")
+             ,show.output.on.console = F)
+      # HMT
+      system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/null/WCs.txt -u sims/",outputAlias,"/null/use.txt -o ",outputAlias,"_null_HMT -f ",num_bases," -hmt 1")
+             ,show.output.on.console = F)
+      #### Run alt dataset
+      if(verbose){print("Executing alt datasets...")}
+      # No HMT
+      system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/alt/WCs.txt -u sims/",outputAlias,"/alt/use.txt -o ",outputAlias,"_alt -f ",num_bases," -fph 1")
+             ,show.output.on.console = F)
+      # HMT
+      system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/alt/WCs.txt -u sims/",outputAlias,"/alt/use.txt -o ",outputAlias,"_alt_HMT -f ",num_bases," -hmt 1")
+             ,show.output.on.console = F)
+
+      if(rMarkdownMode){
+        setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/analysis")
+      }else{
+        setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git")
+      }
+
+    }
+
+
+    # Analysis ----------------------------------------------------------------
+    # This part is different to last time.
+
+    null_data_path = "~/Cpp/WaveQTL_HMT/test/dsQTL/output/"
+    null_data_prefix = paste0(outputAlias,"_null")
+
+    alt_data_path = "~/Cpp/WaveQTL_HMT/test/dsQTL/output/"
+    alt_data_prefix = paste0(outputAlias,"_alt")
+
+
+    # Note that output is in log10 space (keep it all in log 10 space for)
+
+    ### No HMT
+    # Null - WaveQTL
+    null_waveqtl_lhood[lhood_vect_it] <- as.numeric(read.table(paste0(null_data_path,null_data_prefix,".fph.logLR.txt"))[2])
+    # Alt - WaveQTL
+    alt_waveqtl_lhood[lhood_vect_it] <- as.numeric(read.table(paste0(alt_data_path,alt_data_prefix,".fph.logLR.txt"))[2])
+
+    ### HMT
+    # Null - WaveQTL_HMT
+    # Grab scaling coefficient logBF, plus scaling coefficient pi. (from non-HMT analysis - will remain unchanged in HMT)
+    sc_pi_null <- as.numeric(read.table(paste0(null_data_path,null_data_prefix,".fph.pi.txt"))[2])
+    # Convert out of log10
+    sc_BF_null <- 10^(as.numeric(read.table(paste0(null_data_path,null_data_prefix,".fph.logLR.txt"))[3]))
+    # Calc lhood and convert back to log10
+    sc_logL_null <- log(sc_BF_null*sc_pi_null + (1-sc_pi_null),base = 10)
+    null_waveqtl_hmt_lhood[lhood_vect_it] <- as.numeric(read.table(paste0(null_data_path,null_data_prefix,"_HMT.fph.logLR.txt"))[2])
+    # Adjust with scaling coeff
+    null_waveqtl_hmt_lhood[lhood_vect_it] <- null_waveqtl_hmt_lhood[lhood_vect_it] + sc_logL_null
+
+    # Alt - WaveQTL_HMT
+    # Grab scaling coefficient logBF, plus scaling coefficient pi. (from non-HMT analysis - will remain unchanged in HMT)
+    sc_pi_alt <- as.numeric(read.table(paste0(alt_data_path,alt_data_prefix,".fph.pi.txt"))[2])
+    # Convert out of log10
+    sc_BF_alt <- 10^(as.numeric(read.table(paste0(alt_data_path,alt_data_prefix,".fph.logLR.txt"))[3]))
+    # Calc lhood and convert back to log10
+    sc_logL_alt <- log(sc_BF_alt*sc_pi_alt + (1-sc_pi_alt),base = 10)
+    alt_waveqtl_hmt_lhood[lhood_vect_it] <- as.numeric(read.table(paste0(alt_data_path,alt_data_prefix,"_HMT.fph.logLR.txt"))[2])
+    # Adjust with scaling coeff
+    alt_waveqtl_hmt_lhood[lhood_vect_it] <- alt_waveqtl_hmt_lhood[lhood_vect_it] + sc_logL_alt
+  }
+
+  # List of parameters
+  params_list <- list(
+    num_indivs = num_indivs
+    , num_bases = num_bases
+    , effect_length = effect_length
+    , effect_interval = effect_interval
+    , no.QT = no.QT
+    , over_disp_param = over_disp_param
+    , group_data = group_data
+    , effect_size = effect_size
+    , effect_multiple = effect_multiple
+    , num_trials = num_trials
+    , trials_multiple = trials_multiple
+  )
+
+
+  # Should make the output aliases and directories customisable -- again, will do in time.
+  return(list(
+    # effect_ratio = effect_ratio
+    # ,effect_interval = effect_interval
+    # ,p1_vector = p1_vector
+    # ,p2_vector = p2_vector
+    # ,null_data = null_data
+    # ,alt_data = alt_data
+    # ,null_effect_plot = null_effect
+    # ,alt_effect_plot = alt_effect
+    null_waveqtl_lhood = null_waveqtl_lhood
+    ,alt_waveqtl_lhood = alt_waveqtl_lhood
+    ,null_waveqtl_hmt_lhood = null_waveqtl_hmt_lhood
+    ,alt_waveqtl_hmt_lhood = alt_waveqtl_hmt_lhood
+    ,params_list = params_list
+  ))
+
+}
+
+
 waveqtl_diags <- function(sims_list,num_sims, plot_indiv_curves = T){
 
   preds_nohmt <- matrix(c(sims_list$null_waveqtl_lhood

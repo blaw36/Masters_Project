@@ -9105,7 +9105,7 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   //--- BL_HMT end ---//
 
 
-/*  fstream outfile_mean; 
+  fstream outfile_mean; 
   string sfn_mean("output/");
   sfn_mean.append(fnOutput);
   sfn_mean.append(".fph.mean.txt");
@@ -9124,11 +9124,11 @@ void ModelnData::single_snp_functional_phenotype_HMT(int nullcheck)
   if(!outfile_var.is_open()) {
     cout << "can't open file ... " << endl;  
     exit(0); 
-  }*/
+  }
 
 //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
 
-/*fstream outfile_beta_sl_0;
+fstream outfile_beta_sl_0;
 string sfn_beta_sl_0("output/");
 sfn_beta_sl_0.append(fnOutput);
 sfn_beta_sl_0.append(".fph.beta_sl_0.txt");
@@ -9206,7 +9206,7 @@ outfile_alpha_sl_0.open(sfn_alpha_sl_0.c_str(), ios::out);
 if(!outfile_alpha_sl_0.is_open()){
 	cout << "can't open file ..." << endl;
 	exit(0);
-}*/
+}
 
 fstream outfile_pp;
 string sfn_pp("output/");
@@ -9277,7 +9277,7 @@ if(!outfile_pp_joint_01.is_open()){
     exit(0); 
   }
 
-/*  fstream outfile_phi; 
+  fstream outfile_phi; 
   string sfn_phi("output/");
   sfn_phi.append(fnOutput);
   sfn_phi.append(".fph.phi.txt");
@@ -9285,7 +9285,7 @@ if(!outfile_pp_joint_01.is_open()){
   if(!outfile_phi.is_open()) {
     cout << "can't open file ... " << endl;  
     exit(0); 
-  }*/
+  }
 
   //--- wavelets_v2_2 end ---//
   
@@ -9397,9 +9397,8 @@ if(!outfile_pp_joint_01.is_open()){
   // ---- Initial E-step ---- //
   // 'Zero-th' up-down algorithm using all individuals
 
-  // All quantities will be calculated in logs (and kept this way when writing to file).
-  // All quantities are log base e. logBF will be converted to log10 in the end, consistent
-  // with nonHMT.
+  // All quantities will be calculated in logs, converted
+  // (exponentiated) at the end, upon writing to file.
 
   // This pi now only represents the 1 node at the coarsest scale (1,1)
   // Probably easier to have pi logged for underflow reasons.
@@ -9412,11 +9411,6 @@ if(!outfile_pp_joint_01.is_open()){
     double eps_01 = log(0.5);
     double eps_10 = log(0.5);
     double eps_00 = log(0.5);
-  // Playing around with initial parameters
-    // double eps_11 = log(0.1);
-    // double eps_01 = log(0.9);
-    // double eps_10 = log(0.1);
-    // double eps_00 = log(0.9);
 
   // Define some variables
     double logBF, logParentBF;
@@ -9770,11 +9764,11 @@ if(!outfile_pp_joint_01.is_open()){
 
   // ---- Iterate through first M-step, and subsequent E-steps ---- //
     for(int iter = 0; iter < niter; iter++){
-// //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////      
-// std::cout << "EM iteration number: " << iter << "\n";
-// std::cout.precision(6);
-// std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
-// //// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
+//// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////      
+std::cout << "EM iteration number: " << iter << "\n";
+std::cout.precision(6);
+std::cout << "Starting obs log lhood: " << std::fixed << O_obllikli << "\n";
+//// !!!!!!!! END BL DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!! ////
 
     // ---- M-step ---- //
 
@@ -10469,34 +10463,34 @@ if(!outfile_pp_joint_01.is_open()){
     outfile_eps_10 << endl;
 
 //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-	// outfile_beta_sl_0 << vsRsnum.at(g) << " ";
-	// outfile_beta_sl_1 << vsRsnum.at(g) << " ";
-	// outfile_beta_sl_psl_1 << vsRsnum.at(g) << " ";
-	// outfile_beta_sl_psl_0 << vsRsnum.at(g) << " ";
-	// outfile_beta_psl_no_sl_1 << vsRsnum.at(g) << " ";
-	// outfile_beta_psl_no_sl_0 << vsRsnum.at(g) << " ";
-	// outfile_alpha_sl_1 << vsRsnum.at(g) << " ";
-	// outfile_alpha_sl_0 << vsRsnum.at(g) << " ";
+	outfile_beta_sl_0 << vsRsnum.at(g) << " ";
+	outfile_beta_sl_1 << vsRsnum.at(g) << " ";
+	outfile_beta_sl_psl_1 << vsRsnum.at(g) << " ";
+	outfile_beta_sl_psl_0 << vsRsnum.at(g) << " ";
+	outfile_beta_psl_no_sl_1 << vsRsnum.at(g) << " ";
+	outfile_beta_psl_no_sl_0 << vsRsnum.at(g) << " ";
+	outfile_alpha_sl_1 << vsRsnum.at(g) << " ";
+	outfile_alpha_sl_0 << vsRsnum.at(g) << " ";
 	outfile_pp << vsRsnum.at(g) << " ";
 	outfile_pp_joint_11 << vsRsnum.at(g) << " ";
 	outfile_pp_joint_10 << vsRsnum.at(g) << " ";
 	outfile_pp_joint_01 << vsRsnum.at(g) << " ";
 
 	for(int p = 0; p < nPH; p++){
-		// double beta_sl_0_v = gsl_vector_get(beta_sl_0, p);
-		// double beta_sl_1_v = gsl_vector_get(beta_sl_1, p);
-		// double beta_sl_psl_1_v = gsl_vector_get(beta_sl_psl_1, p);
-		// double beta_sl_psl_0_v = gsl_vector_get(beta_sl_psl_0, p);
-		// double beta_psl_no_sl_1_v = gsl_vector_get(beta_psl_no_sl_1, p);
-		// double beta_psl_no_sl_0_v = gsl_vector_get(beta_psl_no_sl_0, p);
-		// double alpha_sl_1_v = gsl_vector_get(alpha_sl_1, p);
-		// double alpha_sl_0_v = gsl_vector_get(alpha_sl_0, p);
+		double beta_sl_0_v = gsl_vector_get(beta_sl_0, p);
+		double beta_sl_1_v = gsl_vector_get(beta_sl_1, p);
+		double beta_sl_psl_1_v = gsl_vector_get(beta_sl_psl_1, p);
+		double beta_sl_psl_0_v = gsl_vector_get(beta_sl_psl_0, p);
+		double beta_psl_no_sl_1_v = gsl_vector_get(beta_psl_no_sl_1, p);
+		double beta_psl_no_sl_0_v = gsl_vector_get(beta_psl_no_sl_0, p);
+		double alpha_sl_1_v = gsl_vector_get(alpha_sl_1, p);
+		double alpha_sl_0_v = gsl_vector_get(alpha_sl_0, p);
 		double pp_v = gsl_vector_get(pp_1, p);
 		double pp_joint_11_v = gsl_vector_get(pp_joint_11, p);
 		double pp_joint_10_v = gsl_vector_get(pp_joint_10, p);
 		double pp_joint_01_v = gsl_vector_get(pp_joint_01, p);
 
-		/*if(beta_sl_0_v < 1e-5){
+		if(beta_sl_0_v < 1e-5){
 			sprintf(buf, "%.5f ", beta_sl_0_v);
 		}else{
 			sprintf(buf, "%+.5f ", beta_sl_0_v);
@@ -10543,7 +10537,7 @@ if(!outfile_pp_joint_01.is_open()){
 		}else{
 			sprintf(buf, "%+.5f ", alpha_sl_0_v);
 		}
-		outfile_alpha_sl_0 << buf;*/
+		outfile_alpha_sl_0 << buf;
 		if(pp_v < 1e-5){
 			sprintf(buf, "%.5f ", pp_v);
 		}else{
@@ -10570,14 +10564,14 @@ if(!outfile_pp_joint_01.is_open()){
 		outfile_pp_joint_01 << buf;
 	}
 
-	// outfile_beta_sl_0 << endl;
-	// outfile_beta_sl_1 << endl;
-	// outfile_beta_sl_psl_1 << endl;
-	// outfile_beta_sl_psl_0 << endl;
-	// outfile_beta_psl_no_sl_1 << endl;
-	// outfile_beta_psl_no_sl_0 << endl;
-	// outfile_alpha_sl_1 << endl;
-	// outfile_alpha_sl_0 << endl;
+	outfile_beta_sl_0 << endl;
+	outfile_beta_sl_1 << endl;
+	outfile_beta_sl_psl_1 << endl;
+	outfile_beta_sl_psl_0 << endl;
+	outfile_beta_psl_no_sl_1 << endl;
+	outfile_beta_psl_no_sl_0 << endl;
+	outfile_alpha_sl_1 << endl;
+	outfile_alpha_sl_0 << endl;
 	outfile_pp << endl;
 	outfile_pp_joint_11 << endl;
 	outfile_pp_joint_10 << endl;
@@ -10587,50 +10581,49 @@ if(!outfile_pp_joint_01.is_open()){
   // ---- Compile estimates of phi, means and vars ---- //
 
   // phi, mean, and var
-    // double phi, mean_out, var_out, mean1_out, var1_out;
-    double mean1_out, var1_out;
-    // outfile_mean << vsRsnum.at(g) << " ";  
-    // outfile_var << vsRsnum.at(g) << " ";
+    double phi, mean_out, var_out, mean1_out, var1_out;
+    outfile_mean << vsRsnum.at(g) << " ";  
+    outfile_var << vsRsnum.at(g) << " ";
     //-- wavelets_v2_2 start --//
     outfile_mean1 << vsRsnum.at(g) << " ";  
     outfile_var1 << vsRsnum.at(g) << " ";
-    // outfile_phi << vsRsnum.at(g) << " ";
+    outfile_phi << vsRsnum.at(g) << " ";
     //-- wavelets_v2_2 end --//
 
   // ~~~ TOFIX; Means, vars, likely to change with simulation.
     for(int p = 0; p < nPH; p++){
       if(use_pheno[p] == 1){
-        // phi = gsl_vector_get(pp_1,p);
+        phi = gsl_vector_get(pp_1,p);
         mean1_out = gsl_vector_get(mean1,p);
         var1_out = gsl_vector_get(var1,p);
-        // mean_out = phi*mean1_out;
-        // var_out = phi*(var1_out + mean1_out*mean1_out*(1-phi));
-        // outfile_mean << mean_out << " ";
-        // outfile_var << var_out << " ";
+        mean_out = phi*mean1_out;
+        var_out = phi*(var1_out + mean1_out*mean1_out*(1-phi));
+        outfile_mean << mean_out << " ";
+        outfile_var << var_out << " ";
       //-- wavelets_v2_2 start --//
         outfile_mean1 << mean1_out << " ";
         outfile_var1 << var1_out << " ";
-        // outfile_phi << phi << " ";
+        outfile_phi << phi << " ";
       //-- wavelets_v2_2 end --//
       }else{
         sprintf(buf, "%.5f ", 0.0);
-        // outfile_mean << buf;
-        // outfile_var << buf;
+        outfile_mean << buf;
+        outfile_var << buf;
       //-- wavelets_v2_2 start --//
         outfile_mean1 << buf;
         outfile_var1 << buf;
-        // outfile_phi << buf;
+        outfile_phi << buf;
       //-- wavelets_v2_2 end --//
       }
     }
   //--- BL_HMT end ---/
 
-    // outfile_mean << endl;
-    // outfile_var << endl;
+    outfile_mean << endl;
+    outfile_var << endl;
     //-- wavelets_v2_2 start --//
     outfile_mean1 << endl;
     outfile_var1 << endl;
-    // outfile_phi << endl; 
+    outfile_phi << endl; 
    //-- wavelets_v2_2 end --//
 
 
@@ -10675,22 +10668,22 @@ if(!outfile_pp_joint_01.is_open()){
   //--- BL_HMT end ---//
 
 //// !!!!!!!! BL DEBUGGING - REMOVE LATER!!! !!!!!!!! ////
-	// outfile_beta_sl_0.close();
-	// cout << sfn_beta_sl_0 << " has been created." << endl;
-	// outfile_beta_sl_1.close();
-	// cout << sfn_beta_sl_1 << " has been created." << endl;
-	// outfile_beta_sl_psl_1.close();
-	// cout << sfn_beta_sl_psl_1 << " has been created." << endl;
-	// outfile_beta_sl_psl_0.close();
-	// cout << sfn_beta_sl_psl_0 << " has been created." << endl;
-	// outfile_beta_psl_no_sl_1.close();
-	// cout << sfn_beta_psl_no_sl_1 << " has been created." << endl;
-	// outfile_beta_psl_no_sl_0.close();
-	// cout << sfn_beta_psl_no_sl_0 << " has been created." << endl;
-	// outfile_alpha_sl_1.close();
-	// cout << sfn_alpha_sl_1 << " has been created." << endl;
-	// outfile_alpha_sl_0.close();
-	// cout << sfn_alpha_sl_0 << " has been created." << endl;
+	outfile_beta_sl_0.close();
+	cout << sfn_beta_sl_0 << " has been created." << endl;
+	outfile_beta_sl_1.close();
+	cout << sfn_beta_sl_1 << " has been created." << endl;
+	outfile_beta_sl_psl_1.close();
+	cout << sfn_beta_sl_psl_1 << " has been created." << endl;
+	outfile_beta_sl_psl_0.close();
+	cout << sfn_beta_sl_psl_0 << " has been created." << endl;
+	outfile_beta_psl_no_sl_1.close();
+	cout << sfn_beta_psl_no_sl_1 << " has been created." << endl;
+	outfile_beta_psl_no_sl_0.close();
+	cout << sfn_beta_psl_no_sl_0 << " has been created." << endl;
+	outfile_alpha_sl_1.close();
+	cout << sfn_alpha_sl_1 << " has been created." << endl;
+	outfile_alpha_sl_0.close();
+	cout << sfn_alpha_sl_0 << " has been created." << endl;
 	outfile_pp.close();
 	cout << sfn_pp << " has been created." << endl;
 	outfile_pp_joint_11.close();
@@ -10704,12 +10697,12 @@ if(!outfile_pp_joint_01.is_open()){
   //--- wavelets_v1.3 start ---//
 
 
-  // outfile_mean.close(); 
-  // cout << sfn_mean << " has been created." << endl;
+  outfile_mean.close(); 
+  cout << sfn_mean << " has been created." << endl;
 
 
-  // outfile_var.close(); 
-  // cout << sfn_var << " has been created." << endl;
+  outfile_var.close(); 
+  cout << sfn_var << " has been created." << endl;
 
 
   //-- wavelets_v2_2 start --//
@@ -10719,8 +10712,8 @@ if(!outfile_pp_joint_01.is_open()){
   outfile_var1.close(); 
   cout << sfn_var1 << " has been created." << endl;
 
-  // outfile_phi.close(); 
-  // cout << sfn_phi << " has been created." << endl;
+  outfile_phi.close(); 
+  cout << sfn_phi << " has been created." << endl;
 
   //--- BL_HMT start ---//
   pi_1_list.resize(0);
