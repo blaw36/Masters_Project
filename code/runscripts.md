@@ -89,3 +89,12 @@ Several tying techniques:
 ../../WaveQTL -gmode 1 -group tree_grp_8_g2.txt -g DeepdiveExamples/toy_eg1_16wc.cis.geno -p DeepdiveExamples/toy_eg1_32wc.txt -u use_all_32.txt -o toy_eg1_32wc_wTie_hmt -f 32 -hmt 1 > DeepdiveExamples/toy_eg1_32wc_out.txt 2> DeepdiveExamples/toy_eg1_32wc_err.txt
 <!-- 1024-tree toy -->
 ../../WaveQTL -gmode 1 -group tree_grp_8_g2.txt -g DeepdiveExamples/toy_eg1_1024wc.cis.geno -p DeepdiveExamples/toy_eg1_1024wc.txt -u use_all_1024.txt -o toy_eg1_1024wc_wTie_hmt -f 1024 -hmt 1 > DeepdiveExamples/toy_eg1_1024wc_out.txt 2> DeepdiveExamples/toy_eg1_1024wc_err.txt
+
+
+### Tests
+
+<!-- Nothing special here, base case -->
+../../WaveQTL -gmode 1 -g ../../data/dsQTL/chr17.10160989.10162012.2kb.cis.geno -p WCs.txt -u use.txt -o sigma_test1 -f 1024 -hmt 1 > stdout.txt 2> stderr.txt 
+
+<!-- Change sigma a -->
+../../WaveQTL -gmode 1 -g ../../data/dsQTL/chr17.10160989.10162012.2kb.cis.geno -p WCs.txt -u use.txt -o sigma_test1 -f 1024 -hmt 1 -a 0.000001 > stdout.txt 2> stderr.txt 

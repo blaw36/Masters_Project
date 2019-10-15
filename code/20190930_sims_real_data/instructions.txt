@@ -1,0 +1,3 @@
+
+# Copy/paste this job script into a text file and submit with the command:
+#    sbatch thefilename

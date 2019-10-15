@@ -1,0 +1,4 @@
+sbatch actual_sims_output/null/runscript_null.txt
+sbatch actual_sims_output/null-hmt/runscript_null_hmt.txt
+sbatch actual_sims_output/alt/runscript_alt.txt
+sbatch actual_sims_output/alt-hmt/runscript_alt_hmt.txt

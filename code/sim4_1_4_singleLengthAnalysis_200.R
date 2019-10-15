@@ -19,6 +19,7 @@ source("code/sim4_functions.R")
 effect_size_and_data <- read_in_gen_eff_size(geno_select = 11)
 
 # Pick effect sizes:
+effect_interval_4 <- 519:522
 effect_interval_8 <- 519:526
 effect_interval_16 <- 450:465
 effect_interval_32 <- 437:468
@@ -33,9 +34,12 @@ effect_interval_56 <- 417:472
 
 # ef_mult <- seq(1e8,2e8,2e7)
 # num_sims <- 50
-od <- 70
-ef_mult_proc1 <- 1.6e8*seq(0.4,1.4,by = 0.1)
-ef_mult_proc2 <- 8e7*seq(0.4,1.4,by = 0.1)
+# od <- 70
+od <- 210
+# ef_mult_proc1 <- 1.2e8*seq(0.4,1.4,by = 0.1) #1.6e8*seq(0.4,1.4,by = 0.1)
+# ef_mult_proc2 <- 6e7*seq(0.4,1.4,by = 0.1) #8e7*seq(0.4,1.4,by = 0.1)
+ef_mult_proc1 <- 1e8*seq(0.4,1.4,by = 0.1) #1.6e8*seq(0.4,1.4,by = 0.1)
+ef_mult_proc2 <- 1.5e7*seq(0.4,1.4,by = 0.1) #8e7*seq(0.4,1.4,by = 0.1)
 # Try: seq(8e6,2.88e8,by = 2e7)
 num_sims <- 200
 
@@ -45,8 +49,9 @@ proc2_label <- "sim4"
 # proc1_lengths <- seq(8,32,8)
 # proc2_lengths <- seq(40,64,8)
 proc1_lengths <- 8
-proc2_lengths <- 16
+proc2_lengths <- 64
 
+# 4: 2e8
 # 8: 1.6e8
 # 16: 8e7
 # 32: 4e7
@@ -54,7 +59,7 @@ proc2_lengths <- 16
 # 64: 2e7
 
 today_dt <- format(Sys.Date(),"%Y%m%d")
-savename <- "v2_multiEff_tieg15"
+savename <- "v3_multiEff_tieg15_od210"
 
 # Computer 1 --------------------------------------------------------------
 

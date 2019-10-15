@@ -580,10 +580,10 @@ run_sim4_v2 <- function(
       #### Run alt dataset
       if(verbose){print("Executing alt datasets...")}
       # No HMT
-      system(paste0("../../WaveQTL -gmode 1-group g15_1024.txt -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/alt/WCs.no.QT.txt -u sims/",outputAlias,"/alt/use.txt -o ",outputAlias,"_alt -f ",num_bases," -fph 1")
+      system(paste0("../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/alt/WCs.no.QT.txt -u sims/",outputAlias,"/alt/use.txt -o ",outputAlias,"_alt -f ",num_bases," -fph 1")
              ,show.output.on.console = F)
       # HMT
-      system(paste0("../../WaveQTL -gmode 1-group g15_1024.txt -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/alt/WCs.no.QT.txt -u sims/",outputAlias,"/alt/use.txt -o ",outputAlias,"_alt_HMT -f ",num_bases," -hmt 1")
+      system(paste0("../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/alt/WCs.no.QT.txt -u sims/",outputAlias,"/alt/use.txt -o ",outputAlias,"_alt_HMT -f ",num_bases," -hmt 1")
              ,show.output.on.console = F)
 
       if(rMarkdownMode){
@@ -597,18 +597,18 @@ run_sim4_v2 <- function(
       #### Run null dataset
       if(verbose){print("Executing null datasets...")}
       # No HMT
-      system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/null/WCs.txt -u sims/",outputAlias,"/null/use.txt -o ",outputAlias,"_null -f ",num_bases," -fph 1")
+      system(paste0("../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/null/WCs.txt -u sims/",outputAlias,"/null/use.txt -o ",outputAlias,"_null -f ",num_bases," -fph 1")
              ,show.output.on.console = F)
       # HMT
-      system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/null/WCs.txt -u sims/",outputAlias,"/null/use.txt -o ",outputAlias,"_null_HMT -f ",num_bases," -hmt 1")
+      system(paste0("../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/null/WCs.txt -u sims/",outputAlias,"/null/use.txt -o ",outputAlias,"_null_HMT -f ",num_bases," -hmt 1")
              ,show.output.on.console = F)
       #### Run alt dataset
       if(verbose){print("Executing alt datasets...")}
       # No HMT
-      system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/alt/WCs.txt -u sims/",outputAlias,"/alt/use.txt -o ",outputAlias,"_alt -f ",num_bases," -fph 1")
+      system(paste0("../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/alt/WCs.txt -u sims/",outputAlias,"/alt/use.txt -o ",outputAlias,"_alt -f ",num_bases," -fph 1")
              ,show.output.on.console = F)
       # HMT
-      system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/alt/WCs.txt -u sims/",outputAlias,"/alt/use.txt -o ",outputAlias,"_alt_HMT -f ",num_bases," -hmt 1")
+      system(paste0("../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/",outputAlias,".cis.geno -p sims/",outputAlias,"/alt/WCs.txt -u sims/",outputAlias,"/alt/use.txt -o ",outputAlias,"_alt_HMT -f ",num_bases," -hmt 1")
              ,show.output.on.console = F)
 
       if(rMarkdownMode){

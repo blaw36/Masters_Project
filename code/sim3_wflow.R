@@ -433,7 +433,8 @@ run_sim3_test <- function(
   wavelet_cleaning_wrapper_function_nonRMD(pheno.dat = alt_data
                                            ,output.path = paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/sims/length_",effect_length,"/alt_data/")
                                            ,library.read.depth = library.read.depth
-                                           ,Covariates = Covariates)
+                                           ,Covariates = Covariates
+                                           ,no.QT = !use_qt_data)
 
 
   # Execute WaveQTL and WAveQTL_HMT scripts ---------------------------------
@@ -451,10 +452,10 @@ run_sim3_test <- function(
     #### Run alt dataset
     print("Executing alt datasets...")
     # No HMT
-    system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_",effect_length,"/alt_data/WCs.no.QT.txt -u sims/length_",effect_length,"/alt_data/use.txt -o sim3_alt -f ",num_bases," -fph 1")
+    system(paste0("../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/sim3.cis.geno -p sims/length_",effect_length,"/alt_data/WCs.no.QT.txt -u sims/length_",effect_length,"/alt_data/use.txt -o sim3_alt -f ",num_bases," -fph 1")
            ,show.output.on.console = F)
     # HMT
-    system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_",effect_length,"/alt_data/WCs.no.QT.txt -u sims/length_",effect_length,"/alt_data/use.txt -o sim3_alt_HMT -f ",num_bases," -hmt 1")
+    system(paste0("../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/sim3.cis.geno -p sims/length_",effect_length,"/alt_data/WCs.no.QT.txt -u sims/length_",effect_length,"/alt_data/use.txt -o sim3_alt_HMT -f ",num_bases," -hmt 1")
            ,show.output.on.console = F)
     setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
   }else{
@@ -470,10 +471,10 @@ run_sim3_test <- function(
     #### Run alt dataset
     print("Executing alt datasets...")
     # No HMT
-    system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_",effect_length,"/alt_data/WCs.txt -u sims/length_",effect_length,"/alt_data/use.txt -o sim3_alt -f ",num_bases," -fph 1")
+    system(paste0("../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/sim3.cis.geno -p sims/length_",effect_length,"/alt_data/WCs.txt -u sims/length_",effect_length,"/alt_data/use.txt -o sim3_alt -f ",num_bases," -fph 1")
            ,show.output.on.console = F)
     # HMT
-    system(paste0("../../WaveQTL -gmode 1 -g ../../data/dsQTL/sim3.cis.geno -p sims/length_",effect_length,"/alt_data/WCs.txt -u sims/length_",effect_length,"/alt_data/use.txt -o sim3_alt_HMT -f ",num_bases," -hmt 1")
+    system(paste0("../../WaveQTL -gmode 1 -group g15_1024.txt -g ../../data/dsQTL/sim3.cis.geno -p sims/length_",effect_length,"/alt_data/WCs.txt -u sims/length_",effect_length,"/alt_data/use.txt -o sim3_alt_HMT -f ",num_bases," -hmt 1")
            ,show.output.on.console = F)
     setwd("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/")
   }
