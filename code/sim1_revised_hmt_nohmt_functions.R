@@ -76,7 +76,7 @@ draw_samples_no_hmt <- function(
     beta_seq[gamma_1_indx] <- t_sample_3p[gamma_1_indx]
 
     # Transform into data space
-    beta_data_samples[j,] = as.vector(-matrix(data=beta_seq, nr = 1, nc = num_pheno)%*%as.matrix(Wmat_1024))
+    beta_data_samples[j,] = as.vector(-matrix(data=beta_seq, nr = 1, nc = num_pheno)%*%as.matrix(wmat))
   }
 
   return(beta_data_samples)
@@ -160,7 +160,7 @@ draw_samples_hmt <- function(
     beta_seq[gamma_1_indx] <- t_sample_3p[gamma_1_indx]
 
     # Transform into data space
-    beta_data_samples[j,] = as.vector(-matrix(data=beta_seq, nr = 1, nc = num_pheno)%*%as.matrix(Wmat_1024))
+    beta_data_samples[j,] = as.vector(-matrix(data=beta_seq, nr = 1, nc = num_pheno)%*%as.matrix(wmat))
   }
   return(beta_data_samples)
 }
