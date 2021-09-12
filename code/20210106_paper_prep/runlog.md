@@ -247,16 +247,20 @@ hmtLR_perms = read.table("/data/gpfs/projects/punim0614/brendan/WaveQTL_HMT_wper
 
 ## 5th August 2021
 Re-run the effect size plots with the data we ran our algo on (maf/nomaf?)
+
+Issue 1: p-values calculated weirdly for this site. The permutations would suggest that the p-values should be high.
 permuted likelihood ratios that leads to the p-values?
 With chr1, site2722, why did the permutations calculate so weirdly?
-Print out logLR for nohmt permutations
+[Print out logLR for nohmt permutations]
 
-Debug case: 
-Chr 2, Site 696 (HMT poor and no-HMT good)
-Chr 20, Site 1364 (HMT poor and no-HMT good but should be HMT stronger?)
-effect size in original algo space (with quantile transform); Make effect size WITH quantile transform (ie. original data which we ran algo on) for everything
-logLR and logLR at different scales
-Pi param estimates at different scales
+Issue 2: HMT doesn't do as well as noHMT; misses the bit in the middle
+Chr 2, Site 696 (HMT poor and no-HMT good); why does HMT not do as well/misses the bit in the middle?
+[logLR and logLR at different scales
+Pi param estimates at different scales]
+
+Issue 3: HMT poor, no-HMT good, but HMT should be 'stronger'. It has more 'pink regions' than no-HMT, but the p-value is higher.
+Chr 20, Site 1364 (HMT poor and no-HMT good but should be HMT stronger?); HMT has more 'pink regions' than no-HMT but p-val is higher.
+[effect size in original algo space (with quantile transform); Make effect size WITH quantile transform (ie. original data which we ran algo on) for everything]
 
 ## 17th August 2021
 1) Check which pheno data we ran our algo on.
@@ -266,4 +270,127 @@ Pi param estimates at different scales
 	`as.matrix(read.table(paste0("/data/gpfs/projects/punim0614/shared/shared_data/internal/multi.scale/WaveQTL/DNase/geno_01_step1/geno_maf/chr",chrIX,".",site,".geno")))`
 	They're the same, no further work required. Phew!
 
+2) In order to debug properly, we should move data onto local computer:
+(chr,site) properties
+	- To run WaveQTL, we need:
+		+ pheno_data_path = paste0("/home/bklaw/paper_data_clean/analysis/simulation/sample_size/simulation_manydsQTL_v1/data/chr", chrIX, ".pheno.dat.", site) [DONE]
+		+ current version WaveQTL_HMT as per Spartan. [DONE]
+		+ /data/gpfs/projects/punim0614/shared/shared_data/internal/multi.scale/WaveQTL/DNase/geno_01_step1/geno_maf/chr",chrIX,".",site,".geno" [DONE]
+		+ WCs (both QT and noQT) [DONE]
+		+ use file [DONE]
+	- To analyse WaveQTL, we need:
+		- all the outputs [DONE]
+	- To run the effect size plots, we need geno and pheno data, both from above
+
+Local R script versions:
+	- end_to_end_funcs_spartan_no_wc.R [DONE]
+	- "/home/bklaw/WaveQTL_HMT_wperm/R/WaveQTL_preprocess_funcs.R" [DONE]
+	- all the '.R' scripts in a folder [DONE]
+	- "/home/bklaw/WaveQTL_HMT_wperm/R/end_to_end_funcs_spartan.R" [DONE]
+	- "/home/bklaw/WaveQTL_HMT_wperm/R/effect_size_plot_funcs_spartan.R" [DONE]
+
+## 18th August 2021
 Outstanding work:
+- Adjust WaveQTL_HMT so it prints out LogLR at each permutation with noHMT (.perm.logLR.txt) [DONE]
+- effect size in original algo space (with quantile transform); Make effect size WITH quantile transform (ie. original data which we ran algo on) for everything [DONE]
+- do logLR at different scales, Pi param estimates at different scales
+
+Here's how to run locally using the current file structure (currently no `--group` option used). Run from `/test/dsQTL` folder
+### HMT
+`../../WaveQTL -gmode 1 -g ../../data/geno_data/chr1.825.geno -p chr.1.825_WCs.txt -u chr.1.825_use.txt -o chr.1.825.hmt -f 1024 -numPerm 10000 -fph 3 -hmt 1`
+
+### No HMT
+`../../WaveQTL -gmode 1 -g ../../data/geno_data/chr1.825.geno -p chr.1.825_WCs.txt -u chr.1.825_use.txt -o chr.1.825.nohmt -f 1024 -numPerm 10000 -fph 3`
+
+For no QT, change the `-p`, `-u` options and probably `-o` to signal you've run something without quantile transformed inputs.
+
+../../WaveQTL -gmode 1 -g ../../data/geno_data/chr1.825.geno -p chr.1.825_WCs.txt -u chr.1.825_use.txt -o chr.1.825.nohmt -f 1024 -numPerm 10000 -fph 3
+
+__Debug issue 1) The p-values calculated weirdly for (1,2722)__
+Issue here is that both display the same thing, but for HMT pval is really small (~0), and for non-HMT, it's really big ~1.
+- I think there's clearly something going on here.
+- noHMT has logLR of 0, and permutations of 0
+- HMT has logLR of 0, and permutations of 4.75675e-13, which are all _just_ above 0, and therefore it runs for the full number of permutations.
+- It doesn't make sense as it's fine returning a 0 logLR in the non-permutation part with exactly the same parameters. Why is it returning not quite 0 for the permutation bit? Need to check that logLRs are being treated the same in the first bit as the second.
+- noHMT outputs maxLR and perms as: max_logLR: 0, max_logLR_perm: 0
+- HMT outputs maxLR and perms as: max_logLR: 5.74651e-13, max_logLR_perm: 4.59244e-13, and the reason why it continues to run all these iterations is because 5.74 > 4.59. Somehow in the non-perm, it gets 5.74, but in all the subsequent perm runs, it only gets 4.59.
+- Not sure still.
+
+../../WaveQTL -gmode 1 -g ../../data/geno_data/chr1.2722.geno -p chr.1.2722_WCs.txt -u chr.1.2722_use.txt -o chr.1.2722.nohmt.sml.eps -f 1024 -numPerm 500 -fph 3 > chr.1.2722.nohmt.out
+../../WaveQTL -gmode 1 -g ../../data/geno_data/chr1.2722.geno -p chr.1.2722_WCs.txt -u chr.1.2722_use.txt -o chr.1.2722.hmt.sml.eps -f 1024 -numPerm 500 -fph 3 -hmt 1 > chr.1.2722.hmt.out
+
+## 19th August 2021
+Goal: understand what the code is doing and outputting regarding parameters text files in both models.
+Understand WaveQTL_HMT again, how model works, how it runs in code.
+VScode and get gdb for c++!!!
+
+## 31st August 2021
+Verified that the R version of WaveQTL_HMT still works. It works on (2,696) on the first SNP. Also verified it on the highest logLR SNP for this (chr,site) as it's the one plotted and which shows the problem space. I've also done a few checks to verify:
+
+- logLR output has logLR, and logBFs; all the logBFs are the same between hmt and nohmt outputs. Other things which should be the same between hmt and nohmt outputs are the mean1 and var1 (as they all come from the bf_uni function). Verified this is true.
+- eps, pi are the hyperparams for Wqtl_HMT, and pp and pp_joint are the posterior probabilities of gamma, gamma joint respectively (required to evaluate eps and pi)
+
+To get a better idea of what's going on, it'd be advisable to see if:
+- We can speed up the R implementation of WQtl_HMT
+- Implement standard WQtl in R, so we can do nice, easy comparisons between the two
+
+## 1st September 2021
+
+So we have a couple of issues we need to address in the R script:
+- In BOTH we seemingly have the 'tying_groups' disconnected to the 'groups' in that they don't reflect each other. Groups is calculated before tying_groups, which doesn't really make sense? Groups needs to reflect tying_groups.
+- Need to figure out why the WQtl one isn't iterating properly between groups.
+
+## 2nd September 2021
+- It's perhaps the scaling coefficient;
+	- There needs to be a separate pi hyperparameter for the scaling coefficient; it doesn't appear we have this (please check)
+	- The scaling coefficient needs to be a part of the logLR calculation; it also doesn't appear that we have this (please check)
+- The scaling coefficient is as per WaveQTL; there are no epsilons/transitions to/from it, it only has a pi (probability of underlying state)
+
+In our plotting functions, we compensate for this; HMT grabs some information from the output of WQtl;
+```
+  # Grab relevant quantities from WaveQTL (scaling coefficient)
+  waveqtl_phi <- as.numeric(as.matrix(read.table(paste0(waveqtl_data_path,waveqtl_dataset,".fph.phi.txt")))[geno_select,2])
+
+```
+In this case, it grabs the phi param to get the gamma. I think we need to figure out, for the logLR, how we:
+- Update our pi to incorporate the probability gamma = 1 for the scaling coeff
+- In WQtl, incorporate the WC into the logLR stat
+- Do the same thing for HMT
+
+## 4th September 2021
+- I think we've successfully ported the WQtl to R. Need to verify that we're there because the Pi's are a little off.
+- Indeed it seems that we've got it right and that adding the scaling coeff will do the trick.
+- Our LogLR for HMT is higher in this case (without the WC)! Now we need to figure out how to do the estimation with scaling coeff.
+
+## 11th September 2021
+Looked through `C:\Users\brend\Dropbox\Uni Stuff - Masters\Research Project\Masters_Project_Git\code\sim4_functions.R`, and specifically the `run_sim4_v2` function, where (as part of our thesis work), we made adjustments to the LogL to handle the scaling coefficient in the HMT case. We'll need to replicate this logic in our code, but also add the method to calculate LogL using WQtl to the HMT code, rather than relying on post-processing and adding the input ourselves (so we can run it end to end in C++). The method we used:
+
+- HMT LogL is as per the output
+- LogL of scaling coefficient is computed using the following:
+	+ Grab the 1st pi (pi of scaling coeff) from WQtl output. Note that this output is NOT in a log scale, so can be used raw.
+	+ Grab the BF corresponding to the scaling coefficient (ie. the first number in the logLR file after the likelihood), and do 10 to the power of it. This converts the BF (which is expressed as log with base 10) to a BF _NOT_ a logBF.
+	+ Formula is that LogL of scaling coefficient is `log(BF*pi + (1-pi))`. In this case, we've done a log with base 10 in our R function.
+	+ We need to verify that the logL is actually saved as log with base 10 in the 'logLR.txt' output. __I don't think it is! That is, the logLR is calculated with natural log and saved in the file as a natural log. There's an issue here. Everything is done in natural log, so why have we chosen to do our SC logL in base 10 when adding? We should be doing it in natural log!__
+	+ We then add the two together (logLR is additive as LR is a product).
+	+ Everything here has been done correctly, but we shouldn't do log base 10.
+
+- If we want to incorporate this into C++, we need to:
+	+ Get WQtl in R printing out the same results as per WQtl in C++ [Done, up to like, the 4th decimal place!]
+	+ Verify that, for the scaling coeff, WQtl gives the same LogLR value as that if we were to compute using the method above from the outputs. [Also done, also up to like, the 4th decimal place!]
+	+ Test by incorporating the WQtl process for scaling coeff in R (iterate the EM over scaling coeff) [DONE]
+	+ Verify that it gives the same output as using the above procedure where we add WQtl's outputs as a 'post-process'. [DONE]
+	+ If so, need to integrate into C++ code
+
+## 12th September 2021
+Figured out that I think the easiest way to incorporate this into C++ code is:
+- We run current HMT as it is
+- We run the WQtl at the end. We'll need to run a special process for it to pull out the required BF, do all the required things.
+- Calculate:
+	+ pi
+	+ pp
+	+ logL
+- And then make sure we print it at the appropriate place in the text document. Ie. when we're printing stuff out to our document, we slot in the pi so that:
+	+ pi is now two columns wide
+	+ logL is the addition of the two
+	+ pp ... we'll have to figure out where it goes (what currently gets printed? It looks like we just print a 0 where the pp for the scaling coefficient should be, so just slot it in there.)
+This was the pattern we used in the R code which was successful. Do the same way in C++
