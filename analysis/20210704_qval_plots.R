@@ -5,12 +5,14 @@
 library("qvalue")
 library(data.table)
 
+data_path = "~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/analysis/20210918_paperprep_run5/"
+
 # Read p-value data
 hmt_data = setDT(
-  readRDS("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/analysis/20210705_paperprep_run4/hmt_pvals.RDS")
+  readRDS(paste0(data_path,"hmt_pvals.RDS"))
 )
 nohmt_data = setDT(
-  readRDS("~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/analysis/20210705_paperprep_run4/nohmt_pvals.RDS")
+  readRDS(paste0(data_path,"nohmt_pvals.RDS"))
 )
 
 hmt_data[is.na(pval)]
@@ -34,11 +36,11 @@ qval.hmt = qvalue(hmt_pval)
 qval.nohmt = qvalue(nohmt_pval)
 qval.hmt$pi0
 qval.nohmt$pi0
-## [1] 0.8517113
-## [1] 0.8525157
+## [1] 0.8354974
+## [1] 0.8496002
 
 ### WaveQTL_HMT vs WaveQTL
-path = "~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/analysis/20210705_paperprep_run4/qval.png"
+path = paste0(data_path,"qval.png")
 png(path, units="in", width = 5, height = 5, res =300)
 par(mar = c(4, 4, 1, 1))
 yval = -log(qval.hmt$qvalues,10)
@@ -91,7 +93,7 @@ cbind.data.frame(
 )
 
 ### WaveQTL_HMT vs WaveQTL p-values
-path = "~/../Dropbox/Uni Stuff - Masters/Research Project/Masters_Project_Git/analysis/20210705_paperprep_run4/pval.png"
+path = paste0(data_path,"pval.png")
 png(path, units="in", width = 5, height = 5, res =300)
 par(mar = c(4, 4, 1, 1))
 yval = -log(hmt_pval,10)
@@ -115,7 +117,7 @@ dev.off()
 
 # Blue is BOTH above -log(0.05,10) ~= 1.30
 sum(col.list == tblue)
-## 713
+## 835
 
 # Red is HMT > -log(0.05,10) ~= 1.30, and No-HMT < -log(0.5,10) ~= 0.30
 sum(col.list == tred)
@@ -123,7 +125,7 @@ sum(col.list == tred)
 
 # Green is HMT < -log(0.5,10) ~= 0.30 and No-HMT > -log(0.05,10) ~= 1.30
 sum(col.list == tgreen)
-## 7
+## 0
 
 cbind.data.frame(
   hmt_data[col.list == tgreen]

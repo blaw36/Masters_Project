@@ -394,3 +394,156 @@ Figured out that I think the easiest way to incorporate this into C++ code is:
 	+ logL is the addition of the two
 	+ pp ... we'll have to figure out where it goes (what currently gets printed? It looks like we just print a 0 where the pp for the scaling coefficient should be, so just slot it in there.)
 This was the pattern we used in the R code which was successful. Do the same way in C++
+
+
+## 18th September 2021
+Trying to integrate scaling coef EM in c++.
+
+```bash
+../../WaveQTL -gmode 1 -g ../../data/geno_data/chr4.845.geno -p chr.4.845_WCs.txt -u chr.4.845_use.txt -o chr.4.845.sc -f 1024 -fph 1 -hmt 1
+
+../../WaveQTL -gmode 1 -g ../../data/geno_data/chr4.845.geno -p chr.4.845_WCs.txt -u chr.4.845_use.txt -o chr.4.845.sc.wperm -f 1024 -numPerm 1 -fph 3 -hmt 1
+```
+
+- Appears we still haven't gotten rid of the '0 logLR, not significant under noHMT but really significant under HMT' bug. It still appears to be there (see (1,2722)). It's some weird sort of underflow character rounding thing which causes:
+	+ the logLR in the HMT setting to be seen as marginally higher than 0 (small positive value) and permute 10000 times (as all the permutations are 0)
+	+ the logLR in the non-HMT setting to be seen as pretty much 0, and cut permutations off at 100
+	+ even though both logLRs are pretty much zero (when rounded) as are their permuted LogLRs.
+
+- Done! Just need to get it up on the server now.
+- Done! Kicked it off. 20210918_run5...
+
+## 20th September 2021
+Raced to look at the results (took 24h). A little better than last time.
+- Effect_plots.sh isn't quite working properly:
+	+ Had to chmod 755 for it to run (why? Did it have different permissions to shell_gen2.sh?)
+	+ Couldn't find the effect_size_plot_spartan.R for some reason, even though the file is there.
+	+ Changed the starting working dir by which it runs but it still didn't work. Investigate...
+
+## 23rd September 2021
+1. Real data [in progress]
+- Two groups:
+	+ One is both (HMT and WQtl) strong; this signal should be broader
+	+ One is HMT strong vs WQtl relatively less strong; this signal should be narrower
+- Try and do something like average # of locs significant between the two
+- Would want to show there's a big difference between HMT and WQtl at shorter lengths
+
+2. Simulated data [Done (preliminary)]
+- Try effect length 8 simulation (as per thesis) to get a grasp over whether new scaling coefficient (different log scale) makes a difference
+- Need to figure out where:
+	+ `l8 <- readRDS("data/20191010_l8_v3_multiEff_tieg15_od210.RDS")` in `ch3_auroc_images.R` is created. Once this is done, it's straight forward.
+	+ Ok, found it. It's in `code/sim4_1_4_singleLengthAnalysis_200.R`
+	+ Re-do it with the updated WQtl (so re-run the WQtl HMT as required) given the new log transformed logLRs
+	+ Here were some of the details from that run:
+	```
+	input_data_path = "~/Cpp/WaveQTL_HMT/data/dsQTL/"
+	data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/" # change this when you port it all over to the Masters Git repo
+	dataset <- "tree_tie_noQT" # need to replicate the 'tree_tie_noQT' run
+	waveqtl_data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/WaveQTL/"
+	waveqtl_dataset <- "test.no.QT"
+	geno_select <- 11 # the one used in the demo
+	```
+	+ Firstly, tried to reproduce the analysis for 100% strength, length 8. [DONE, reproduced (up to the simulation randomness)]
+	+ Now, time to dig into the code and figure out what change I need to make to account for the scaling coefficient properly. Turns out all that's required is we change the R code to make sure it converts the scaling coeff's logL to natural log so that it's compatible with the tree's logLR.
+	+ I've re-run the analysis for 100% strength, length 8 with this updated R code. I manually use the code from `ch3_auroc_images.R` to use this data and plot some ROC curves, and compare this (and auROC) with that from my thesis.
+	+ Outputs saved in /analysis/20211006_paperprep_sim
+	+ The impact seems to be minimal. It's worth just running it for all though, just to see.
+
+3. Grouping [Done]
+- Try grouping the top 5-6 levels (excl scaling coefficient) as one group (all others as individual groups). Kick that off, see if it makes a difference.
+`../../WaveQTL -gmode 1 -group grouping1.txt -g ../../data/geno_data/chr1.825.geno -p chr.1.825_WCs.txt -u chr.1.825_use.txt -o chr.1.825.sc.grp -f 1024 -fph 1 -hmt 1`
+- Results look more or less the same
+- The histogram looks funny; a sharp peak near '1' for HMT histogram. Is there a bug in the code (argh)?
+- Something isn't right, we'll handle it later.
+
+4. Look into the 'red group'; the group where no effect, but HMT says significant and WQtl says not significant
+
+5. Follow-up with Sean about Spartan access on staff email account; lawb@unimelb.edu.au (username: lawb) [Done]
+
+## 7th October 2021
+1. Simulations based on chr12:6264339-6265362, rather than the current loc-site we're using at the moment.
+	+ chr12:6264339-6265362 is chr12, loc 171 [FOUND, DONE]
+	+ Reproduce the effect size plot using WaveQTL, will show that we're on the right track [DONE. Verified is same.]
+	+ Reproduce data space shape, should be similar to the top plot [DONE, is similar]
+	+ Find effect size location and try and simulate higher or lower effect size
+2. Use FDR instead! In all locations; fdr rather than p-value (even in effect size plots, etc)
+	+ Can we find the one or two examples? Use a broad brush first and try and look for effect sizes
+	+ amend the script to do it vertically; data, nohmt, hmt and p-val, fdr, logLR, real data shape
+	+ fdr < 0.05 all examples, print them all.
+	+ We want to get a feel to see if it's worth pursuing this avenue of analysis
+
+## 26th October 2021
+- Creating a new plotting function so we can have data plot, hmt and no-hmt effect plot all in one.
+- Then we can stack (as required) for easier reference
+- File in C:\Users\brend\Dropbox\Uni Stuff - Masters\Research Project\Masters_Project_Git\code\20210106_paper_prep\plotting_funcs.R	
+To do:
+- Data space plots for all [done, just need to move to server and align with server files. test on the chr12.171]
+- Add the WaveQTL and WaveQTL_HMT funcitons into that plotting_funcs thing [done]
+- Combine so we have three plots on top of each other in a function too. [done]
+- Make SNP an input so we can control that too. Make sure we add in q-value [done]
+
+## 10th November 2021
+1. Make SNP num an input so we can control that too. Make sure we add in q-value on the plot. This involves adding qvalues to the p-value data, and then having this function read that p-value data and extract the q-value, and plotting it. [DONE]
+2. Try new plotting function on server to do some of the other sites, as per signal_strength_picker.R: [DONE]
+- Both
+- 1,2391 (similar qvals)
+- 22,133 (less similar qvals)
+- HMT only
+- 4,1294 (less similar qvals)
+- 16,1985 (more similar qvals)
+How did I do it? Copied the script over to Spartan and ran the .R script through the Rscript command. This requires me to edit the R script and 'queue' up multiple function calls over all the sites and chrs I want to plot. Plots saved in run 5's analysis directory.
+3. Start simulation work. What do we need? Which file did we use last time to do simulations?
+
+### 15th November 2021
+- Two sets of plots; one uses HMT strongest plot and the other uses non-HMT strongest plot. Otherwise one plot. In fact, do this all the time. [DONE]
+- 'No HMT' -> 'WaveQTL' [DONE]
+- For all FDR < 0.05; how many cases HMT find [DONE]
+- Then start on the simulations, and then we may be all good.
+
+## 16th November 2021
+Did all the pairs of plots. Use adobe to merge in batches of 100:
+Start to 5.1117
+5.1397 to 11.2099
+11.2391 to 19.437
+19.750 to end
+11.1448; an example of two separate plots; did we do it correctly? (pg 103-104). [DONE, seems reasonable]
+
+## 28th November 2021
+Re-doing simulations on new data. The idea here is that in my thesis, we did simulations based off the counts from the data in the WaveQTL package, which is chr17:10160989-10162012 as per page 14 of WQtl paper. This corresponds to Chr 17, Site 570. 
+
+Now what we want to do is re-run the simulations, but based off the counts from another chr-site which shows more 'narrower' effects. This is chr12:6264339-6265362, or chr12, loc 171. It seems the data space has more sudden and 'localised' peaks for this chr-site. So now we'll re-create the simulation script which was originally in `code/sim4_1_4_singleLengthAnalysis_200.R`. I've copied this script into code/20210106_paper_prep/20211128_chr12_loc171_sims
+
+- Will adapt this script to run in the 'Masters_Project_Git' R Project. [DONE]
+- Try effect length 8 simulation first (as per thesis) to get a grasp over the simulation parameters.
+- Current code had all the data in the `~/Cpp/WaveQTL_HMT/data/dsQTL` directory. I'm going to try and replicate one in `~/Cpp/20210817_Wqtl/data/dsQTL`. Here's what I need:
+	+ Need to make the `read_in_gen_eff_size` function a little more generic to be able to read in the phenotype data I want. [DONE]
+	+ HMT dataset used in original script was `WaveQTL_HMT/test/dsQTL/output/tree_tie_noQT` in WaveQTL_HMT folder. Its command was ` ../../WaveQTL -gmode 1 -g ../../data/dsQTL/chr17.10160989.10162012.2kb.cis.geno -p WCs.no.QT.txt -u use.txt -o tree_tie_noQT -f 1024 -hmt 1 `. Ie. default grouping, that chr-site's geno, used the no QT wavelet coefficients, with hmt mode.
+	+ WQtl dataset used in original script was `WaveQTL_HMT/test/dsQTL/output/WaveQTL/test.no.QT.___`. Its command was `../../WaveQTL -gmode 1 -g ../../data/dsQTL/chr17.10160989.10162012.2kb.cis.geno -p WCs.no.QT.txt -u use.txt -o test.no.QT -f 1024 -fph 1` which is the same as above, just on WQtl, NOT HMT mode.
+	+ We need:
+		+ Chr12-Loc171 phenotype data [DONE]
+		+ Outputs from running Chr12-Loc171 on HMT mode, with no grouping, on the No QT WCs [DONE]
+		+ Output from running Chr12-Loc171 on WQtl mode, with no grouping, on the No QT WCs [DONE]
+- May need to generalise the `read_in_gen_effect_size` function to take in other phenotype file names. (Path is configurable, file name currently isn't) [DONE]
+- Change the file savename
+- `run_sim4_v2` function in `sim4_functions.R` is the big driver of the work here. Lots of things to change:
+	+ Pass input to change all sims output location from `paste0("~/Cpp/WaveQTL_HMT/test/dsQTL/sims/",outputAlias)` to `paste0("~/Cpp/20210817_Wqtl/test/dsQTL/sims/",outputAlias)` [DONE]
+	+ Unfortunately, not genericised at the moment. For expedience, make a copy into my sims folder of just what we need. [DONE]
+	+ Update the system commands to run WaveQTL and HMT from the current locations, with the new syntax (if required)
+	+ Also, can we make this thing run any faster?
+
+### Previous run details from re-running thesis simulations on updated code with scaling coefficient
++ Here were some of the details from that run:
+```
+input_data_path = "~/Cpp/WaveQTL_HMT/data/dsQTL/"
+data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/" # change this when you port it all over to the Masters Git repo
+dataset <- "tree_tie_noQT" # need to replicate the 'tree_tie_noQT' run
+waveqtl_data_path <- "~/Cpp/WaveQTL_HMT/test/dsQTL/output/WaveQTL/"
+waveqtl_dataset <- "test.no.QT"
+geno_select <- 11 # the one used in the demo
+```
+
+### 13th December 2021
+- In the original thesis runs, I used 'WaveQTL_HMT/test/dsQTL/g15_1024.txt', which grouped all levels 1-5 together as follows: `1 2 33 65 129 257 513` when doing the simulations. Note that these simulations were run off output files which DIDN'T have this grouping; the no QT output files were run with default groupings.
+- Send HJ the scripts and a play by play commentary (well commented code) about what these scripts actually do.
+- If it's easy to do, port to Spartan
+- How to login, submit jobs through slurm etc

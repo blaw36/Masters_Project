@@ -644,8 +644,8 @@ run_sim4_v2 <- function(
     sc_pi_null <- as.numeric(read.table(paste0(null_data_path,null_data_prefix,".fph.pi.txt"))[2])
     # Convert out of log10
     sc_BF_null <- 10^(as.numeric(read.table(paste0(null_data_path,null_data_prefix,".fph.logLR.txt"))[3]))
-    # Calc lhood and convert back to log10
-    sc_logL_null <- log(sc_BF_null*sc_pi_null + (1-sc_pi_null),base = 10)
+    # Calc lhood and convert into natural log (which is the base of the logLR)
+    sc_logL_null <- log(sc_BF_null*sc_pi_null + (1-sc_pi_null))
     null_waveqtl_hmt_lhood[lhood_vect_it] <- as.numeric(read.table(paste0(null_data_path,null_data_prefix,"_HMT.fph.logLR.txt"))[2])
     # Adjust with scaling coeff
     null_waveqtl_hmt_lhood[lhood_vect_it] <- null_waveqtl_hmt_lhood[lhood_vect_it] + sc_logL_null
@@ -655,8 +655,8 @@ run_sim4_v2 <- function(
     sc_pi_alt <- as.numeric(read.table(paste0(alt_data_path,alt_data_prefix,".fph.pi.txt"))[2])
     # Convert out of log10
     sc_BF_alt <- 10^(as.numeric(read.table(paste0(alt_data_path,alt_data_prefix,".fph.logLR.txt"))[3]))
-    # Calc lhood and convert back to log10
-    sc_logL_alt <- log(sc_BF_alt*sc_pi_alt + (1-sc_pi_alt),base = 10)
+    # Calc lhood and convert into natural log (which is the base of the logLR)
+    sc_logL_alt <- log(sc_BF_alt*sc_pi_alt + (1-sc_pi_alt))
     alt_waveqtl_hmt_lhood[lhood_vect_it] <- as.numeric(read.table(paste0(alt_data_path,alt_data_prefix,"_HMT.fph.logLR.txt"))[2])
     # Adjust with scaling coeff
     alt_waveqtl_hmt_lhood[lhood_vect_it] <- alt_waveqtl_hmt_lhood[lhood_vect_it] + sc_logL_alt

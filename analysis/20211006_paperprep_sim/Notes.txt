@@ -1,0 +1,17 @@
+re-ran simulations as per page 39 of my thesis due to incorrect log transform. Wanted to get a feel for what impact it may have, so I re-ran the analysis for length 8, 100% strength. (The log transform issue concerns adding scaling coefficient using the same log base as the tree's logLR when running the ROC analysis).
+
+To reproduce the sims, all I had to do was:
+- Alter the R code in run_sim4_v2 function to make sure same logLRs of same log scale were added in both null and alt cases
+- I ran the length 8 simulations from /code/sim4_1_4_singleLengthAnalysis_200.R. That represents the l8.RDS data saved here.
+- Then I manually ran it through ch3_auroc_images.R to generate the plots.
+
+Not much difference just by squinting at the plot. The auROCs:
+old: 
+noHMT 91.73
+HMT 93.26
+
+new:
+noHMT 91.80
+HMT 93.61
+
+Marginal difference
