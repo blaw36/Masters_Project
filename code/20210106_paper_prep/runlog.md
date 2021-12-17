@@ -547,3 +547,6 @@ geno_select <- 11 # the one used in the demo
 - Send HJ the scripts and a play by play commentary (well commented code) about what these scripts actually do.
 - If it's easy to do, port to Spartan
 - How to login, submit jobs through slurm etc
+
+### 14th December 2021
+All done, over to HJ. Refer to email for what I last sent over.
