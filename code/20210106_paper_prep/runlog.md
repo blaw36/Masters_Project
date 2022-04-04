@@ -550,3 +550,45 @@ geno_select <- 11 # the one used in the demo
 
 ### 14th December 2021
 All done, over to HJ. Refer to email for what I last sent over.
+
+### 31st January 2022
+No progress since, so i'll take over the simulations from where I left it with HJ.
+
+### 7th March 2022
+- Plot; 3 datasets from null and 8 datasets from alt (each 2 from each of the 4 effect strengths) = 11
+	+ Effect size, and [as per page 36 of thesis]
+	+ Data space [as per page 76 of thesis]
+- Where does the effect come from? How is it being generated?
+- auROC @ about 3 points for each effect size. 8, 16, 32 might be fine.
+
+
+## 19th March 2022
+- Need to find some effect multiples which are consistent between the three effect lengths
+- Try and hone in on: 3 effect lengths and 3 effect multiples. From these:
+	+ Effect size
+		+ Note that `read_in_gen_eff_size_for_paper` does the effect size of the real data. Doesn't do any simulations. We'll have to simulate some data and then try and replicate this plot in order to do this.
+		+ This is the 'base effect size plot' by which we sample from.
+	+ Data space [sample, done.]
+		+ Should just be a comparison of counts between g1 and g2 (the two genotypes) in a null vs in an alt dataset.
+	+ Simulations of auROC for error bars
+- Trying to do 8, 16, 24, with strengths:
+	+ blah, blah, blah
+
+## 21st March 2022
+- Check that the effect region is included in the effect size plot [done]
+	+ __So the issue is that not the effect size interval doesn't always include the pre-specified simulation effect interval. That is, our effect size may only be locations 340-345, but we simulate the data such that the interval should be 335-351.__ Is this ok?
+- Verify that there is no effect if we pass the null through HMT [done]
+	+ Do this on strong effect sizes. So run 8, 16, 24 through strong effect multiple once.
+	+ Pass through the count data to verify the effect sizes extracted.
+	+ __The null through HMT is far less likely to raise any effect in the simulated effect area. If anything, there are noisy effects in other locations (due to chance?)__
+
+- Fix the effect length (100% of the estimated effect size)
+- One length, show the little diff to left and right (take 8 or 16?)
+- One strength, when you increase the length, the difference will decrease
+
+- Do all of the colours at one strength to the left and one more to the right (for black and red)
+	+ Effect lengths 8, 16, 24; 1/3, 5/3 [done, looks ok]
+- Then work on the error bars simulations (on Spartan, if possible) [in progress]
+
+## 28th March 2022
+- Red all throughout, black and green @ 100, 133%
